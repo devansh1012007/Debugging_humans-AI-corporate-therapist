@@ -18,17 +18,14 @@ class ChatSerializer(serializers.ModelSerializer):
         model = UserChatDB
         fields = ['chat', 'content', 'owner']
 
-    '''def validate(self, data):
-        # Ensure the user owns the chat session they are trying to attach history to
-        if data['chat'].owner != self.context['request'].user:
-            raise serializers.ValidationError("You do not own this chat session.")
-        return data'''
+
     
 class UserProblemSerializer(serializers.ModelField):
     owner = serializers.HiddenField(default=serializers.CurrentUserDefault())
     class Meta:
         model = UserProblems
         fields = ['content', 'owner']
+        read_only_fields = ['content', 'owner']
 
 class TeamMembersSerializer(serializers.ModelField):
     class Meta:
@@ -38,8 +35,8 @@ class TeamMembersSerializer(serializers.ModelField):
 class TeamDataSerializer(serializers.ModelField):
     class Meta:
         model = TeamData
-        fields = ['summery', 'recommendation', 'common_problems']
-
+        fields = ['summery', 'recommendation', 'common_problems']# v need to make it read only for all http request
+        read_only_fields = ['summery', 'recommendation', 'common_problems']
 
 class RegisterSerializer(serializers.ModelSerializer):
     email = serializers.EmailField(

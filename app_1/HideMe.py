@@ -1,31 +1,24 @@
-from rest_framework import viewsets, permissions
-from .models import UserHomepageDB, UserChatDB,TeamMembers,TeamData
-from .serializers import HomePageSerializer, ChatSerializer, UserProblemSerializer, TeamMembersSerializer, TeamDataSerializer
-from rest_framework import generics
-from django.contrib.auth.models import User
-from .serializers import RegisterSerializer
-from rest_framework.permissions import AllowAny
-import json
-from django.http import JsonResponse
-from Ai import therpy_ai_response, consiler_ai_responce
+'''
+def continue_chat(request, session_uuid):
+    user_prompt = request.POST.get('text')
+    history_obj = UserChatDB.objects.get(chat_session__id=session_uuid, owner=request.user)
+    
+    # 1. Get current history
+    current_messages = history_obj.full_history 
+    
+    # 2. Append user message
+    current_messages.append({"role": "user", "content": user_prompt})
+    
+    # 3. Get AI Response (placeholder logic)
+    ai_response = "This is the AI response" 
+    current_messages.append({"role": "assistant", "content": ai_response})
+    
+    # 4. Save back to DB
+    history_obj.full_history = current_messages
+    history_obj.save()
 
-#views.py
-# Class 1 -> gives data from model 1 (mostly get but dosen't matter)
-class OldChatsViewSet(viewsets.ModelViewSet):
-    serializer_class = HomePageSerializer 
-    permission_classes = [permissions.IsAuthenticated] 
-    # this will give list of all the titel along with there titels 
-    def get_queryset(self):
-        return UserHomepageDB.objects.filter(owner=self.request.user)
-    # if user wants to star a new chat v take title and ai mode and add it to our UserHomepageDB
-    def perform_create(self, serializer):
-        session = serializer.save(owner=self.request.user) # id will generted by itself 
-        UserChatDB.objects.create(
-            owner=self.request.user, 
-            chat=session, 
-            content=[]
-        )
-# Class 2 -> gives and take data to ai and front end chat interface
+'''
+
 
 class ChatViewSet(viewsets.ModelViewSet):
     serializer_class = ChatSerializer 
@@ -88,28 +81,4 @@ class ChatViewSet(viewsets.ModelViewSet):
             # saving data
             serializer.save(owner=self.request.user, content = ai_text, id = Chat_ID) ## important
             return JsonResponse({'response': ai_text})
-
-
-class problemsViewSet:
-    serializer_class = UserProblemSerializer 
-    permission_classes = [permissions.IsAuthenticated]
-    def get_queryset(self):
-        return UserHomepageDB.objects.filter(owner=self.request.user)
-    # data in this will be updated automaticly from some time set function using django-apscheduler
-
-class TeamMembaersViewSet :
-    serializer_class = TeamMembersSerializer
-    queryset = TeamMembers.objects.all()
-
-class TeamDataViewSet:
-    serializer_class = TeamDataSerializer
-    queryset = TeamData.objects.all()
-    # there will be alot of custom logic later 
-
-class RegisterView(generics.CreateAPIView): # generic view for user registration built-in create behavior
-    queryset = User.objects.all() # queryset set to all users so that we can create new ones
-    # Everyone must be able to hit this endpoint to sign up!
-    permission_classes = (AllowAny,)
-    serializer_class = RegisterSerializer
-
 
