@@ -1,3 +1,73 @@
 from django.db import models
+from django.contrib.auth.models import User
+import uuid
 
 # Create your models here.
+
+#model 0 (base model)
+class OwnedModel(models.Model):
+    owner = models.ForeignKey(User, on_delete=models.CASCADE)
+    
+    class Meta:
+        abstract = True # This tells Django not to create a table for this base class
+
+
+# modele 1 
+# for user home page
+# it has things like user's list of old chat
+class UserHomepageDB (OwnedModel):
+    title = models.CharField(max_length=255, default="New Chat") # v need to add the name of problem here when our ai gets better 
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    AiMode = models.CharField(max_length=20,default="therpy")
+    last_updated = models.DateTimeField(auto_now=True)
+    class Meta:
+        # This makes the newest chats appear 1st
+        ordering = ['-last_updated']
+    def __str__(self):
+        return f"{self.owner.username} - {self.title}"
+# frontend will take this data when user clicked on it and the send it back 
+
+# modele 2 
+# for chat interface
+# it has all the data of old chat + prompt from the user
+class UserChatDB(OwnedModel):
+    chat = models.OneToOneField(UserHomepageDB, on_delete=models.CASCADE, related_name="history") # this is unique chat id 
+    content = models.JSONField(default=list)# so that all the json msg are in list
+    
+    
+
+# modele 3
+# for saving assessments 
+# it will have list the different results of psycology assesment 
+class UserProblems(OwnedModel):
+    content = models.TextField()
+
+
+# modele 4
+# for team related data
+# it will have mainly - people who are in teams
+class TeamMembers(models.Model): # this will be accessed by only admin so do that 
+    teamname = models.CharField(max_length=255, default="team")
+    content = models.JSONField(default=list) # list of all the users 
+
+
+
+# modele 5
+# data for management dashboard 
+# it will have team-wise report data
+# make it readonly after it is genetated (it will happen in views ig)
+# assessable by anyone (idt it will be security threat right ?)
+class TeamData(TeamMembers):
+    summery = models.TextField()
+    recommendation = models.TextField()
+    common_problems = models.JSONField(default=list)
+
+
+
+# module 6
+# data related to webside and app use
+# this is not needed till hackathon
+'''
+class WebsiteData(models.Model):
+    user = models.JSONField()
+'''
