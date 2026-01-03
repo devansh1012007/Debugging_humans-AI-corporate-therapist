@@ -16,27 +16,27 @@ class ChatSerializer(serializers.ModelSerializer):
     owner = serializers.HiddenField(default=serializers.CurrentUserDefault())
     class Meta:
         model = UserChatDB
-        fields = ['chat', 'content', 'owner']
+        fields = ['id','chat', 'content', 'owner']
 
 
     
-class UserProblemSerializer(serializers.ModelField):
+class UserProblemSerializer(serializers.ModelSerializer):
     owner = serializers.HiddenField(default=serializers.CurrentUserDefault())
     class Meta:
         model = UserProblems
         fields = ['content', 'owner']
         read_only_fields = ['content', 'owner']
 
-class TeamMembersSerializer(serializers.ModelField):
+class TeamMembersSerializer(serializers.ModelSerializer):
     class Meta:
         model = TeamMembers
         fields = ['teamname', 'content']
 
-class TeamDataSerializer(serializers.ModelField):
+class TeamDataSerializer(serializers.ModelSerializer):
     class Meta:
         model = TeamData
-        fields = ['summery', 'recommendation', 'common_problems']# v need to make it read only for all http request
-        read_only_fields = ['summery', 'recommendation', 'common_problems']
+        fields = ['summary', 'recommendation', 'common_problems']# v need to make it read only for all http request
+        read_only_fields = ['summary', 'recommendation', 'common_problems']
 
 class RegisterSerializer(serializers.ModelSerializer):
     email = serializers.EmailField(

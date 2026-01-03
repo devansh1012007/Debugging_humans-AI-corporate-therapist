@@ -1,3 +1,4 @@
+# models.py
 from django.db import models
 from django.contrib.auth.models import User
 import uuid
@@ -18,7 +19,7 @@ class OwnedModel(models.Model):
 class UserHomepageDB (OwnedModel):
     title = models.CharField(max_length=255, default="New Chat") # v need to add the name of problem here when our ai gets better 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    AiMode = models.CharField(max_length=20,default="therpy")
+    AiMode = models.CharField(max_length=20,default="therapy")
     last_updated = models.DateTimeField(auto_now=True)
     class Meta:
         # This makes the newest chats appear 1st
@@ -58,7 +59,7 @@ class TeamMembers(models.Model): # this will be accessed by only admin so do tha
 # make it readonly after it is genetated (it will happen in views ig)
 # assessable by anyone (idt it will be security threat right ?)
 class TeamData(TeamMembers):
-    summery = models.TextField()
+    summary = models.TextField()
     recommendation = models.TextField()
     common_problems = models.JSONField(default=list)
 
