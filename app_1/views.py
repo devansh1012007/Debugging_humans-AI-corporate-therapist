@@ -12,6 +12,10 @@ from rest_framework.permissions import AllowAny
 import json
 from django.http import JsonResponse
 from .Ai import therpy_ai_response, consiler_ai_responce
+from allauth.socialaccount.providers.google.views import GoogleOAuth2Adapter
+from allauth.socialaccount.providers.oauth2.client import OAuth2Client
+from dj_rest_auth.registration.views import SocialLoginView
+
 
 
 # Class 1 -> gives data from model 1 (mostly get but dosen't matter)
@@ -79,7 +83,8 @@ class ChatViewSet(viewsets.ModelViewSet):
         history_obj.save() 
 
         return Response({'response': response_text})
-class problemsViewSet(viewsets.ModelViewSet):
+    
+class problemsViewSet(viewsets.ModelViewSet):# this will need to be changed later and made someting read only and v need to addewd ai 
     serializer_class = UserProblemSerializer 
     permission_classes = [permissions.IsAuthenticated]
     def get_queryset(self):
@@ -104,3 +109,8 @@ class RegisterView(generics.CreateAPIView): # generic view for user registration
     serializer_class = RegisterSerializer
 
 
+class GoogleLogin(SocialLoginView):
+    adapter_class = GoogleOAuth2Adapter
+    # callback_url must match exactly what you set in Google Cloud Console
+    callback_url = "Http://127.0.0.1:8000" 
+    client_class = OAuth2Client

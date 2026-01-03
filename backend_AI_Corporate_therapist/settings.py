@@ -37,6 +37,7 @@ INSTALLED_APPS = [
     'django.contrib.sites',
     'allauth',
     'allauth.account',
+    'rest_framework.authtoken',
     'allauth.socialaccount',
     'allauth.socialaccount.providers.github',
     'allauth.socialaccount.providers.google',
@@ -155,3 +156,7 @@ AUTHENTICATION_BACKENDS = [
 # Redirect URLs
 LOGIN_REDIRECT_URL = '/'
 LOGOUT_REDIRECT_URL = '/'
+
+REST_USE_JWT = True
+JWT_AUTH_COOKIE = 'my-app-auth' # Optional: name of the cookie
+JWT_AUTH_REFRESH_COOKIE = 'my-refresh-token'
