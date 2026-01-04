@@ -1,6 +1,6 @@
 # app1/urls.py
 from django.urls import path, include
-from rest_framework_simplejwt.views import TokenObtainPairView
+from rest_framework_simplejwt.views import TokenObtainPairView,TokenRefreshView
 from rest_framework.routers import DefaultRouter
 from .views import OldChatsViewSet,ChatViewSet, RegisterView,problemsViewSet,TeamMembersViewSet,TeamDataViewSet
 
@@ -14,6 +14,6 @@ urlpatterns = [
     path('login/', TokenObtainPairView.as_view(), name='token_obtain_pair'),# JWT login endpoint built-in view # not needed as v r using allauth for authentication, best for barebones setup
     path('', include(router.urls)),
     path('register/', RegisterView.as_view(), name='auth_register'),# not needed as v r using allauth for authentication, best for barebones setup
-    
+    path('refresh/', TokenRefreshView.as_view(), name='token_refresh'),
 ]
 
