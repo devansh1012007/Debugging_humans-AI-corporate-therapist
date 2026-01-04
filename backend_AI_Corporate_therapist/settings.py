@@ -21,18 +21,10 @@ INSTALLED_APPS = [
     'django.contrib.sessions', # Required for Admin and Allauth handshake
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    
+    'rest_framework_simplejwt',# The engine for JWT
     # Third Party Apps
     'rest_framework',
-    'rest_framework_simplejwt', # The engine for JWT
-    
-    # Allauth (Social Login)
-    'django.contrib.sites',
-    'allauth',
-    'allauth.account',
-    'allauth.socialaccount',
-    'allauth.socialaccount.providers.github',
-    'allauth.socialaccount.providers.google',
+    'corsheaders',#for frontend
     
     # Local Apps
     'app_1',
@@ -42,14 +34,14 @@ INSTALLED_APPS = [
 SITE_ID = 1
 
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware', # for frontend
     'django.middleware.security.SecurityMiddleware',
-    'django.contrib.sessions.middleware.SessionMiddleware', # Keep this for OAuth handshake
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
+    'django.contrib.sessions.middleware.SessionMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'allauth.account.middleware.AccountMiddleware',
 ]
 
 ROOT_URLCONF = 'backend_AI_Corporate_therapist.urls'
@@ -96,11 +88,8 @@ REST_FRAMEWORK = {
     # This specifically enforces that ONLY JWT is accepted for API views
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'rest_framework_simplejwt.authentication.JWTAuthentication',
+        'rest_framework.authentication.SessionAuthentication',
     ],
-    # Optional: Default permission
-    # 'DEFAULT_PERMISSION_CLASSES': [
-    #     'rest_framework.permissions.IsAuthenticated',
-    # ]
 }
 
 # --- JWT SETTINGS ---
@@ -109,15 +98,12 @@ SIMPLE_JWT = {
     'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
     'ROTATE_REFRESH_TOKENS': True, 
     'BLACKLIST_AFTER_ROTATION': True,
+    'AUTH_HEADER_TYPES': ('Bearer',),
 }
 
-# --- SOCIAL AUTH CONFIGURATION ---
-AUTHENTICATION_BACKENDS = [
-    'django.contrib.auth.backends.ModelBackend',
-    'allauth.account.auth_backends.AuthenticationBackend',
-]
 
 
 LOGIN_REDIRECT_URL = '/'
 LOGOUT_REDIRECT_URL = '/'
-
+CORS_ALLOW_ALL_ORIGINS = True # for 
+#CORS_ALLOWED_ORIGINS = ["http://127.0.0.1:5500",]
