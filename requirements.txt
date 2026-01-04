@@ -1,0 +1,15 @@
+Django
+psycopg2-binary>=2.9.9
+djangorestframework
+django-cors-headers
+django-apscheduler
+django-allauth
+dj-rest-auth[with_social]
+cryptography
+djangorestframework-simplejwt
+requests
+dotenv
+ollama
+psycopg2-binary 
+pgvector 
+httpx
