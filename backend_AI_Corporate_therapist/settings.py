@@ -1,66 +1,49 @@
-#settings,py
 from pathlib import Path
 import os
+from datetime import timedelta # Moved import to top for standard practice
 from dotenv import load_dotenv
+
 load_dotenv()
 env = os.getenv
 
-# Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+SECRET_KEY = env('SECRET_KEY', default='django-insecure-!&p4_a3_(x65@1c*m_93#dztsav#1lj!m0s4z0d@b$wkn8s$l7')
 
-# Quick-start development settings - unsuitable for production
-# See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
-
-# SECURITY WARNING: keep the secret key used in production secret!
-# this need to be set using env variable later
-SECRET_KEY = 'django-insecure-!&p4_a3_(x65@1c*m_93#dztsav#1lj!m0s4z0d@b$wkn8s$l7'
-
-# SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
 ALLOWED_HOSTS = []
-
-
-# Application definition
 
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
-    'django.contrib.sessions',
+    'django.contrib.sessions', # Required for Admin and Allauth handshake
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'app_1',
-    'rest_framework_simplejwt',
+    
+    # Third Party Apps
     'rest_framework',
+    'rest_framework_simplejwt', # The engine for JWT
+    
+    # Allauth (Social Login)
     'django.contrib.sites',
     'allauth',
     'allauth.account',
-    'rest_framework.authtoken',
     'allauth.socialaccount',
     'allauth.socialaccount.providers.github',
     'allauth.socialaccount.providers.google',
+    
+    # Local Apps
+    'app_1',
+    
 ]
-SOCIALACCOUNT_PROVIDERS = {
-    'google': {
-        'APP': {
-            'client_id': env('GOOGLE_CLIENT_ID', default='your_google_client_id'),
-            'secret': env('GOOGLE_CLIENT_SECRET', default='your_google_client_secret'),
-        }
-    },
-    'github': {
-        'APP': {
-            'client_id': env('GITHUB_CLIENT_ID', default='your_github_client_id'),
-            'secret': env('GITHUB_CLIENT_SECRET', default='your_github_client_secret'),
-        }
-    }
-}
+
 SITE_ID = 1
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
-    'django.contrib.sessions.middleware.SessionMiddleware',
+    'django.contrib.sessions.middleware.SessionMiddleware', # Keep this for OAuth handshake
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -88,10 +71,6 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'backend_AI_Corporate_therapist.wsgi.application'
 
-
-# Database
-# https://docs.djangoproject.com/en/6.0/ref/settings/#databases
-
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
@@ -99,65 +78,46 @@ DATABASES = {
     }
 }
 
-
-# Password validation
-# https://docs.djangoproject.com/en/6.0/ref/settings/#auth-password-validators
-
 AUTH_PASSWORD_VALIDATORS = [
-    {
-        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
-    },
+    { 'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator', },
+    { 'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator', },
+    { 'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator', },
+    { 'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator', },
 ]
 
-
-# Internationalization
-# https://docs.djangoproject.com/en/6.0/topics/i18n/
-
 LANGUAGE_CODE = 'en-us'
-
 TIME_ZONE = 'UTC'
-
 USE_I18N = True
-
 USE_TZ = True
-
-
-# Static files (CSS, JavaScript, Images)
-# https://docs.djangoproject.com/en/6.0/howto/static-files/
-
 STATIC_URL = 'static/'
 
-# settings.py
+# --- DRF CONFIGURATION (STRICT JWT) ---
 REST_FRAMEWORK = {
+    # This specifically enforces that ONLY JWT is accepted for API views
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     ],
+    # Optional: Default permission
+    # 'DEFAULT_PERMISSION_CLASSES': [
+    #     'rest_framework.permissions.IsAuthenticated',
+    # ]
 }
-# lets set lifetimes for tokens
-from datetime import timedelta
 
+# --- JWT SETTINGS ---
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(minutes=30),
     'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
+    'ROTATE_REFRESH_TOKENS': True, 
+    'BLACKLIST_AFTER_ROTATION': True,
 }
+
+# --- SOCIAL AUTH CONFIGURATION ---
 AUTHENTICATION_BACKENDS = [
     'django.contrib.auth.backends.ModelBackend',
     'allauth.account.auth_backends.AuthenticationBackend',
 ]
-# Redirect URLs
+
+
 LOGIN_REDIRECT_URL = '/'
 LOGOUT_REDIRECT_URL = '/'
-'''
-REST_USE_JWT = True
-JWT_AUTH_COOKIE = 'my-app-auth' # Optional: name of the cookie
-JWT_AUTH_REFRESH_COOKIE = 'my-refresh-token'
-'''
+
