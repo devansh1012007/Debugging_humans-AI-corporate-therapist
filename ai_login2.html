@@ -34,30 +34,73 @@
 
     <!-- NOTIFICATION TOAST -->
     <div id="toast" class="fixed top-5 right-5 z-50 transform transition-transform duration-300 translate-x-full">
-        <div class="bg-red-500 text-white px-6 py-3 rounded shadow-lg" id="toast-msg">
-            Error message
+        <div class="bg-indigo-800 text-white px-6 py-3 rounded shadow-lg flex items-center" id="toast-container">
+            <i class="fas fa-info-circle mr-2"></i>
+            <span id="toast-msg">Error message</span>
         </div>
     </div>
 
     <!-- VIEW: LOGIN -->
     <div id="login-view" class="h-full flex items-center justify-center">
-        <div class="bg-white p-8 rounded-lg shadow-xl w-96">
+        <div class="bg-white p-8 rounded-lg shadow-xl w-96 login-form">
             <h2 class="text-2xl font-bold text-center text-indigo-600 mb-6">AI Therapist Login</h2>
-            <form id="login-form" class="space-y-4">
+            
+            <form id="loginForm" class="space-y-4">
                 <div>
                     <label class="block text-sm font-medium text-gray-700">Username</label>
-                    <input type="text" id="username" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500" required>
+                    <input type="text" id="loginUserame" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500" required>
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700">Password</label>
-                    <input type="password" id="password" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500" required>
+                    <input type="password" id="loginPassword" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500" required>
                 </div>
-                <button type="submit" class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none">
+                
+                <div class="flex items-center">
+                    <input id="rememberMe" type="checkbox" class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded">
+                    <label for="rememberMe" class="ml-2 block text-sm text-gray-900">
+                        Remember me
+                    </label>
+                </div>
+
+                <button type="submit" class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none transition duration-150">
                     Sign In
                 </button>
             </form>
+            
             <div class="mt-4 text-center text-sm">
-                <a href="#" onclick="alert('Please implement registration endpoint')" class="text-indigo-600 hover:text-indigo-500">Need an account? Register</a>
+                <p class="text-gray-600">Don't have an account?</p>
+                <a href="#" onclick="showRegister()" class="text-indigo-600 hover:text-indigo-500 font-medium">Register here</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- VIEW: REGISTER (New) -->
+    <div id="register-view" class="h-full flex items-center justify-center hidden">
+        <div class="bg-white p-8 rounded-lg shadow-xl w-96">
+            <h2 class="text-2xl font-bold text-center text-green-600 mb-6">Create Account</h2>
+            
+            <form id="registerForm" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Username</label>
+                    <input type="text" id="regUsername" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500" required>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Email Address</label>
+                    <input type="email" id="regEmail" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500" required>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Password</label>
+                    <input type="password" id="regPassword" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500" required>
+                </div>
+
+                <button type="submit" class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none transition duration-150">
+                    Register
+                </button>
+            </form>
+            
+            <div class="mt-4 text-center text-sm">
+                <p class="text-gray-600">Already have an account?</p>
+                <a href="#" onclick="showLogin()" class="text-indigo-600 hover:text-indigo-500 font-medium">Back to Login</a>
             </div>
         </div>
     </div>
@@ -214,12 +257,13 @@
             }
         });
 
-        const loginForm = document.getElementById('login-form');
-        loginForm.addEventListener('submit', async (e) => {
+        // LOGIN LOGIC
+        document.getElementById('loginForm').addEventListener('submit', async function(e) {
             e.preventDefault();
-            const username = document.getElementById('username').value;
-            const password = document.getElementById('password').value;
-
+            
+            const username = document.getElementById('loginUserame').value;
+            const password = document.getElementById('loginPassword').value;
+            
             try {
                 const response = await fetch(`${API_BASE}/login/`, {
                     method: 'POST',
@@ -230,15 +274,50 @@
                 if (!response.ok) throw new Error('Invalid credentials');
 
                 const data = await response.json();
-                
-                // Save Tokens
                 localStorage.setItem('access_token', data.access);
-                localStorage.setItem('refresh_token', data.refresh);// this will be needed to refreshed so that v can keep user loged in
-                localStorage.setItem('username', username); // Store username for display
-                
+                localStorage.setItem('refresh_token', data.refresh);
+                localStorage.setItem('username', username);
+
+                showToast('Login successful!');
+                this.reset();
                 showApp();
+
             } catch (err) {
-                showToast(err.message);
+                showToast(err.message, true);
+            }
+        });
+
+        // REGISTER LOGIC (New)
+        document.getElementById('registerForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const username = document.getElementById('regUsername').value;
+            const email = document.getElementById('regEmail').value;
+            const password = document.getElementById('regPassword').value;
+
+            try {
+                const response = await fetch(`${API_BASE}/register/`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, email, password })
+                });
+
+                if (!response.ok) {
+                    const data = await response.json();
+                    // Handle Django DRF error format usually { "field": ["Error detail"] }
+                    let msg = "Registration failed.";
+                    if(data.username) msg = "Username: " + data.username[0];
+                    else if(data.email) msg = "Email: " + data.email[0];
+                    else if(data.password) msg = "Password: " + data.password[0];
+                    throw new Error(msg);
+                }
+
+                showToast('Registration successful! Please sign in.');
+                this.reset();
+                showLogin();
+
+            } catch (err) {
+                showToast(err.message, true);
             }
         });
 
@@ -264,8 +343,6 @@
             });
 
             if (response.status === 401) {
-                // Token expired - simple logout handling for now
-                // Ideally implement refresh token logic here
                 logout();
                 throw new Error("Session expired");
             }
@@ -277,15 +354,22 @@
 
         function showLogin() {
             document.getElementById('login-view').classList.remove('hidden');
+            document.getElementById('register-view').classList.add('hidden');
+            document.getElementById('app-view').classList.add('hidden');
+        }
+
+        function showRegister() {
+            document.getElementById('login-view').classList.add('hidden');
+            document.getElementById('register-view').classList.remove('hidden');
             document.getElementById('app-view').classList.add('hidden');
         }
 
         function showApp() {
             document.getElementById('login-view').classList.add('hidden');
+            document.getElementById('register-view').classList.add('hidden');
             document.getElementById('app-view').classList.remove('hidden');
             document.getElementById('current-user-display').textContent = localStorage.getItem('username') || 'User';
             
-            // Load initial data
             loadChatHistory();
         }
 
@@ -309,9 +393,21 @@
             }
         }
 
-        function showToast(msg) {
+        function showToast(msg, isError = false) {
             const toast = document.getElementById('toast');
-            document.getElementById('toast-msg').innerText = msg;
+            const toastContainer = document.getElementById('toast-container');
+            const toastMsg = document.getElementById('toast-msg');
+            
+            toastMsg.innerText = msg;
+            
+            if (isError) {
+                toastContainer.classList.remove('bg-indigo-800');
+                toastContainer.classList.add('bg-red-600');
+            } else {
+                toastContainer.classList.remove('bg-red-600');
+                toastContainer.classList.add('bg-indigo-800');
+            }
+
             toast.classList.remove('translate-x-full');
             setTimeout(() => toast.classList.add('translate-x-full'), 3000);
         }
@@ -365,7 +461,7 @@
                     loadConversation(newChat.id, newChat.title, newChat.AiMode);
                 }
             } catch (err) {
-                showToast("Could not create chat");
+                showToast("Could not create chat", true);
             }
         }
 
@@ -384,17 +480,10 @@
             msgContainer.innerHTML = '<div class="flex justify-center mt-10"><div class="loader"></div></div>';
 
             try {
-                // To get messages, we likely need to query ChatData. 
-                // Based on backend, ChatData is the model with 'content'.
-                // Ideally, backend should support filtering ChatData by homepageId, 
-                // but ChatViewSet returns ALL chats for user. 
-                // We will fetch all and find the matching one. (Not efficient for prod, but fits current backend)
-                
                 const res = await authenticatedFetch('/ChatData/');
                 const chatDataList = await res.json();
                 
-                // Find the specific chat entry linked to this homepageId
-                // NOTE: Backend 'ChatSerializer' returns 'chat' field which is the ID of UserHomepageDB
+                // Find chat linked to homepageId
                 const activeChatData = chatDataList.find(c => c.chat === homepageId);
                 
                 msgContainer.innerHTML = ''; // Clear loader
@@ -464,13 +553,12 @@
             scrollToBottom();
 
             try {
-                // Hitting the 'continue_chat' action
                 const res = await authenticatedFetch('/ChatData/continue_chat/', {
                     method: 'POST',
                     body: JSON.stringify({
                         prompt: text,
                         mode: mode,
-                        ChatID: currentChatId // Passing the HomepageDB UUID
+                        ChatID: currentChatId
                     })
                 });
 
@@ -484,7 +572,7 @@
 
             } catch (err) {
                 document.getElementById(loaderId)?.remove();
-                showToast("Failed to get response");
+                showToast("Failed to get response", true);
             }
         });
 
@@ -500,7 +588,6 @@
                 
                 const data = await res.json();
                 
-                // Update stats
                 document.getElementById('total-teams-count').innerText = data.length;
                 let totalIssues = 0;
                 
