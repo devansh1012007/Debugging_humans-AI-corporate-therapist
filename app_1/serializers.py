@@ -25,7 +25,7 @@ class UserProblemSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserProblems
         fields = ['content', 'owner']
-        read_only_fields = ['content', 'owner']
+        #read_only_fields = ['content', 'owner']
 
 class TeamMembersSerializer(serializers.ModelSerializer):
     class Meta:
@@ -36,7 +36,7 @@ class TeamDataSerializer(serializers.ModelSerializer):
     class Meta:
         model = TeamData
         fields = ['summary', 'recommendation', 'common_problems']# v need to make it read only for all http request
-        read_only_fields = ['summary', 'recommendation', 'common_problems']
+        #read_only_fields = ['summary', 'recommendation', 'common_problems']
 
 class RegisterSerializer(serializers.ModelSerializer):
     email = serializers.EmailField(

@@ -11,7 +11,7 @@ from django.shortcuts import get_object_or_404
 from rest_framework.permissions import AllowAny
 import json
 from django.http import JsonResponse
-from .Ai import therpy_ai_response, consiler_ai_responce
+from .Ai import therpy_ai_response, counselor_ai_responce
 
 
 
@@ -63,7 +63,7 @@ class ChatViewSet(viewsets.ModelViewSet):
                 ai_result = therpy_ai_response(user_prompt, messages_list)
                 ai_message_data = ai_result.get('message', {})
             else:
-                ai_result = consiler_ai_responce(user_prompt, messages_list)
+                ai_result = counselor_ai_responce(user_prompt, messages_list)
                 ai_message_data = ai_result.get('message', {})
             
             # Extract just the text response to send back to frontend
