@@ -15,7 +15,7 @@ import {
 } from 'lucide-react';
 
 // --- Configuration ---
-const API_BASE = 'http://127.0.0.1:8000/'; // Change this to your backend URL http://0.0.0.0:8000
+const API_BASE = 'https://providing-expertise-dollars-unlikely.trycloudflare.com/'; // Change this to your backend URL http://0.0.0.0:8000
 
 // --- Auth Context ---
 const AuthContext = createContext(null);

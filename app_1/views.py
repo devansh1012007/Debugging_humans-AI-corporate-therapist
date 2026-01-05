@@ -55,19 +55,24 @@ class ChatViewSet(viewsets.ModelViewSet):
 
         history_obj = get_object_or_404(UserChatDB, chat__id=chat_id, owner=request.user)
         # v r checking if chat has any history or not, if not v will create empty list
-        messages_list = history_obj.content if isinstance(history_obj.content, list) else []     
+        raw_history= history_obj.content if isinstance(history_obj.content, list) else []
+        messages_list = [
+            msg for msg in raw_history 
+            if isinstance(msg, dict) and 'role' in msg and 'content' in msg
+        ]
+             
         messages_list.append({"role": "user", "content": user_prompt})
 
         try:
             if ai_mode == "therapy":
                 ai_result = therpy_ai_response(user_prompt, messages_list)
-                ai_message_data = ai_result.get('message', {})
+                
             else:
                 ai_result = counselor_ai_responce(user_prompt, messages_list)
-                ai_message_data = ai_result.get('message', {})
-            
+                
+            ai_message_data = ai_result.get('message', {})
             # Extract just the text response to send back to frontend
-            response_text = ai_message_data.get('response', '')
+            response_text = ai_message_data.get('content', '')
 
         except Exception as e:
             return Response({'error': f'AI Error: {str(e)}'}, status=500)
