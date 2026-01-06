@@ -73,6 +73,7 @@ class ChatViewSet(viewsets.ModelViewSet):
 
         if ai_mode == "therapy":
             model_override = "therapy-ai"
+            delet = True
         else:
             model_override = "problem-solver"
         # 1. Get History
@@ -120,7 +121,8 @@ class ChatViewSet(viewsets.ModelViewSet):
 
         history_obj.content = current_history
         history_obj.save()
-        ai_message_text = ai_message_text[:-4]
+        if delet:
+            ai_message_text = ai_message_text[:-4]
         print("response sent: "+ ai_message_text)
         return Response({'response': ai_message_text})
 class problemsViewSet(viewsets.ModelViewSet):# this will need to be changed later and made someting read only and v need to addewd ai 
