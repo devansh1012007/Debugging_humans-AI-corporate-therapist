@@ -1,37 +1,70 @@
+# docker-compose.yml
+
+# Defines the groups of services (containers) we want to run
 services:
+  
+  # Service 1: The Database
   db:
+    # Download the official PostgreSQL version 15 image from the internet
     image: postgres:15
+    
+    # Save the database files on your actual hard drive so data isn't lost when you restart
+    # Format: ./local_folder:/folder_inside_container
     volumes:
       - ./postgres_data:/var/lib/postgresql/data/
+    
+    # Set the username and password for the database
     environment:
       - POSTGRES_DB=django_db
       - POSTGRES_USER=django_user
       - POSTGRES_PASSWORD=django_pass
-      # Removed AI_SERVER_URL from here (Database doesn't need it)
+      # Note: The database is isolated; it doesn't need to know about the AI URL
+    
+    # A safety check: The 'web' server will wait for this check to pass before starting
+    # It tries to run a command inside the container to see if Postgres is ready to accept connections
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U django_user -d django_db"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+      interval: 10s # Check every 10 seconds
+      timeout: 5s   # If check takes longer than 5s, it fails
+      retries: 5    # Try 5 times before giving up
 
+  # Service 2: The Web Application (Your Django Code)
   web:
+    # Build this container using the instructions in the 'Dockerfile' in the current directory
     build: .
+    
+    # The command to start the server
+    # 0.0.0.0:8000 allows connections from outside the container (crucial for Docker)
     command: python manage.py runserver 0.0.0.0:8000
+    
+    # Sync your actual code folder with the code folder inside the container
+    # This is for DEVELOPMENT: If you change a file on your laptop, it updates inside the container instantly
     volumes:
       - .:/code
+    
+    # Open port 8000 to the outside world so you can access the site in your browser
     ports:
       - "8000:8000"
+    
+    # These variables tell Django how to find the database defined above
     environment:
       - DB_NAME=django_db
       - DB_USER=django_user
       - DB_PASSWORD=django_pass
+      # This 'db' hostname works because Docker creates a magical internal network linking these services
       - DB_HOST=db
       - DB_PORT=5432
-      # CRITICAL CHANGE: Use 'ai-server' instead of '127.0.0.1'
+      # This points to where your AI logic lives.
+      # It uses the specific IP address provided in 'extra_hosts' below.
       - AI_SERVER_URL=http://26.217.98.105:8001/chat
+    
+    # This ensures the 'web' container won't crash by trying to start before the database is ready
     depends_on:
       db:
         condition: service_healthy
+    
+    # This is a manual networking bridge.
+    # It maps the name "ai-server" to the specific IP "26.217.98.105"
+    # This allows the container to talk to a server that is NOT inside this docker-compose setup (e.g., another machine or the host PC)
     extra_hosts:
-      # This maps the hostname 'ai-server' to the host machine's IP
       - "ai-server:26.217.98.105"

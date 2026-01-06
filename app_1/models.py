@@ -1,73 +1,67 @@
 # models.py
+# Import standard database tools
 from django.db import models
+# Import the built-in User system (handles usernames/passwords)
 from django.contrib.auth.models import User
+# Import a tool to generate unique random IDs
 import uuid
 
-# Create your models here.
-
-#model 0 (base model)
+# Base Model: A template for other models
 class OwnedModel(models.Model):
+    # Every model inheriting this will have an "owner" (a link to a User)
     owner = models.ForeignKey(User, on_delete=models.CASCADE)
     
     class Meta:
-        abstract = True # This tells Django not to create a table for this base class
+        abstract = True # Tells Django not to build a table for this, just use it as a template
 
-
-# modele 1 
-# for user home page
-# it has things like user's list of old chat
+# Model 1: User Homepage (The "Cover" of the chat)
 class UserHomepageDB (OwnedModel):
-    title = models.CharField(max_length=255, default="New Chat") # v need to add the name of problem here when our ai gets better 
+    # The title of the chat (e.g., "Work Stress")
+    title = models.CharField(max_length=255, default="New Chat") 
+    # A unique ID for the chat (better than numbers like 1, 2, 3)
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    # The setting for the AI (e.g., therapy mode)
     AiMode = models.CharField(max_length=20,default="therapy")
+    # Timestamp for when the chat was last touched
     last_updated = models.DateTimeField(auto_now=True)
     class Meta:
-        # This makes the newest chats appear 1st
+        # Sort results so the newest chats appear first
         ordering = ['-last_updated']
+    # A string representation (helper for the admin panel)
     def __str__(self):
         return f"{self.owner.username} - {self.title}"
-# frontend will take this data when user clicked on it and the send it back 
 
-# modele 2 
-# for chat interface
-# it has all the data of old chat + prompt from the user
+# Model 2: User Chat (The "Pages" of the chat)
 class UserChatDB(OwnedModel):
-    chat = models.OneToOneField(UserHomepageDB, on_delete=models.CASCADE, related_name="history") # this is unique chat id 
-    content = models.JSONField(default=list)# so that all the json msg are in list
-    
-    
+    # Links strictly to one HomepageDB entry (One-to-One relationship)
+    chat = models.OneToOneField(UserHomepageDB, on_delete=models.CASCADE, related_name="history") 
+    # Stores the actual messages as a list of data (JSON)
+    content = models.JSONField(default=list)
 
-# modele 3
-# for saving assessments 
-# it will have list the different results of psycology assesment 
+# Model 3: User Problems (Assessment results)
 class UserProblems(OwnedModel):
+    # Text field to describe the user's problems
     content = models.TextField()
 
-
-# modele 4
-# for team related data
-# it will have mainly - people who are in teams
-class TeamMembers(models.Model): # this will be accessed by only admin so do that 
+# Model 4: Team Members (Who is in which team)
+class TeamMembers(models.Model): 
+    # Name of the team
     teamname = models.CharField(max_length=255, default="team")
-    content = models.JSONField(default=list) # list of all the users 
+    # A list of users in that team (JSON format)
+    content = models.JSONField(default=list) 
 
-
-
-# modele 5
-# data for management dashboard 
-# it will have team-wise report data
-# make it readonly after it is genetated (it will happen in views ig)
-# assessable by anyone (idt it will be security threat right ?)
+# Model 5: Team Data (The Dashboard Reports)
+# Inherits from TeamMembers, so it is linked to a specific team
 class TeamData(TeamMembers):
+    # Text summary of the team's status
     summary = models.TextField()
+    # Advice for the manager
     recommendation = models.TextField()
+    # List of common issues in the team
     common_problems = models.JSONField(default=list)
 
-
-
-# module 6
-# data related to webside and app use
-# this is not needed till hackathon
+# Model 6: Website Usage Data (Currently disabled)
+# This code is commented out and not active.
 '''
 class WebsiteData(models.Model):
     user = models.JSONField()
