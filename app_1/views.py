@@ -74,7 +74,7 @@ class ChatViewSet(viewsets.ModelViewSet):
         if ai_mode == "therapy":
             model_override = "therapy-ai"
         else:
-            model_override = ""
+            model_override = "problem-solver"
         # 1. Get History
         history_obj = get_object_or_404(UserChatDB, chat__id=chat_id, owner=request.user)
         # Ensure it is a list, defaulting to empty
