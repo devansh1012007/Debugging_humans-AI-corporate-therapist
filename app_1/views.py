@@ -11,7 +11,7 @@ from django.shortcuts import get_object_or_404
 from rest_framework.permissions import AllowAny
 import json
 from django.http import JsonResponse
-from .Ai import therpy_ai_response, counselor_ai_responce
+from .Ai import ai_response
 
 
 
@@ -38,54 +38,91 @@ class ChatViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
     
     #lookup_field = 'chat__id'
+    # v should add a filter by chat_id
+    # chat_session = UserHomepageDB.objects.get(id=chat_id, owner=request.user)
+    # return chat_session
     def get_queryset(self):
         return UserChatDB.objects.filter(owner=self.request.user)
     #we don't need to filter the chat by id because we are not using any url parameter here; but chat_id method still works(need to experiment)
 
-
+    
     @action(detail=False, methods=['post'])# maybe v should also add patch but udt its needed)# @action decorator to create a custom action and v want use perform_create or perform_update here bcoz we are not creating or updating any model instance directly
     def continue_chat(self, request):
         
         user_prompt = request.data.get('prompt')
         ai_mode = request.data.get('mode')
         chat_id = request.data.get('ChatID')
+    
+        
 
+        try:
+            chat_session = UserHomepageDB.objects.get(id=chat_id, owner=request.user)
+            # chat_session = chat_session[20:] # for returning last 10 chats 
+        except UserHomepageDB.DoesNotExist:
+            return Response({'error': f'Chat Session {chat_id} not found for this user.'}, status=404)
+
+        
+        history_obj, created = UserChatDB.objects.get_or_create(
+            chat=chat_session,
+            owner=request.user,
+            defaults={'content': []} 
+        )
+        user_username = request.user.username
         if not user_prompt or not chat_id:
             return Response({'error': 'Prompt and ChatID are required'}, status=400)
 
+        if ai_mode == "therapy":
+            model_override = "therapy-ai"
+        else:
+            model_override = ""
+        # 1. Get History
         history_obj = get_object_or_404(UserChatDB, chat__id=chat_id, owner=request.user)
-        # v r checking if chat has any history or not, if not v will create empty list
-        raw_history= history_obj.content if isinstance(history_obj.content, list) else []
-        messages_list = [
-            msg for msg in raw_history 
-            if isinstance(msg, dict) and 'role' in msg and 'content' in msg
-        ]
+        # Ensure it is a list, defaulting to empty
+        current_history = history_obj.content if isinstance(history_obj.content, list) else []
+        #print("Current History:", current_history)
+        #print("User Prompt:", user_prompt)
+        #print("AI Mode:", model_override)
+        payload = {
+            "message": user_prompt,
+            "conversation" : current_history,# can cause issues
+            "user_profile": "name:" + user_username,
+            "workspace_context": "employee in an Indian startup or hight intencity work enviroment",
+            "model_override": model_override
+        }
              
-        messages_list.append({"role": "user", "content": user_prompt})
-
         try:
-            if ai_mode == "therapy":
-                ai_result = therpy_ai_response(user_prompt, messages_list)
-                
-            else:
-                ai_result = counselor_ai_responce(user_prompt, messages_list)
-                
-            ai_message_data = ai_result.get('message', {})
-            # Extract just the text response to send back to frontend
-            response_text = ai_message_data.get('content', '')
+            
+            ai_result = ai_response(payload) 
+            #print("AI Result:", ai_result)
+            # Check for error key from our safe Ai.py
+            if "error" in ai_result:
+                raise ValueError(ai_result["error"])
 
+            ai_message_text = ai_result.get('response', '')
+            
+            if not ai_message_text:
+                raise ValueError("AI returned an empty response")
         except Exception as e:
             return Response({'error': f'AI Error: {str(e)}'}, status=500)
 
-        messages_list.append(ai_message_data)
-
+            
+        current_history.append({
+            "role": "user", 
+            "message": user_prompt
+        })
         
-        history_obj.content = messages_list
-        
-        history_obj.save() 
+        # Append AI Message Object
+        current_history.append({
+            "role": "assistant", 
+            "message": ai_message_text
+        })
 
-        return Response({'response': response_text})
-    
+
+        history_obj.content = current_history
+        history_obj.save()
+        ai_message_text = ai_message_text[:-4]
+        print("response sent: "+ ai_message_text)
+        return Response({'response': ai_message_text})
 class problemsViewSet(viewsets.ModelViewSet):# this will need to be changed later and made someting read only and v need to addewd ai 
     serializer_class = UserProblemSerializer 
     permission_classes = [permissions.IsAuthenticated]

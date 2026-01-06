@@ -7,8 +7,7 @@ services:
       - POSTGRES_DB=django_db
       - POSTGRES_USER=django_user
       - POSTGRES_PASSWORD=django_pass
-      - AI_SERVER_URL=http://192.168.1.20:11434
-      
+      # Removed AI_SERVER_URL from here (Database doesn't need it)
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U django_user -d django_db"]
       interval: 10s
@@ -28,9 +27,11 @@ services:
       - DB_PASSWORD=django_pass
       - DB_HOST=db
       - DB_PORT=5432
-      - AI_SERVER_URL=http://192.168.1.20:11434
+      # CRITICAL CHANGE: Use 'ai-server' instead of '127.0.0.1'
+      - AI_SERVER_URL=http://26.217.98.105:8001/chat
     depends_on:
       db:
         condition: service_healthy
     extra_hosts:
-      - "ai-server:192.168.1.20"
+      # This maps the hostname 'ai-server' to the host machine's IP
+      - "ai-server:26.217.98.105"
