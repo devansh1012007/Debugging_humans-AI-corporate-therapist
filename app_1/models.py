@@ -72,3 +72,23 @@ class TeamData(TeamMembers):
 class WebsiteData(models.Model):
     user = models.JSONField()
 '''
+
+class UserFeedback(OwnedModel):
+    feedback = models.TextField()
+    rating = models.IntegerField(default=5)
+    submitted_at = models.DateTimeField(auto_now_add=True)
+    def __str__(self):
+        return f"Feedback from {self.owner.username} - Rating: {self.rating}"
+    
+class PrivacyPolicyAcceptance(OwnedModel):
+    accepted_at = models.DateTimeField(auto_now_add=True)
+    version = models.CharField(max_length=50, default="1.0")
+    def __str__(self):
+        return f"Privacy Policy accepted by {self.owner.username} at {self.accepted_at}"
+
+class ConsentFormAcceptance(OwnedModel):
+    accepted_at = models.DateTimeField(auto_now_add=True)
+    version = models.CharField(max_length=50, default="1.0")
+    def __str__(self):
+        return f"Consent Form accepted by {self.owner.username} at {self.accepted_at}"
+

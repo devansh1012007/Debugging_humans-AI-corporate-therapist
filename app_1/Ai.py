@@ -9,7 +9,7 @@ def ai_response(payload):
     #client = Client(host=ai_url,)#timeout=httpx.Timeout(180.0) 
     try:
         #response_obj = client.chat(model='llama3.2:1b', messages=history, stream=False)
-        response_obj = requests.post("http://192.168.29.162:8001/chat",json=payload)# 26.217.98.105 --> vpn
+        response_obj = requests.post("http://26.217.98.105:8001/chat",json=payload)# 26.217.98.105 --> vpn
 
     except Exception as e:
         final_text = f"Error: {str(e)}"

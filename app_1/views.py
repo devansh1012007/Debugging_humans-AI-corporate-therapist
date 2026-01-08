@@ -1,7 +1,7 @@
 #views.py
 from rest_framework import viewsets, permissions
-from .models import UserHomepageDB, UserChatDB,TeamMembers,TeamData,UserProblems
-from .serializers import HomePageSerializer, ChatSerializer, UserProblemSerializer, TeamMembersSerializer, TeamDataSerializer
+from .models import PrivacyPolicyAcceptance, UserFeedback, UserHomepageDB, UserChatDB,TeamMembers,TeamData,UserProblems,ConsentFormAcceptance
+from .serializers import ConsentFormAcceptanceSerializer, HomePageSerializer, ChatSerializer, PrivacyPolicyAcceptanceSerializer, UserFeedbackSerializer, UserProblemSerializer, TeamMembersSerializer, TeamDataSerializer
 from rest_framework import generics
 from django.contrib.auth.models import User
 from .serializers import RegisterSerializer
@@ -149,3 +149,29 @@ class RegisterView(generics.CreateAPIView): # generic view for user registration
     permission_classes = (AllowAny,)
     serializer_class = RegisterSerializer
 
+class UserFeedbackViewSet(viewsets.ModelViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = UserFeedbackSerializer
+    queryset = UserFeedback.objects.all()
+    def get_queryset(self):
+        return UserFeedback.objects.filter(owner=self.request.user)
+    def perform_create(self, serializer):
+        serializer.save(owner=self.request.user)
+
+class PrivacyPolicyAcceptanceViewSet(viewsets.ModelViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = PrivacyPolicyAcceptanceSerializer
+    queryset = PrivacyPolicyAcceptance.objects.all()
+    def get_queryset(self):
+        return PrivacyPolicyAcceptance.objects.filter(owner=self.request.user)
+    def perform_create(self, serializer):
+        serializer.save(owner=self.request.user)
+
+class ConsentFormAcceptanceViewSet(viewsets.ModelViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = ConsentFormAcceptanceSerializer
+    queryset = ConsentFormAcceptance.objects.all()
+    def get_queryset(self):
+        return ConsentFormAcceptance.objects.filter(owner=self.request.user)
+    def perform_create(self, serializer):
+        serializer.save(owner=self.request.user)

@@ -3,7 +3,7 @@ from django.contrib.auth.models import User
 from rest_framework import serializers
 from rest_framework.validators import UniqueValidator
 from rest_framework.fields import CurrentUserDefault
-from .models import UserHomepageDB, UserChatDB, UserProblems, TeamMembers, TeamData
+from .models import UserFeedback, UserHomepageDB, UserChatDB, UserProblems, TeamMembers, TeamData,ConsentFormAcceptance, PrivacyPolicyAcceptance
 from rest_framework.validators import UniqueValidator
 
 class HomePageSerializer(serializers.ModelSerializer):
@@ -37,6 +37,18 @@ class TeamDataSerializer(serializers.ModelSerializer):
         model = TeamData
         fields = ['summary', 'recommendation', 'common_problems']# v need to make it read only for all http request
         #read_only_fields = ['summary', 'recommendation', 'common_problems']
+class UserFeedbackSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = UserFeedback
+        fields = ['feedback', 'rating', 'submitted_at']
+class PrivacyPolicyAcceptanceSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PrivacyPolicyAcceptance
+        fields = ['accepted_at', 'version']
+class ConsentFormAcceptanceSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ConsentFormAcceptance
+        fields = ['accepted_at', 'version']
 
 class RegisterSerializer(serializers.ModelSerializer):
     email = serializers.EmailField(
@@ -57,3 +69,4 @@ class RegisterSerializer(serializers.ModelSerializer):
             password=validated_data['password']
         )
         return user
+    
