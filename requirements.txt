@@ -13,3 +13,4 @@ ollama
 psycopg2-binary 
 pgvector 
 httpx
+starlette

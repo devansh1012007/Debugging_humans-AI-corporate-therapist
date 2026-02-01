@@ -1,3 +1,177 @@
 python -m http.server 3000
 docker run --network host cloudflare/cloudflared:latest tunnel --url http://127.0.0.1:8000
 docker compose exec web python manage.py runserver
+
+def get_queryset(self):
+        return UserChatDB.objects.filter(owner=self.request.user)
+    #we don't need to filter the chat by id because we are not using any url parameter here; but chat_id method still works(need to experiment)
+
+    
+    @action(detail=False, methods=['post'])# maybe v should also add patch but udt its needed)# @action decorator to create a custom action and v want use perform_create or perform_update here bcoz we are not creating or updating any model instance directly
+    def continue_chat(self, request):
+        
+        user_prompt = request.data.get('prompt')
+        ai_mode = request.data.get('mode')
+        chat_id = request.data.get('ChatID')
+    
+        
+
+        try:
+            chat_session = UserHomepageDB.objects.get(id=chat_id, owner=request.user)
+            # chat_session = chat_session[20:] # for returning last 10 chats 
+        except UserHomepageDB.DoesNotExist:
+            return Response({'error': f'Chat Session {chat_id} not found for this user.'}, status=404)
+
+        
+        history_obj, created = UserChatDB.objects.get_or_create(
+            chat=chat_session,
+            owner=request.user,
+            defaults={'content': []} 
+        )
+        user_username = request.user.username
+        if not user_prompt or not chat_id:
+            return Response({'error': 'Prompt and ChatID are required'}, status=400)
+
+        if ai_mode == "specialist":
+            model_override = "therapy-ai"
+            delet = True
+        else:
+            model_override = "problem-solver"
+        # 1. Get History
+        history_obj = get_object_or_404(UserChatDB, chat__id=chat_id, owner=request.user)
+        # Ensure it is a list, defaulting to empty
+        current_history = history_obj.content if isinstance(history_obj.content, list) else []
+        #print("Current History:", current_history)
+        #print("User Prompt:", user_prompt)
+        #print("AI Mode:", model_override)
+        '''payload = {
+            "message": user_prompt,
+            "conversation" : current_history,# can cause issues
+            "user_profile": "name:" + user_username,
+            "workspace_context": "employee in an Indian startup or hight intencity work enviroment",
+            "model_override": model_override
+        }'''
+        
+        def stream_wrapper():
+            full_reply = ""
+
+            # Select the correct AI function
+            if ai_mode == "specialist":
+                gen = therpy_ai_response(user_prompt, messages_list=current_history)
+            else:
+                gen = consiler_ai_responce(user_prompt, messages_list=current_history)
+
+            # Iterate through tokens yielded by the AI function
+            for token in gen:
+                full_reply += token
+                yield token
+            '''try:
+
+                ai_result = ai_response(payload) 
+                #print("AI Result:", ai_result)
+                # Check for error key from our safe Ai.py
+                if "error" in ai_result:
+                    raise ValueError(ai_result["error"])
+
+                ai_message_text = ai_result.get('response', '')
+
+                if not ai_message_text:
+                    raise ValueError("AI returned an empty response")
+            except Exception as e:
+                return Response({'error': f'AI Error: {str(e)}'}, status=500)'''
+
+
+            current_history.append({
+                "role": "user", 
+                "message": user_prompt
+            })
+
+            # Append AI Message Object
+            current_history.append({
+                "role": "assistant", 
+                "message": ai_message_text
+            })
+
+
+            history_obj.content = current_history
+            history_obj.save()
+            #if delet:
+            #    ai_message_text = ai_message_text[:-4]
+            #print("response sent: "+ ai_message_text)
+            #return Response({'response': ai_message_text})
+            return StreamingResponse(stream_wrapper(), content_type='text/plain')
+
+
+
+
+
+
+
+
+
+
+  const handleSendMessage = async (e) => {
+    e.preventDefault();
+    if (!input.trim() || !activeSessionId) return;
+
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+
+    const userMsg = { role: 'user', content: input };
+    const token = localStorage.getItem('access_token');
+    
+    setMessages(prev => [...prev, userMsg]);
+    setInput('');
+    setLoading(true);
+
+    // Add empty assistant message for streaming
+    setMessages(prev => [...prev, { role: 'assistant', content: '' }]);
+
+    try {
+      const activeSession = sessions.find(s => s.id === activeSessionId);
+      
+      // Native fetch for streaming (bypasses api.request wrapper which expects JSON)
+      const response = await fetch(`${API_BASE}ChatData/continue_chat/`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}` 
+        },
+        body: JSON.stringify({
+          ChatID: activeSessionId,
+          prompt: userMsg.content,
+          mode: activeSession?.AiMode || 'specialist'
+        }),
+        signal: controller.signal
+      });
+
+      if (!response.ok) throw new Error('Network response was not ok');
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let accumulatedResponse = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const chunk = decoder.decode(value, { stream: true });
+        accumulatedResponse += chunk;
+
+        setMessages(prev => {
+          const updated = [...prev];
+          const lastIndex = updated.length - 1;
+          // Safely update last message
+          if (updated[lastIndex]) {
+             updated[lastIndex] = { 
+               ...updated[lastIndex], 
+               content: accumulatedResponse 
+             };
+          }
+          return updated;
+        });
+      }

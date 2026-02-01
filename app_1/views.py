@@ -11,8 +11,9 @@ from django.shortcuts import get_object_or_404
 from rest_framework.permissions import AllowAny
 import json
 from django.http import JsonResponse
-from .Ai import ai_response
-
+from .Ai import ai_response, therpy_ai_response, consiler_ai_responce
+from .permissions import IsManager
+from django.http import StreamingHttpResponse
 
 
 # Class 1 -> gives data from model 1 (mostly get but dosen't matter)
@@ -33,112 +34,93 @@ class OldChatsViewSet(viewsets.ModelViewSet):
 # Class 2 -> gives and take data to ai and front end chat interface
 
 
-class ChatViewSet(viewsets.ModelViewSet):
+'''class ChatViewSet(viewsets.ModelViewSet):
     serializer_class = ChatSerializer
     permission_classes = [permissions.IsAuthenticated]
     
     #lookup_field = 'chat__id'
     # v should add a filter by chat_id
     # chat_session = UserHomepageDB.objects.get(id=chat_id, owner=request.user)
-    # return chat_session
+    # return chat_session'''
+class ChatViewSet(viewsets.ModelViewSet):
+    serializer_class = ChatSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    # views.py
     def get_queryset(self):
-        return UserChatDB.objects.filter(owner=self.request.user)
-    #we don't need to filter the chat by id because we are not using any url parameter here; but chat_id method still works(need to experiment)
-
+        chat_id = self.request.query_params.get('chat_id')
+        if chat_id is None:
+            # Return nothing if no ID provided, or use UserChatDB.objects.none()
+            return UserChatDB.objects.filter(owner=self.request.user) 
+        chat_session = get_object_or_404(UserHomepageDB, id=chat_id, owner=self.request.user)
+        return UserChatDB.objects.filter(chat=chat_session, owner=self.request.user)
     
-    @action(detail=False, methods=['post'])# maybe v should also add patch but udt its needed)# @action decorator to create a custom action and v want use perform_create or perform_update here bcoz we are not creating or updating any model instance directly
+    @action(detail=False, methods=['post'])
     def continue_chat(self, request):
-        
         user_prompt = request.data.get('prompt')
         ai_mode = request.data.get('mode')
         chat_id = request.data.get('ChatID')
     
-        
-
-        try:
-            chat_session = UserHomepageDB.objects.get(id=chat_id, owner=request.user)
-            # chat_session = chat_session[20:] # for returning last 10 chats 
-        except UserHomepageDB.DoesNotExist:
-            return Response({'error': f'Chat Session {chat_id} not found for this user.'}, status=404)
-
-        
-        history_obj, created = UserChatDB.objects.get_or_create(
-            chat=chat_session,
-            owner=request.user,
-            defaults={'content': []} 
-        )
-        user_username = request.user.username
         if not user_prompt or not chat_id:
             return Response({'error': 'Prompt and ChatID are required'}, status=400)
-
-        if ai_mode == "therapy":
-            model_override = "therapy-ai"
-            delet = True
-        else:
-            model_override = "problem-solver"
-        # 1. Get History
-        history_obj = get_object_or_404(UserChatDB, chat__id=chat_id, owner=request.user)
-        # Ensure it is a list, defaulting to empty
+    
+        # 1. Get the session and history objects
+        chat_session = get_object_or_404(UserHomepageDB, id=chat_id, owner=request.user)
+        history_obj = get_object_or_404(UserChatDB, chat=chat_session, owner=request.user)
         current_history = history_obj.content if isinstance(history_obj.content, list) else []
-        #print("Current History:", current_history)
-        #print("User Prompt:", user_prompt)
-        #print("AI Mode:", model_override)
-        payload = {
-            "message": user_prompt,
-            "conversation" : current_history,# can cause issues
-            "user_profile": "name:" + user_username,
-            "workspace_context": "employee in an Indian startup or hight intencity work enviroment",
-            "model_override": model_override
-        }
-             
+    
+        # 2. Define the Stream Generator
+        def stream_wrapper():
+            full_reply = "" # Keep track of the full string to save to DB later
+            
+            # Determine which generator to use
+            if ai_mode == "specialist":
+                gen = therpy_ai_response(user_prompt, current_history)
+            else:
+                gen = consiler_ai_responce(user_prompt, current_history)
+    
+            for token in gen:
+                full_reply += token
+                yield token # Send token to frontend
+    
+            # 3. SAVE TO DB: This only runs after the 'for' loop finishes (stream ends)
+            current_history.append({"role": "user", "content": user_prompt})
+            current_history.append({"role": "assistant", "content": full_reply})
+            
+            history_obj.content = current_history
+            history_obj.save()
+    
+        # 4. Return the Stream
+
+        return StreamingHttpResponse(stream_wrapper(), headers={'Content-Type': 'text/plain'})    
+    # add delete method to delete chat history if needed
+    @action(detail=False, methods=['delete'])
+    def delete_chat(self, request):
+        chat_id = request.data.get('ChatID')
         try:
-            
-            ai_result = ai_response(payload) 
-            #print("AI Result:", ai_result)
-            # Check for error key from our safe Ai.py
-            if "error" in ai_result:
-                raise ValueError(ai_result["error"])
-
-            ai_message_text = ai_result.get('response', '')
-            
-            if not ai_message_text:
-                raise ValueError("AI returned an empty response")
-        except Exception as e:
-            return Response({'error': f'AI Error: {str(e)}'}, status=500)
-
-            
-        current_history.append({
-            "role": "user", 
-            "message": user_prompt
-        })
+            chat_session = UserHomepageDB.objects.get(id=chat_id, owner=request.user)
+        except UserHomepageDB.DoesNotExist:
+            return Response({'error': f'Chat Session {chat_id} not found for this user.'}, status=404)
         
-        # Append AI Message Object
-        current_history.append({
-            "role": "assistant", 
-            "message": ai_message_text
-        })
-
-
-        history_obj.content = current_history
+        history_obj = get_object_or_404(UserChatDB, chat=chat_session, owner=request.user)
+        history_obj.content = []  # Clear the chat history
         history_obj.save()
-        if delet:
-            ai_message_text = ai_message_text[:-4]
-        print("response sent: "+ ai_message_text)
-        return Response({'response': ai_message_text})
+        return Response({'status': 'Chat history deleted successfully'})
 class problemsViewSet(viewsets.ModelViewSet):# this will need to be changed later and made someting read only and v need to addewd ai 
     serializer_class = UserProblemSerializer 
     permission_classes = [permissions.IsAuthenticated]
     def get_queryset(self):
         return UserProblems.objects.filter(owner=self.request.user)
+    def partial_update(self, serializer):
+        serializer.save(owner=self.request.user)
     # data in this will be updated automaticly from some time set function using django-apscheduler
 
 class TeamMembersViewSet(viewsets.ModelViewSet):
-    permission_classes = [permissions.IsAuthenticated] 
+    permission_classes = [permissions.IsAdminUser] 
     serializer_class = TeamMembersSerializer
     queryset = TeamMembers.objects.all()
 
 class TeamDataViewSet(viewsets.ModelViewSet):
-    permission_classes = [permissions.IsAuthenticated] 
+    permission_classes = [IsManager]
     serializer_class = TeamDataSerializer
     queryset = TeamData.objects.all()
     # there will be alot of custom logic later 
@@ -152,7 +134,7 @@ class RegisterView(generics.CreateAPIView): # generic view for user registration
 class UserFeedbackViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
     serializer_class = UserFeedbackSerializer
-    queryset = UserFeedback.objects.all()
+    #queryset = UserFeedback.objects.filter(owner=self.request.user)
     def get_queryset(self):
         return UserFeedback.objects.filter(owner=self.request.user)
     def perform_create(self, serializer):
@@ -161,7 +143,7 @@ class UserFeedbackViewSet(viewsets.ModelViewSet):
 class PrivacyPolicyAcceptanceViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
     serializer_class = PrivacyPolicyAcceptanceSerializer
-    queryset = PrivacyPolicyAcceptance.objects.all()
+    #queryset = PrivacyPolicyAcceptance.objects.all()
     def get_queryset(self):
         return PrivacyPolicyAcceptance.objects.filter(owner=self.request.user)
     def perform_create(self, serializer):
@@ -170,7 +152,7 @@ class PrivacyPolicyAcceptanceViewSet(viewsets.ModelViewSet):
 class ConsentFormAcceptanceViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
     serializer_class = ConsentFormAcceptanceSerializer
-    queryset = ConsentFormAcceptance.objects.all()
+    #queryset = ConsentFormAcceptance.objects.all()
     def get_queryset(self):
         return ConsentFormAcceptance.objects.filter(owner=self.request.user)
     def perform_create(self, serializer):

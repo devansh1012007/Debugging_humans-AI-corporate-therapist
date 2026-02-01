@@ -15,7 +15,7 @@ import {
 } from 'lucide-react';
 
 // --- Configuration ---
-const API_BASE = 'http://localhost:8000/'; // Change this to your backend URL http://0.0.0.0:8000
+const API_BASE = 'http://localhost:8000/'; // Change this to your backend URL http://localhost:8000/
 
 // --- Auth Context ---
 const AuthContext = createContext(null);
@@ -356,23 +356,67 @@ const ChatInterface = () => {
     e.preventDefault();
     if (!input.trim() || !activeSessionId) return;
 
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+
     const userMsg = { role: 'user', content: input };
+    const token = localStorage.getItem('access_token');
+    
     setMessages(prev => [...prev, userMsg]);
     setInput('');
     setLoading(true);
 
+    // Add empty assistant message for streaming
+    setMessages(prev => [...prev, { role: 'assistant', content: '' }]);
+
     try {
       const activeSession = sessions.find(s => s.id === activeSessionId);
       
-      // Call the continue_chat endpoint
-      const response = await api.request('/ChatData/continue_chat/', {
+      // Native fetch for streaming (bypasses api.request wrapper which expects JSON)
+      const response = await fetch(`${API_BASE}ChatData/continue_chat/`, {
         method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}` 
+        },
         body: JSON.stringify({
           ChatID: activeSessionId,
           prompt: userMsg.content,
-          mode: activeSession?.AiMode || 'therapy'
-        })
+          mode: activeSession?.AiMode || 'specialist'
+        }),
+        signal: controller.signal
       });
+
+      if (!response.ok) throw new Error('Network response was not ok');
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let accumulatedResponse = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const chunk = decoder.decode(value, { stream: true });
+        accumulatedResponse += chunk;
+
+        setMessages(prev => {
+          const updated = [...prev];
+          const lastIndex = updated.length - 1;
+          // Safely update last message
+          if (updated[lastIndex]) {
+             updated[lastIndex] = { 
+               ...updated[lastIndex], 
+               content: accumulatedResponse 
+             };
+          }
+          return updated;
+        });
+      }
 
       const aiMsg = { role: 'assistant', content: response.response };
       setMessages(prev => [...prev, aiMsg]);
