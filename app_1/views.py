@@ -1,7 +1,7 @@
 #views.py
 from rest_framework import viewsets, permissions
-from .models import PrivacyPolicyAcceptance, UserFeedback, UserHomepageDB, UserChatDB,TeamMembers,TeamData,UserProblems,ConsentFormAcceptance
-from .serializers import ConsentFormAcceptanceSerializer, HomePageSerializer, ChatSerializer, PrivacyPolicyAcceptanceSerializer, UserFeedbackSerializer, UserProblemSerializer, TeamMembersSerializer, TeamDataSerializer
+from .models import PrivacyPolicyAcceptance, UserFeedback, UserHomepageDB, UserChatDB,TeamMembers,TeamData,UserProblems,ConsentFormAcceptance,UserPsycoData
+from .serializers import ConsentFormAcceptanceSerializer, HomePageSerializer, ChatSerializer, PrivacyPolicyAcceptanceSerializer, UserFeedbackSerializer, UserProblemSerializer, TeamMembersSerializer, TeamDataSerializer, UserPsycoDataSerializer
 from rest_framework import generics
 from django.contrib.auth.models import User
 from .serializers import RegisterSerializer
@@ -16,7 +16,7 @@ from .permissions import IsManager
 from django.http import StreamingHttpResponse
 
 
-# Class 1 -> gives data from model 1 (mostly get but dosen't matter)
+
 class OldChatsViewSet(viewsets.ModelViewSet):
     serializer_class = HomePageSerializer 
     permission_classes = [permissions.IsAuthenticated] 
@@ -33,20 +33,10 @@ class OldChatsViewSet(viewsets.ModelViewSet):
         )
 # Class 2 -> gives and take data to ai and front end chat interface
 
-
-'''class ChatViewSet(viewsets.ModelViewSet):
-    serializer_class = ChatSerializer
-    permission_classes = [permissions.IsAuthenticated]
-    
-    #lookup_field = 'chat__id'
-    # v should add a filter by chat_id
-    # chat_session = UserHomepageDB.objects.get(id=chat_id, owner=request.user)
-    # return chat_session'''
 class ChatViewSet(viewsets.ModelViewSet):
     serializer_class = ChatSerializer
     permission_classes = [permissions.IsAuthenticated]
-    # views.py
-    def get_queryset(self):
+    def get_queryset(self):# used for filtering the chat history based on chat session id #It is the "Django way" to handle ownership.
         chat_id = self.request.query_params.get('chat_id')
         if chat_id is None:
             # Return nothing if no ID provided, or use UserChatDB.objects.none()
@@ -54,7 +44,7 @@ class ChatViewSet(viewsets.ModelViewSet):
         chat_session = get_object_or_404(UserHomepageDB, id=chat_id, owner=self.request.user)
         return UserChatDB.objects.filter(chat=chat_session, owner=self.request.user)
     
-    @action(detail=False, methods=['post'])
+    @action(detail=False, methods=['post'])# action decorator to create custom endpoint
     def continue_chat(self, request):
         user_prompt = request.data.get('prompt')
         ai_mode = request.data.get('mode')
@@ -92,7 +82,9 @@ class ChatViewSet(viewsets.ModelViewSet):
         # 4. Return the Stream
 
         return StreamingHttpResponse(stream_wrapper(), headers={'Content-Type': 'text/plain'})    
+    
     # add delete method to delete chat history if needed
+    # no need coz ModelViewSet already has a .destroy() method mapped to the DELETE HTTP verb
     @action(detail=False, methods=['delete'])
     def delete_chat(self, request):
         chat_id = request.data.get('ChatID')
@@ -105,6 +97,15 @@ class ChatViewSet(viewsets.ModelViewSet):
         history_obj.content = []  # Clear the chat history
         history_obj.save()
         return Response({'status': 'Chat history deleted successfully'})
+
+class UserPsycoDataViewSet(viewsets.ModelViewSet):# this will need to be changed later 
+    serializer_class = UserPsycoDataSerializer 
+    permission_classes = [permissions.IsAuthenticated]
+    def get_queryset(self):
+        return UserPsycoData.objects.filter(owner=self.request.user)
+    def perform_create(self, serializer):
+        serializer.save(owner=self.request.user)
+
 class problemsViewSet(viewsets.ModelViewSet):# this will need to be changed later and made someting read only and v need to addewd ai 
     serializer_class = UserProblemSerializer 
     permission_classes = [permissions.IsAuthenticated]
@@ -157,3 +158,86 @@ class ConsentFormAcceptanceViewSet(viewsets.ModelViewSet):
         return ConsentFormAcceptance.objects.filter(owner=self.request.user)
     def perform_create(self, serializer):
         serializer.save(owner=self.request.user)
+
+
+from django.http import JsonResponse
+
+def TeamData2(request):
+    data = {
+        'summary': 'This is a summary of the team data.',
+        'recommendation': [{'recommendation': 'Recommendation 1'}, {'recommendation': 'Recommendation 2'}],
+        'common_problems': [{'problem': 'Problem 1'}, {'problem': 'Problem 2'}]
+    }
+    # Use JsonResponse to return the dictionary as a JSON object
+    return JsonResponse(data)
+
+def PrivacyPolicy(request):
+    policy_text = """
+    Privacy Policy
+
+    Effective Date: January 1, 2024
+
+    1. Introduction
+    We value your privacy and are committed to protecting your personal information. This Privacy Policy outlines how we collect, use, and safeguard your data.
+
+    2. Information We Collect
+    - Personal Information: Name, email address, contact details.
+    - Usage Data: IP address, browser type, pages visited.
+
+    3. How We Use Your Information
+    - To provide and maintain our services.
+    - To communicate with you about updates and promotions.
+    - To improve our website and services.
+
+    4. Data Sharing
+    We do not sell or rent your personal information to third parties. We may share data with service providers who assist us in operating our business.
+
+    5. Data Security
+    We implement security measures to protect your data from unauthorized access, alteration, disclosure, or destruction.
+
+    6. Your Rights
+    You have the right to access, correct, or delete your personal information. Contact us to exercise these rights.
+
+    7. Changes to This Policy
+    We may update this Privacy Policy from time to time. Changes will be posted on this page with an updated effective date.
+
+    8. Contact Us
+    If you have any questions about this Privacy Policy, please contact us at"""
+    return JsonResponse({'privacy_policy': policy_text})
+
+def TermsOfService(request):
+    terms_text = """
+    Terms of Service
+
+    Effective Date: January 1, 2024
+
+    1. Acceptance of Terms
+    By accessing or using our services, you agree to be bound by these Terms of Service.
+
+    2. User Responsibilities
+    You agree to use our services in compliance with all applicable laws and regulations.
+
+    3. Intellectual Property
+    All content and materials provided through our services are the property of the company and protected by intellectual property laws.
+
+    4. Limitation of Liability
+    We are not liable for any damages arising from your use of our services.
+
+    5. Termination
+    We reserve the right to terminate or suspend your access to our services at our discretion.
+
+    6. Changes to Terms
+    We may modify these Terms of Service at any time. Continued use of our services constitutes acceptance of the updated terms.
+
+    7. Contact Us
+    If you have any questions about these Terms of Service, please contact us at"""
+    return JsonResponse({'terms_of_service': terms_text})
+
+def UserPsycoData(request):
+    data = {
+        'summary': 'This is a summary of the team data.',
+        'recommendation': [{'recommendation': 'Recommendation 1'}, {'recommendation': 'Recommendation 2'}],
+        'common_problems': [{'problem': 'Problem 1'}, {'problem': 'Problem 2'}]
+    }
+    return JsonResponse(data)
+

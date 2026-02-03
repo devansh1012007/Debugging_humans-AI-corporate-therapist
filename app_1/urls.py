@@ -1,22 +1,31 @@
 # app1/urls.py
 from django.urls import path, include
+from rest_framework import permissions
 from rest_framework_simplejwt.views import TokenObtainPairView,TokenRefreshView
 from rest_framework.routers import DefaultRouter
-from .views import ConsentFormAcceptanceViewSet, OldChatsViewSet,ChatViewSet, PrivacyPolicyAcceptanceViewSet, RegisterView, UserFeedbackViewSet,problemsViewSet,TeamMembersViewSet,TeamDataViewSet
+from .views import ConsentFormAcceptanceViewSet, OldChatsViewSet,ChatViewSet, PrivacyPolicyAcceptanceViewSet, RegisterView, UserFeedbackViewSet,TeamDataViewSet, UserPsycoData,UserPsycoDataViewSet,PrivacyPolicy, TermsOfService,TeamData2#problemsViewSet,TeamMembersViewSet,
 
-router = DefaultRouter()# creating a router instance to register viewsets
-router.register(r'Chats', OldChatsViewSet, basename='Chats') # router basicly handels all the reqests and it 
-router.register(r'ChatData', ChatViewSet, basename='ChatData')# 
-router.register(r'Problems', problemsViewSet, basename='Problems')
-router.register(r'TeamMembers', TeamMembersViewSet, basename='TeamMembers')
+router = DefaultRouter()# creating a router instance to register viewsets 
+# router basicly handels all the reqests and it 
+router.register(r'Chats', OldChatsViewSet, basename='Chats') # this has only previous chats history
+router.register(r'ChatData', ChatViewSet, basename='ChatData')# this has all the previous chats beteween user and ai
+router.register(r'UserPsycoDataViewSet', UserPsycoDataViewSet, basename='UserPsycoData')
 router.register(r'TeamData', TeamDataViewSet, basename='TeamData')
 router.register(r'UserFeedback', UserFeedbackViewSet, basename='UserFeedback')
 router.register(r'PrivacyPolicyAcceptance', PrivacyPolicyAcceptanceViewSet, basename='PrivacyPolicyAcceptance')
 router.register(r'ConsentFormAcceptance', ConsentFormAcceptanceViewSet, basename='ConsentFormAcceptance')
+
 urlpatterns = [
     path('login/', TokenObtainPairView.as_view(), name='token_obtain_pair'),# JWT login endpoint built-in view # not needed as v r using allauth for authentication, best for barebones setup
     path('', include(router.urls)),
     path('register/', RegisterView.as_view(), name='auth_register'),# not needed as v r using allauth for authentication, best for barebones setup
     path('refresh/', TokenRefreshView.as_view(), name='token_refresh'),
+    path('PrivacyPolicy/', PrivacyPolicy, name='PrivacyPolicy'),
+    path('TermsOfService/', TermsOfService, name='TermsOfService'),
+    path('UserPsycoData/', UserPsycoData, name='UserPsycoData'),
+    path('teamdata2/', TeamData2, name='TeamData2'),
+    
 ]
 
+'''
+this is urls.py of my backend, i want u to make changes in api urls accordingly'''

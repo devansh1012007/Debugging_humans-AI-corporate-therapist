@@ -3,7 +3,7 @@ from django.contrib.auth.models import User
 from rest_framework import serializers
 from rest_framework.validators import UniqueValidator
 from rest_framework.fields import CurrentUserDefault
-from .models import UserFeedback, UserHomepageDB, UserChatDB, UserProblems, TeamMembers, TeamData,ConsentFormAcceptance, PrivacyPolicyAcceptance
+from .models import UserFeedback, UserHomepageDB, UserChatDB, UserProblems, TeamMembers, TeamData,ConsentFormAcceptance, PrivacyPolicyAcceptance,UserPsycoData
 from rest_framework.validators import UniqueValidator
 
 class HomePageSerializer(serializers.ModelSerializer):
@@ -18,7 +18,11 @@ class ChatSerializer(serializers.ModelSerializer):
         model = UserChatDB
         fields = ['id','chat', 'content', 'owner']
 
-
+class UserPsycoDataSerializer(serializers.ModelSerializer):
+    owner = serializers.HiddenField(default=serializers.CurrentUserDefault())
+    class Meta:
+        model = UserPsycoData
+        fields = ['content', 'owner']
     
 class UserProblemSerializer(serializers.ModelSerializer):
     owner = serializers.HiddenField(default=serializers.CurrentUserDefault())
