@@ -51,17 +51,20 @@ class UserHomepageDB(OwnedModel):
 class UserChatDB(OwnedModel):
     chat = models.OneToOneField(UserHomepageDB, on_delete=models.CASCADE, related_name="history")
     content = models.JSONField(default=list)
+    to_be_summarized = models.BooleanField(default=False) # New field to store messages that need summarization
 
 class UserDashboard(OwnedModel):
     # Removed direct User link to avoid conflicts. Access via Node -> User
-    node = models.OneToOneField(OrgNode, on_delete=models.CASCADE, related_name='user_dashboard')
+    #node = models.OneToOneField(OrgNode, on_delete=models.CASCADE, related_name='user_dashboard')
+    owner = models.ForeignKey(User, on_delete=models.CASCADE)
     content = models.JSONField()
 
 # Fixed Typo: Dashbioard -> Dashboard
 class UserDashboardHistory(models.Model):
-    dashboard = models.ForeignKey(UserDashboard, on_delete=models.CASCADE, related_name='history')
+    owner = models.OneToOneField(User, on_delete=models.CASCADE)
+    #dashboard = models.ForeignKey(UserDashboard, on_delete=models.CASCADE, related_name='history')
     timestamp = models.DateTimeField(auto_now_add=True)
-    data = models.JSONField()
+    content = models.JSONField()
 
 class UserDrillDown(OwnedModel):
     # owner is inherited
@@ -75,10 +78,10 @@ class TeamData(models.Model):
 
 class TeamDataHistory(models.Model):
     # Changed 'owner' to 'node_ref' to avoid confusion with User model
-    node_ref = models.ForeignKey(OrgNode, on_delete=models.CASCADE)
-    team_data = models.ForeignKey(TeamData, on_delete=models.CASCADE, related_name='history_entries')
+    node = models.OneToOneField(OrgNode, on_delete=models.CASCADE)
+    #team_data = models.ForeignKey(TeamData, on_delete=models.CASCADE, related_name='history_entries')
     timestamp = models.DateTimeField(auto_now_add=True)
-    data = models.JSONField()
+    content = models.JSONField()
 
 # --- MISC MODELS ---
 
@@ -88,7 +91,7 @@ class UserPsycoData(OwnedModel):
 # Fixed Typo: Summery -> Summary
 class UserChatSummary(OwnedModel):
     content = models.JSONField()
-
+    chat = models.OneToOneField(UserHomepageDB, on_delete=models.CASCADE, related_name="summary")
 class UserPersonalityData(OwnedModel):
     content = models.JSONField()
 

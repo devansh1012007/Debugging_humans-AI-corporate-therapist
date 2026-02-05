@@ -1,7 +1,7 @@
 #views.py
 from httpx import request
 from rest_framework import viewsets, permissions
-from .models import OrgNode, PrivacyPolicyAcceptance, UserFeedback, UserHomepageDB, UserChatDB,TeamData,UserConsent,UserPsycoData,UserDrillDown,UserDashboard,UserChatSummery, UserPersonalityData,UserDashbioardHistory,TeamDataHistory
+from .models import OrgNode, PrivacyPolicyAcceptance, UserFeedback, UserHomepageDB, UserChatDB,TeamData,UserConsent,UserDrillDown,UserDashboard, UserPersonalityData,TeamDataHistory,UserChatSummary
 from .serializers import UserConsentSerializer, HomePageSerializer, ChatSerializer, OrgNodeSerializer, PrivacyPolicyAcceptanceSerializer, UserFeedbackSerializer, TeamDataSerializer, UserPsycoDataSerializer, UserDrillDownSerializer, UserDashboardSerializer, UserPersonalityDataSerializer, UserChatSummerySerializer, UserDashbioardHistorySerializer, TeamDataHistorySerializer
 from rest_framework import generics
 from django.contrib.auth.models import User
@@ -17,6 +17,7 @@ from .permissions import IsHierarchicalSuperior
 from django.http import StreamingHttpResponse
 from rest_framework.permissions import IsAuthenticated,IsAdminUser
 from django.db import transaction
+from .tasks import generate_drill_down_lists
 
 class OldChatsViewSet(viewsets.ModelViewSet):
     serializer_class = HomePageSerializer 
@@ -30,10 +31,10 @@ class OldChatsViewSet(viewsets.ModelViewSet):
         UserChatDB.objects.create( # creating space in other db
             owner=self.request.user, 
             chat=session, 
-            content=[]
+            content=[],
+            to_be_summarized=False,
         )
 
-# Class 2 -> gives and take data to ai and front end chat interface
 class ChatViewSet(viewsets.ModelViewSet):
     serializer_class = ChatSerializer
     permission_classes = [permissions.IsAuthenticated]
@@ -41,9 +42,10 @@ class ChatViewSet(viewsets.ModelViewSet):
         chat_id = self.request.query_params.get('chat_id')
         if chat_id is None:
             # Return nothing if no ID provided, or use UserChatDB.objects.none()
-            return UserChatDB.objects.filter(owner=self.request.user) 
+            error_response = Response({'error': 'Chat ID is required'}, status=400)
+            return error_response 
         chat_session = get_object_or_404(UserHomepageDB, id=chat_id, owner=self.request.user)
-        return UserChatDB.objects.filter(chat=chat_session, owner=self.request.user)
+        return UserChatDB.objects.filter(chat=chat_session, owner=self.request.user)# another way of filtering that chat willl be --> UserChatDB.objects.filter(chat__id=chat_id, owner=self.request.user) # this is also correct and works fine, but the above one is more readable and easier to understand for most developers, especially those new to Django. It clearly shows the relationship between the models and the filtering logic. The double underscore syntax can be less intuitive for those who are not familiar with Django's ORM.
     
     # need to looka at this from other project whewre streaming works
     @action(detail=False, methods=['post'])# action decorator to create custom endpoint
@@ -59,32 +61,47 @@ class ChatViewSet(viewsets.ModelViewSet):
         chat_session = get_object_or_404(UserHomepageDB, id=chat_id, owner=request.user)
         history_obj = get_object_or_404(UserChatDB, chat=chat_session, owner=request.user)
         current_history = history_obj.content if isinstance(history_obj.content, list) else []
-    
-        # 2. Define the Stream Generator
+        #context_window = current_history[:10] if len(current_history) > 10 else current_history
+        if len(current_history) > 10:#call summery function
+            #chat_to_be_summarized = current_history[9:]
+            summary = UserChatSummary.objects.filter(owner=request.user, chat=chat_session,).first()# idt first should be needed here coz there will be only one summary per chat session due to OneToOne relationship, so we can directly use .get() instead of .filter().first()
+            context_window = current_history[:9] + [{"role": "assistant", "content": summary}]
+            # Save the summary to the UserChatSummary model
+            '''UserChatSummary.objects.create(
+                owner=request.user,
+                chat=chat_session,
+                summary=summary
+            )'''
+        else:
+            context_window = current_history
+
+        
         def stream_wrapper():
             full_reply = "" # Keep track of the full string to save to DB later
-            
-            # Determine which generator to use
-            if ai_mode == "specialist":
-                gen = therpy_ai_response(user_prompt, current_history)
-            else:
-                gen = consiler_ai_responce(user_prompt, current_history)
-    
-            for token in gen:
-                full_reply += token
-                yield token # Send token to frontend
-    
+            try:    
+                # Determine which generator to use
+                if ai_mode == "specialist":
+                    gen = therpy_ai_response(user_prompt, context_window, request.user.name)
+                else:
+                    gen = consiler_ai_responce(user_prompt, context_window, request.user.name)
+
+                for token in gen:
+                    full_reply += token
+                    yield token # Send token to frontend
+            except Exception as e:
+                yield f"\n[Error generating response: {str(e)}]"
+                return# In case of error, we yield an error message and exit the generator
             # 3. SAVE TO DB
             current_history.append({"role": "user", "content": user_prompt})
             current_history.append({"role": "assistant", "content": full_reply})
-            
+            history_obj.to_be_summarized = True
             history_obj.content = current_history
             history_obj.save()
     
         # 4. Return the Stream
 
         return StreamingHttpResponse(stream_wrapper(), headers={'Content-Type': 'text/plain'})    
-    
+        
     # add delete method to delete chat history if needed
     # no need coz ModelViewSet already has a .destroy() method mapped to the DELETE HTTP verb
     @action(detail=False, methods=['delete'])
@@ -105,57 +122,7 @@ class UserDrillDownViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
     def get_queryset(self):
         return UserDrillDown.objects.filter(owner=self.request.user)
-'''
-class UserPsycoDataViewSet(viewsets.ModelViewSet):# this will need to be changed later 
-    serializer_class = UserPsycoDataSerializer 
-    permission_classes = [permissions.IsAuthenticated]
-    def get_queryset(self):
-        return UserPsycoData.objects.filter(owner=self.request.user)
-'''
-'''
-class UserDashboardViewSet(viewsets.ModelViewSet):# this will need to be changed later and made someting read only and v need to addewd ai 
-    serializer_class = UserDashboardSerializer 
-    permission_classes = [permissions.IsAuthenticated]
-    
-    def get_queryset(self):
-        return UserDashboard.objects.filter(owner=self.request.user)
-    def partial_update(self, serializer):# no need
-        serializer.save(owner=self.request.user)
-    # data in this will be updated automaticly from some time set function using django-apscheduler
-'''
-'''
-# no need
-class UserPersonalityDataViewSet(viewsets.ModelViewSet):# this will need to be changed later, no need here
-    serializer_class = UserPersonalityDataSerializer
-    permission_classes = [permissions.IsAuthenticated]
-    def get_queryset(self):
-        return UserPersonalityData.objects.filter(owner=self.request.user)
 
-class UserChatSummeryViewSet(viewsets.ModelViewSet):# this will need to be changed later , this no need here
-    serializer_class = UserChatSummerySerializer
-    permission_classes = [permissions.IsAuthenticated]
-    def get_queryset(self):
-        return UserChatSummery.objects.filter(owner=self.request.user)
-
-class UserDashbioardHistoryViewSet(viewsets.ModelViewSet):# this will need to be changed later,this no need here
-    serializer_class = UserDashbioardHistorySerializer
-    permission_classes = [permissions.IsAuthenticated]
-    def get_queryset(self):
-        return UserDashbioardHistory.objects.filter(owner=self.request.user)
-
-# this needs to be changed later
-class TeamDataHistoryViewSet(viewsets.ModelViewSet):# this will need to be changed later, this no need here
-    serializer_class = TeamDataHistorySerializer
-    permission_classes = [IsHierarchicalSuperior]
-    queryset = TeamDataHistory.objects.all()
-    # there will be alot of custom logic later
-'''
-# this needs to be changed later
-'''class TeamDataViewSet(viewsets.ModelViewSet):
-    permission_classes = [IsHierarchicalSuperior]
-    serializer_class = TeamDataSerializer
-    queryset = TeamData.objects.all()
-    # there will be alot of custom logic later '''
 
 class RegisterView(generics.CreateAPIView): # generic view for user registration built-in create behavior
     queryset = User.objects.all() # queryset set to all users so that we can create new ones
@@ -370,7 +337,7 @@ class OrgNodeViewSet(viewsets.ModelViewSet):
                 # This deletes the Old Node row. 
                 # Note: Because 'UserDashboard' is OneToOne with CASCADE, the old user's dashboard is deleted.
                 old_node.delete()
-
+                generate_drill_down_lists(new_node.OrgNode)
                 return Response({
                     "message": f"Success. {new_node.user.username} has replaced {old_node.user.username}."
                 })

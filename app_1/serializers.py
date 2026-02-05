@@ -42,10 +42,10 @@ class UserPersonalityDataSerializer(serializers.ModelSerializer):
         fields = ['content', 'owner']
 
 class UserDashboardSerializer(serializers.ModelSerializer):
-    owner = serializers.HiddenField(default=serializers.CurrentUserDefault())
+    owner = serializers.HiddenField(default=serializers.CurrentUserDefault())# 
     class Meta:
         model = UserDashboard
-        fields = ['owner', 'content', 'node']
+        fields = ['owner', 'content']
 
 # --- ORG SERIALIZERS ---
 
@@ -84,34 +84,34 @@ class UserFeedbackSerializer(serializers.ModelSerializer):
 class PrivacyPolicyAcceptanceSerializer(serializers.ModelSerializer):
     class Meta:
         model = PrivacyPolicyAcceptance
-        fields = ['id', 'accepted_at', 'version', 'created_at']
-        read_only_fields = ['id', 'accepted_at', 'created_at', 'user']
+        fields = ['user', 'ip_address', 'user_agent', 'accepted_at', 'current_version']
+        #read_only_fields = ['id', 'accepted_at', 'created_at', 'user']
 
 class UserConsentSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserConsent
         # We only require 'consent_version' from the user input
-        fields = ['id', 'consent_version', 'ip_address', 'user_agent', 'agreed_at']
-        read_only_fields = ['id', 'ip_address', 'user_agent', 'agreed_at', 'user']
+        fields = ['user', 'ip_address', 'user_agent', 'accepted_at', 'current_version']
+        #read_only_fields = ['id', 'ip_address', 'user_agent', 'agreed_at', 'user']
 
 # --- HISTORY & SUMMARY SERIALIZERS ---
 
 class UserDashboardHistorySerializer(serializers.ModelSerializer):
     class Meta:
         model = UserDashboardHistory
-        fields = ['dashboard', 'timestamp', 'data']
+        fields = ['owner', 'timestamp', 'content']
 
 class TeamDataHistorySerializer(serializers.ModelSerializer):
     class Meta:
         model = TeamDataHistory
-        fields = ['node_ref', 'team_data', 'timestamp', 'data']
+        fields = ['node', 'timestamp', 'content']
 
 class UserChatSummarySerializer(serializers.ModelSerializer):
     # ADDED owner hidden field
     owner = serializers.HiddenField(default=serializers.CurrentUserDefault())
     class Meta:
         model = UserChatSummary
-        fields = ['owner', 'content']
+        fields = ['owner', 'content', 'chat']
 
 # --- AUTH SERIALIZER ---
 

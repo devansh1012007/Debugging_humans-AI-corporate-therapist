@@ -9,7 +9,7 @@ import pydantic
 # Example output = [{problem : highly stressed, suggestion : u should take breaks and practice 1,2,3,4,5}, {problem : overwork, suggestion : set boundries}, {problem : loneliness, suggestion : join social groups and engage more with people}]
 from typing import List
 from pydantic import BaseModel
-
+# this will be updated  soon
 class Problem(BaseModel):
     problem: str
     suggestion: str

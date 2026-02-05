@@ -2,17 +2,15 @@
 # summar + probelsm + team problems
 # not working yet
 from datetime import date
-from .models import OrgNode, UserDashboard, UserDashboard,User, UserChatDB, UserDrillDown
-from .Ai import idea_lister
+from .models import OrgNode, UserChatSummary, UserDashboard, UserDashboard,User, UserChatDB, UserDrillDown, TeamData, TeamDataHistory, UserDashboardHistory
+from .Ai import ai_model
 from django.shortcuts import get_object_or_404
 
 
-def generate_drill_down_lists():
-    for User in User.objects.all():
-        target = User.org_node
+def generate_drill_down_lists(target):
         subordinates = target.children.all()
         drill_down_list, created = UserDrillDown.objects.get_or_create(
-            owner=User,
+            owner=target.owner,
             defaults={'content': []}
         )
         #OneToOneField in models
@@ -48,87 +46,100 @@ def get_direct_reports_ids(root_id, include_self=True):
 def ai_model():
     pass
 
-def process_midnight_snapshots():
-    """
-    CRON JOB: Runs at 00:00.
-    Iterates through every Manager in the company.
-    Calculates their TEAM's average for the day/week.
-    Saves it as a static snapshot.
-    """
-    #print(f"--- Starting Batch Processing for {.today()} ---")
-    print(f"--- Starting Batch Processing for {date.today()} ---")
-    
-    # 1. Get all nodes that have subordinates (Managers only)
-    # We use distinct() to avoid duplicates
-    #managers = OrgNode.objects.filter(children__isnull=False).distinct()
+def mid_night():# this is for chat summry
     users = User.objects.all()
-    for manager in users:
-        # 2. Identify the Team (1 Layer Deep)
-        # We only aggregate the Direct Reports.
-        if manager.OrgNode.children.exists():
-            direct_reports = manager.OrgNode.children.all()
+    for user in users:
+        # Get all chat sessions for this user   
+        user_chats = UserChatDB.objects.filter(owner=user)
+        for chat_session in user_chats:
+                history_obj = get_object_or_404(UserChatDB, chat=chat_session, owner=user, to_be_summarized=True)
+                # summarize the chat history
+                summary = ai_model(history_obj.content)
+                UserChatSummary.objects.clear(owner=user, chat=chat_session)
+                UserChatSummary.objects.create(
+                    owner=user,
+                    chat=chat_session,
+                    summary=summary
+                )
+                history_obj.to_be_summarized = False
+                history_obj.save()
 
-            # 3. Calculate the Stats (The "AI" Processing)
-            # We aggregate the metrics from the collected raw logs
-            # this needs to be changed 
-            target_group_ids = get_direct_reports_ids(manager.OrgNode.id)
-            # roughly pseudocode
+def process_midnight_snapshots():
+    users = User.objects.all()
+    for employee in users:
+        if employee.OrgNode.children.exists():
+            direct_reports = employee.OrgNode.children.all()
+            target_group_ids = get_direct_reports_ids(employee.OrgNode.id)
             # get chats 
             chats = []
             for id in target_group_ids:
-                chats.extend(list(UserChatDB.objects.filter(node_id=id)))
+                user_ = id.user
+                user_chats = UserChatDB.objects.filter(owner=user_)
+                for chat in user_chats:
+                    chats.append(chat.content)
             # pass chats to ai model and get avg back
-            team_stats = ai_model.calculate_team_averages(chats)
-            
-            
-            
-            '''
-            stats = MentalHealthMetric.objects.filter(node__in=direct_reports).aggregate(
-                avg_wellness=Avg('wellness_index'),
-                avg_stress=Avg('stress_level')
-            )
-
-            # 4. Filter: Only save if there is data
-            if stats['avg_wellness'] is None:
-                continue'''
-
+            TeamData = ai_model(chats)
             processed_data = {
-                "manager_title": manager.name,
+                "employee_name": employee.name,
+                "employee_title": employee.OrgNode.structure_level.name,
                 "team_size": direct_reports.count(),
-                "metrics": {
-                    "wellness_avg": team_stats['avg_wellness'],
-                    "stress_avg": team_stats['avg_stress']
-                },
-                "status": "Calculated & Verified"
+                "team_data": TeamData,
+                "status": "Calculated & Verified",
+                "date": date.today()
             }
-
-            # 5. Save to Database (The Record)----> need to be chaged heavily + needs to be chges made in models.py also
-            master_doc, created = OrgNode.objects.get_or_create(
-                node=manager,
-                defaults={'data': []}
+            
+            master_doc, created = TeamDataHistory.objects.get_or_create(
+                node=employee,
+                defaults={'content': []}
             )
-            master_list = master_doc.data if isinstance(master_doc.data, list) else []
-            master_list.extend([processed_data])
-            master_doc.data = master_list### THIS NEED TO be set all saved in one json field, SO v just extend the list and save it and also in models v need to change ForeignKey to oneToOneField and also change the related name to content coz 
+            history_doc, created = TeamDataHistory.objects.get_or_create(
+                node=employee,
+                #team_data=master_doc,
+                defaults={'data': []})
+            
+            history_list = history_doc.content if isinstance(history_doc.content, list) else []
+            master_list = master_doc.content if isinstance(master_doc.content, list) else []
+            history_list.append(processed_data)
+            master_list.clear()
+            master_list.append(processed_data)
+            master_doc.content = master_list
             master_doc.save()
+            history_doc.content = history_list
+            history_doc.save()
 
     for user in users:
-        chats = list(OrgNode.objects.filter(node__user=user)) #we need to link chat to nodes
-            # pass chats to ai model and get avg back
-        team_stats = ai_model.calculate_team_averages(chats)
+        chats = []
+        # Get all chat sessions for this user
+        user_chats = UserChatDB.objects.filter(owner=user)
+        for chat in user_chats:
+            chats.append(chat.content)
+        
+        DashBoardData= ai_model(chats)
+        
         personal_doc, created = UserDashboard.objects.get_or_create(
             owner=user,
+            #node = employee.OrgNode.id
             defaults={'content': []}
         )
         
         processed_data = {
-                "type": "TEAM_SUMMARY",
-                    "manager_title": user.name,
-                "metrics": {
-                    "wellness_avg": team_stats['avg_wellness'],
-                    "stress_avg": team_stats['avg_stress']
-                },
+                "employee_name": user.name,
+                "employee_title": user.OrgNode.structure_level.name if user.OrgNode else "No Title",
+                "_personal_dashboard_data": DashBoardData,
+                "date": date.today(),
                 "status": "Calculated & Verified"
             }
-        personal_doc.content.append(processed_data)
+        
+        history_doc, created = UserDashboardHistory.objects.get_or_create(
+                owner=user,
+                #dashboard=personal_doc,
+                defaults={'content': []})
+        history_list = history_doc.content if isinstance(history_doc.content, list) else []
+        history_list.append(processed_data)
+        history_doc.content = history_list
+        history_doc.save()
+        personal_doc.content.clear()
+        Personal_list = personal_doc.content if isinstance(personal_doc.content, list) else []
+        Personal_list.append(processed_data)
+        personal_doc.content = Personal_list
         personal_doc.save()
