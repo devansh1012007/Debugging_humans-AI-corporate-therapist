@@ -1,7 +1,8 @@
 #views.py
+from httpx import request
 from rest_framework import viewsets, permissions
-from .models import PrivacyPolicyAcceptance, UserFeedback, UserHomepageDB, UserChatDB,TeamMembers,TeamData,UserProblems,ConsentFormAcceptance,UserPsycoData
-from .serializers import ConsentFormAcceptanceSerializer, HomePageSerializer, ChatSerializer, PrivacyPolicyAcceptanceSerializer, UserFeedbackSerializer, UserProblemSerializer, TeamMembersSerializer, TeamDataSerializer, UserPsycoDataSerializer
+from .models import OrgNode, PrivacyPolicyAcceptance, UserFeedback, UserHomepageDB, UserChatDB,TeamData,UserConsent,UserPsycoData,UserDrillDown,UserDashboard,UserChatSummery, UserPersonalityData,UserDashbioardHistory,TeamDataHistory
+from .serializers import UserConsentSerializer, HomePageSerializer, ChatSerializer, OrgNodeSerializer, PrivacyPolicyAcceptanceSerializer, UserFeedbackSerializer, TeamDataSerializer, UserPsycoDataSerializer, UserDrillDownSerializer, UserDashboardSerializer, UserPersonalityDataSerializer, UserChatSummerySerializer, UserDashbioardHistorySerializer, TeamDataHistorySerializer
 from rest_framework import generics
 from django.contrib.auth.models import User
 from .serializers import RegisterSerializer
@@ -12,10 +13,10 @@ from rest_framework.permissions import AllowAny
 import json
 from django.http import JsonResponse
 from .Ai import ai_response, therpy_ai_response, consiler_ai_responce
-from .permissions import IsManager
+from .permissions import IsHierarchicalSuperior
 from django.http import StreamingHttpResponse
-
-
+from rest_framework.permissions import IsAuthenticated,IsAdminUser
+from django.db import transaction
 
 class OldChatsViewSet(viewsets.ModelViewSet):
     serializer_class = HomePageSerializer 
@@ -31,8 +32,8 @@ class OldChatsViewSet(viewsets.ModelViewSet):
             chat=session, 
             content=[]
         )
-# Class 2 -> gives and take data to ai and front end chat interface
 
+# Class 2 -> gives and take data to ai and front end chat interface
 class ChatViewSet(viewsets.ModelViewSet):
     serializer_class = ChatSerializer
     permission_classes = [permissions.IsAuthenticated]
@@ -44,6 +45,7 @@ class ChatViewSet(viewsets.ModelViewSet):
         chat_session = get_object_or_404(UserHomepageDB, id=chat_id, owner=self.request.user)
         return UserChatDB.objects.filter(chat=chat_session, owner=self.request.user)
     
+    # need to looka at this from other project whewre streaming works
     @action(detail=False, methods=['post'])# action decorator to create custom endpoint
     def continue_chat(self, request):
         user_prompt = request.data.get('prompt')
@@ -72,7 +74,7 @@ class ChatViewSet(viewsets.ModelViewSet):
                 full_reply += token
                 yield token # Send token to frontend
     
-            # 3. SAVE TO DB: This only runs after the 'for' loop finishes (stream ends)
+            # 3. SAVE TO DB
             current_history.append({"role": "user", "content": user_prompt})
             current_history.append({"role": "assistant", "content": full_reply})
             
@@ -98,33 +100,62 @@ class ChatViewSet(viewsets.ModelViewSet):
         history_obj.save()
         return Response({'status': 'Chat history deleted successfully'})
 
+class UserDrillDownViewSet(viewsets.ModelViewSet):
+    serializer_class = UserDrillDownSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    def get_queryset(self):
+        return UserDrillDown.objects.filter(owner=self.request.user)
+'''
 class UserPsycoDataViewSet(viewsets.ModelViewSet):# this will need to be changed later 
     serializer_class = UserPsycoDataSerializer 
     permission_classes = [permissions.IsAuthenticated]
     def get_queryset(self):
         return UserPsycoData.objects.filter(owner=self.request.user)
-    def perform_create(self, serializer):
-        serializer.save(owner=self.request.user)
-
-class problemsViewSet(viewsets.ModelViewSet):# this will need to be changed later and made someting read only and v need to addewd ai 
-    serializer_class = UserProblemSerializer 
+'''
+'''
+class UserDashboardViewSet(viewsets.ModelViewSet):# this will need to be changed later and made someting read only and v need to addewd ai 
+    serializer_class = UserDashboardSerializer 
     permission_classes = [permissions.IsAuthenticated]
+    
     def get_queryset(self):
-        return UserProblems.objects.filter(owner=self.request.user)
-    def partial_update(self, serializer):
+        return UserDashboard.objects.filter(owner=self.request.user)
+    def partial_update(self, serializer):# no need
         serializer.save(owner=self.request.user)
     # data in this will be updated automaticly from some time set function using django-apscheduler
+'''
+'''
+# no need
+class UserPersonalityDataViewSet(viewsets.ModelViewSet):# this will need to be changed later, no need here
+    serializer_class = UserPersonalityDataSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    def get_queryset(self):
+        return UserPersonalityData.objects.filter(owner=self.request.user)
 
-class TeamMembersViewSet(viewsets.ModelViewSet):
-    permission_classes = [permissions.IsAdminUser] 
-    serializer_class = TeamMembersSerializer
-    queryset = TeamMembers.objects.all()
+class UserChatSummeryViewSet(viewsets.ModelViewSet):# this will need to be changed later , this no need here
+    serializer_class = UserChatSummerySerializer
+    permission_classes = [permissions.IsAuthenticated]
+    def get_queryset(self):
+        return UserChatSummery.objects.filter(owner=self.request.user)
 
-class TeamDataViewSet(viewsets.ModelViewSet):
-    permission_classes = [IsManager]
+class UserDashbioardHistoryViewSet(viewsets.ModelViewSet):# this will need to be changed later,this no need here
+    serializer_class = UserDashbioardHistorySerializer
+    permission_classes = [permissions.IsAuthenticated]
+    def get_queryset(self):
+        return UserDashbioardHistory.objects.filter(owner=self.request.user)
+
+# this needs to be changed later
+class TeamDataHistoryViewSet(viewsets.ModelViewSet):# this will need to be changed later, this no need here
+    serializer_class = TeamDataHistorySerializer
+    permission_classes = [IsHierarchicalSuperior]
+    queryset = TeamDataHistory.objects.all()
+    # there will be alot of custom logic later
+'''
+# this needs to be changed later
+'''class TeamDataViewSet(viewsets.ModelViewSet):
+    permission_classes = [IsHierarchicalSuperior]
     serializer_class = TeamDataSerializer
     queryset = TeamData.objects.all()
-    # there will be alot of custom logic later 
+    # there will be alot of custom logic later '''
 
 class RegisterView(generics.CreateAPIView): # generic view for user registration built-in create behavior
     queryset = User.objects.all() # queryset set to all users so that we can create new ones
@@ -135,109 +166,216 @@ class RegisterView(generics.CreateAPIView): # generic view for user registration
 class UserFeedbackViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
     serializer_class = UserFeedbackSerializer
-    #queryset = UserFeedback.objects.filter(owner=self.request.user)
-    def get_queryset(self):
-        return UserFeedback.objects.filter(owner=self.request.user)
     def perform_create(self, serializer):
         serializer.save(owner=self.request.user)
 
 class PrivacyPolicyAcceptanceViewSet(viewsets.ModelViewSet):
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [AllowAny]
     serializer_class = PrivacyPolicyAcceptanceSerializer
-    #queryset = PrivacyPolicyAcceptance.objects.all()
-    def get_queryset(self):
-        return PrivacyPolicyAcceptance.objects.filter(owner=self.request.user)
+    queryset = PrivacyPolicyAcceptance.objects.all()
+    
+    def get_client_ip(self, request):
+        x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+        if x_forwarded_for:
+            return x_forwarded_for.split(',')[0]
+        return request.META.get('REMOTE_ADDR')
+    
+    def create(self, request, *args, **kwargs):
+        """
+        Overriding create to handle IP capture and Cookie setting
+        """
+        # 1. Standard DRF validation
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        # 2. Save the instance with the extra system data
+        # We pass these into save() so they override the read_only constraints for the save action
+        self.perform_create(serializer)
+
+        # 3. Create the standard DRF JSON response
+        headers = self.get_success_headers(serializer.data)
+        response = Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+
+        # 4. Attach the Cookie to the response
+        response.set_cookie(
+            key='privacy_policy_version_held',
+            value=serializer.data['privacy_policy_version'],
+            max_age=31536000, # 1 Year
+            httponly=False,   # False so frontend JS can read it to hide the banner
+            samesite='Lax'
+        )
+
+        return response
+
     def perform_create(self, serializer):
-        serializer.save(owner=self.request.user)
+        # This is where we inject the data not provided by the user
+        serializer.save(
+            ip_address=self.get_client_ip(self.request),
+            user_agent=self.request.META.get('HTTP_USER_AGENT', ''),
+            user=self.request.user if self.request.user.is_authenticated else None
+        )
 
-class ConsentFormAcceptanceViewSet(viewsets.ModelViewSet):
-    permission_classes = [permissions.IsAuthenticated]
-    serializer_class = ConsentFormAcceptanceSerializer
-    #queryset = ConsentFormAcceptance.objects.all()
-    def get_queryset(self):
-        return ConsentFormAcceptance.objects.filter(owner=self.request.user)
+    def needs_new_consent(request):
+    # 1. Define your current required version (usually in settings.py)
+        CURRENT_VERSION = "v2.0" 
+
+        # 2. Get the version from the user's cookie
+        user_held_version = request.COOKIES.get('privacy_policy_version_held')
+
+        # 3. Compare
+        if not user_held_version or user_held_version != CURRENT_VERSION:
+            return True # Trigger the pop-up/form again
+
+        return False
+    
+
+class UserConsentViewSet(viewsets.ModelViewSet):
+    queryset = UserConsent.objects.all()
+    serializer_class = UserConsentSerializer
+    permission_classes = [AllowAny] # Unauthenticated users must also be able to consent
+
+    def get_client_ip(self, request):
+        x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+        if x_forwarded_for:
+            return x_forwarded_for.split(',')[0]
+        return request.META.get('REMOTE_ADDR')
+
+    def create(self, request, *args, **kwargs):
+        """
+        Overriding create to handle IP capture and Cookie setting
+        """
+        # 1. Standard DRF validation
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        # 2. Save the instance with the extra system data
+        # We pass these into save() so they override the read_only constraints for the save action
+        self.perform_create(serializer)
+
+        # 3. Create the standard DRF JSON response
+        headers = self.get_success_headers(serializer.data)
+        response = Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+
+        # 4. Attach the Cookie to the response
+        response.set_cookie(
+            key='consent_version_held',
+            value=serializer.data['consent_version'],
+            max_age=31536000, # 1 Year
+            httponly=False,   # False so frontend JS can read it to hide the banner
+            samesite='Lax'
+        )
+
+        return response
+
     def perform_create(self, serializer):
-        serializer.save(owner=self.request.user)
+        # This is where we inject the data not provided by the user
+        serializer.save(
+            ip_address=self.get_client_ip(self.request),
+            user_agent=self.request.META.get('HTTP_USER_AGENT', ''),
+            user=self.request.user if self.request.user.is_authenticated else None
+        )
+
+    def needs_new_consent(request):
+    # 1. Define your current required version (usually in settings.py)
+        CURRENT_VERSION = "v2.0" 
+
+        # 2. Get the version from the user's cookie
+        user_held_version = request.COOKIES.get('consent_version_held')
+
+        # 3. Compare
+        if not user_held_version or user_held_version != CURRENT_VERSION:
+            return True # Trigger the pop-up/form again
+
+        return False
 
 
-from django.http import JsonResponse
+class OrgNodeViewSet(viewsets.ModelViewSet):
+    queryset = OrgNode.objects.all()
+    serializer_class = OrgNodeSerializer
+    permission_classes = [IsAuthenticated, IsHierarchicalSuperior]
 
-def TeamData2(request):
-    data = {
-        'summary': 'This is a summary of the team data.',
-        'recommendation': [{'recommendation': 'Recommendation 1'}, {'recommendation': 'Recommendation 2'}],
-        'common_problems': [{'problem': 'Problem 1'}, {'problem': 'Problem 2'}]
-    }
-    # Use JsonResponse to return the dictionary as a JSON object
-    return JsonResponse(data)
+    @action(detail=True, methods=['get'])
+    def health_dashboard(self, request, pk=None):
+        # 1. Permission Check (IsHierarchicalSuperior runs here automatically)
+        target_node = self.get_object() 
+        requester_node = request.user.org_node
+        
+        # --- SCENARIO 1: I AM LOOKING AT MYSELF (Raw Data) ---
+        if target_node.id == requester_node.id:
+            try:
+                # FIX: Use lowercase 'node' (field name), not 'OrgNode' (class name)
+                dashboard = UserDashboard.objects.get(node=target_node)
+                
+                # FIX: Must serialize the data before returning
+                serializer = UserDashboardSerializer(dashboard)
+                return Response(serializer.data)
+                
+            except UserDashboard.DoesNotExist:
+                return Response({"view_mode": "PERSONAL", "data": []})
+        
+        # --- SCENARIO 2: I AM LOOKING AT A SUBORDINATE (Team Snapshot) ---
+        else:
+            try:
+                # FIX: We want the TeamData attached to the TARGET (subordinate), not the requester
+                team_data = TeamData.objects.get(node=target_node)
+                
+                serializer = TeamDataSerializer(team_data)
+                return Response(serializer.data)
+                
+            except TeamData.DoesNotExist:
+                return Response({
+                    "view_mode": "TEAM_OVERSIGHT",
+                    "error": "No processed data available yet. Wait for midnight processing."
+                }, status=404)
 
-def PrivacyPolicy(request):
-    policy_text = """
-    Privacy Policy
+    @action(detail=True, methods=['post'], permission_classes=[IsAdminUser])
+    def replace_employee(self, request, pk=None):
+        """
+        Logic:
+        - 'pk' is the OLD person (leaving).
+        - 'replacement_id' is the NEW person (taking the seat).
+        """
+        old_node_id = pk
+        new_node_id = request.data.get('replacement') # Expecting ID (e.g., 5), not User object
 
-    Effective Date: January 1, 2024
+        if not new_node_id:
+            return Response({"error": "replacement ID is required"}, status=400)
 
-    1. Introduction
-    We value your privacy and are committed to protecting your personal information. This Privacy Policy outlines how we collect, use, and safeguard your data.
+        try:
+            with transaction.atomic():
+                # FIX: Query by ID (pk), not by User, to ensure we get the node specifically
+                old_node = OrgNode.objects.get(pk=old_node_id)
+                new_node = OrgNode.objects.get(pk=new_node_id)
 
-    2. Information We Collect
-    - Personal Information: Name, email address, contact details.
-    - Usage Data: IP address, browser type, pages visited.
+                # Step 1: Validate Company Match
+                if old_node.company != new_node.company:
+                    return Response({"error": "Cannot cross-promote between companies"}, status=400)
 
-    3. How We Use Your Information
-    - To provide and maintain our services.
-    - To communicate with you about updates and promotions.
-    - To improve our website and services.
+                # Step 2: "Inheritance" - New Node moves up to Old Node's spot
+                # We give the New Person the Old Person's Rank & Boss
+                new_node.structure_level = old_node.structure_level
+                
+                # Handling the Parent logic
+                # If New Node was reporting to Old Node, New Node's parent becomes Old Node's parent.
+                new_node.parent = old_node.parent 
+                
+                new_node.save()
 
-    4. Data Sharing
-    We do not sell or rent your personal information to third parties. We may share data with service providers who assist us in operating our business.
+                # Step 3: "Adoption" - Move Old Node's children to New Node
+                # All people who used to report to Old Node now report to New Node.
+                # FIX: Use 'id' to exclude, it's safer.
+                old_node.children.exclude(id=new_node.id).update(parent=new_node)
 
-    5. Data Security
-    We implement security measures to protect your data from unauthorized access, alteration, disclosure, or destruction.
+                # Step 4: Fire the Old Node
+                # This deletes the Old Node row. 
+                # Note: Because 'UserDashboard' is OneToOne with CASCADE, the old user's dashboard is deleted.
+                old_node.delete()
 
-    6. Your Rights
-    You have the right to access, correct, or delete your personal information. Contact us to exercise these rights.
+                return Response({
+                    "message": f"Success. {new_node.user.username} has replaced {old_node.user.username}."
+                })
 
-    7. Changes to This Policy
-    We may update this Privacy Policy from time to time. Changes will be posted on this page with an updated effective date.
-
-    8. Contact Us
-    If you have any questions about this Privacy Policy, please contact us at"""
-    return JsonResponse({'privacy_policy': policy_text})
-
-def TermsOfService(request):
-    terms_text = """
-    Terms of Service
-
-    Effective Date: January 1, 2024
-
-    1. Acceptance of Terms
-    By accessing or using our services, you agree to be bound by these Terms of Service.
-
-    2. User Responsibilities
-    You agree to use our services in compliance with all applicable laws and regulations.
-
-    3. Intellectual Property
-    All content and materials provided through our services are the property of the company and protected by intellectual property laws.
-
-    4. Limitation of Liability
-    We are not liable for any damages arising from your use of our services.
-
-    5. Termination
-    We reserve the right to terminate or suspend your access to our services at our discretion.
-
-    6. Changes to Terms
-    We may modify these Terms of Service at any time. Continued use of our services constitutes acceptance of the updated terms.
-
-    7. Contact Us
-    If you have any questions about these Terms of Service, please contact us at"""
-    return JsonResponse({'terms_of_service': terms_text})
-
-def UserPsycoData(request):
-    data = {
-        'summary': 'This is a summary of the team data.',
-        'recommendation': [{'recommendation': 'Recommendation 1'}, {'recommendation': 'Recommendation 2'}],
-        'common_problems': [{'problem': 'Problem 1'}, {'problem': 'Problem 2'}]
-    }
-    return JsonResponse(data)
-
+        except OrgNode.DoesNotExist:
+            return Response({"error": "Node not found"}, status=404)
+        except Exception as e:
+            return Response({"error": str(e)}, status=500)

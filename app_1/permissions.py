@@ -1,13 +1,23 @@
 from rest_framework import permissions
+from django.db import connection
 
-class IsManager(permissions.BasePermission):
-    """
-    Allows access only to users who are in the 'Team' group.
-    """
-    def has_permission(self, request, view):
-        # 1. Ensure they are logged in
-        if not request.user or not request.user.is_authenticated:
-            return False
+class IsHierarchicalSuperior(permissions.BasePermission):
+    def has_object_permission(self, request, view, obj):
+        # Allow Self
+        if request.user.org_node.id == obj.id:
+            return True
 
-        # 2. Check if they are in a group named 'Manager'
-        return request.user.groups.filter(name='Manager').exists()
+        # Allow Downline (Recursive check)
+        requester_id = request.user.org_node.id
+        query = """
+        WITH RECURSIVE subordinates AS (
+            SELECT id FROM app_orgnode WHERE parent_id = %s
+            UNION ALL
+            SELECT child.id FROM app_orgnode child
+            JOIN subordinates parent ON child.parent_id = parent.id
+        )
+        SELECT 1 FROM subordinates WHERE id = %s LIMIT 1;
+        """
+        with connection.cursor() as cursor:
+            cursor.execute(query, [requester_id, obj.id])
+            return bool(cursor.fetchone())
