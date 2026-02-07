@@ -22,11 +22,11 @@ from .models import (
     UserChatDB, TeamData, UserConsent, UserDrillDown, UserDashboard, 
     UserChatSummary
 )
+
 from .serializers import (
-    UserConsentSerializer, HomePageSerializer, ChatSerializer, 
+    RegisterSerializer, UserConsentSerializer, HomePageSerializer, ChatSerializer, 
     OrgNodeSerializer, PrivacyPolicyAcceptanceSerializer, UserFeedbackSerializer, 
-    TeamDataSerializer, UserDrillDownSerializer, UserDashboardSerializer, 
-    UserSerializer
+    TeamDataSerializer, UserDrillDownSerializer, UserDashboardSerializer
 )
 from .Ai import therpy_ai_response, consiler_ai_responce
 from .permissions import IsHierarchicalSuperior
@@ -124,13 +124,7 @@ class UserDrillDownViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         return UserDrillDown.objects.filter(owner=self.request.user)
 
-'''
-class RegisterView(generics.CreateAPIView): # generic view for user registration built-in create behavior
-    queryset = User.objects.all() # queryset set to all users so that we can create new ones
-    # Everyone must be able to hit this endpoint to sign up!
-    permission_classes = (AllowAny,)
-    serializer_class = RegisterSerializer
-'''
+
 class UserFeedbackViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
     serializer_class = UserFeedbackSerializer
@@ -346,29 +340,13 @@ class OrgNodeViewSet(viewsets.ModelViewSet):
         except Exception as e:
             return Response({"error": str(e)}, status=500)
 
-class RegisterView(APIView):
-    def post(self, request):
-        serializer = UserSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response({"message": "User created"}, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-class ProfileView(APIView):
-    permission_classes = [IsAuthenticated]
-    def get(self, request):
-        return Response({
-            "email": request.user.email,
-            "message": "Access granted to protected data"
-        })
-'''
-class GoogleLogin(SocialLoginView):
-    adapter_class = GoogleOAuth2Adapter
-    client_class = OAuth2Client
-    callback_url = "http://127.0.0.1:8000/accounts/google/login/callback/"
+# for jwt token auth and registration
+class RegisterView(generics.CreateAPIView):
+    queryset = User.objects.all()
+    permission_classes = (AllowAny,)
+    serializer_class = RegisterSerializer
 
 
-'''
 from allauth.socialaccount.providers.google.views import GoogleOAuth2Adapter
 from allauth.socialaccount.providers.oauth2.client import OAuth2Client
 from dj_rest_auth.registration.views import SocialLoginView
