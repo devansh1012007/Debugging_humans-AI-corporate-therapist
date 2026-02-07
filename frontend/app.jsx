@@ -39,7 +39,7 @@ import {
 } from 'lucide-react';
 
 // --- Configuration ---
-const API_BASE = 'http://localhost:8000'; 
+const API_BASE = 'http://localhost:8000/'; 
 
 // --- Global Styles ---
 const GlobalStyles = () => (

@@ -1,15 +1,32 @@
 # app_1/models.py
 from django.db import models
+# models.py
+from django.db import models
 from django.contrib.auth.models import User
 import uuid
-from django.conf import settings
 
-# --- BASE MODEL ---
 class OwnedModel(models.Model):
     owner = models.ForeignKey(User, on_delete=models.CASCADE)
-    
     class Meta:
         abstract = True
+
+class UserHomepageDB(OwnedModel):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    title = models.CharField(max_length=255, default="New Chat")
+    AiMode = models.CharField(max_length=20, default="therapy")
+    last_updated = models.DateTimeField(auto_now=True)
+
+class UserChatDB(OwnedModel):
+    chat = models.OneToOneField(UserHomepageDB, on_delete=models.CASCADE, related_name="history")
+    content = models.JSONField(default=list)
+    to_be_summarized = models.BooleanField(default=False)
+
+class UserChatSummary(OwnedModel):
+    content = models.JSONField()
+    chat = models.OneToOneField(UserHomepageDB, on_delete=models.CASCADE, related_name="summary")
+
+# --- BASE MODEL ---
+
 
 class Company(models.Model):
     name = models.CharField(max_length=255, unique=True)
@@ -36,22 +53,6 @@ class OrgNode(models.Model):
         return f"{self.name} ({self.structure_level.name})"
 
 # --- USER DATA MODELS ---
-
-class UserHomepageDB(OwnedModel):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    title = models.CharField(max_length=255, default="New Chat")
-    AiMode = models.CharField(max_length=20, default="therapy")
-    last_updated = models.DateTimeField(auto_now=True)
-    
-    class Meta:
-        ordering = ['-last_updated']
-        
-    def __str__(self): return f"{self.owner.username} - {self.title}"
-
-class UserChatDB(OwnedModel):
-    chat = models.OneToOneField(UserHomepageDB, on_delete=models.CASCADE, related_name="history")
-    content = models.JSONField(default=list)
-    to_be_summarized = models.BooleanField(default=False) # New field to store messages that need summarization
 
 class UserDashboard(OwnedModel):
     # Removed direct User link to avoid conflicts. Access via Node -> User
@@ -89,9 +90,7 @@ class UserPsycoData(OwnedModel):
     content = models.JSONField()
 
 # Fixed Typo: Summery -> Summary
-class UserChatSummary(OwnedModel):
-    content = models.JSONField()
-    chat = models.OneToOneField(UserHomepageDB, on_delete=models.CASCADE, related_name="summary")
+
 class UserPersonalityData(OwnedModel):
     content = models.JSONField()
 
@@ -100,10 +99,10 @@ class UserFeedback(OwnedModel):
     rating = models.IntegerField(default=5)
     submitted_at = models.DateTimeField(auto_now_add=True)
 
-class PrivacyPolicyAcceptance(OwnedModel):
-    user = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True)
+class PrivacyPolicyAcceptance(models.Model):
+    #user = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True)
     ip_address = models.GenericIPAddressField(null=True)
-    consent_version = models.CharField(max_length=50)  # e.g., "v1.0-2023"
+    consent_version = models.CharField(max_length=50, default="v1.0-2026")  # e.g., "v1.0-2023"
     agreed_at = models.DateTimeField(auto_now_add=True)
     user_agent = models.TextField(blank=True) # Stores browser info
 
@@ -113,7 +112,7 @@ class PrivacyPolicyAcceptance(OwnedModel):
 class UserConsent(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True)
     ip_address = models.GenericIPAddressField(null=True)
-    consent_version = models.CharField(max_length=50)  # e.g., "v1.0-2023"
+    consent_version = models.CharField(max_length=50, default="v1.0-2026")  # e.g., "v1.0-2023"
     agreed_at = models.DateTimeField(auto_now_add=True)
     user_agent = models.TextField(blank=True) # Stores browser info
 

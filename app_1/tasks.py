@@ -1,11 +1,9 @@
-# here all the repeating task will come
-# summar + probelsm + team problems
-# not working yet
+# app_1/tasks.py
 from datetime import date
 from .models import OrgNode, UserChatSummary, UserDashboard, UserDashboard,User, UserChatDB, UserDrillDown, TeamData, TeamDataHistory, UserDashboardHistory
-from .Ai import ai_model
 from django.shortcuts import get_object_or_404
-
+def ai_model(chats):
+    pass
 
 def generate_drill_down_lists(target):
         subordinates = target.children.all()

@@ -1,54 +1,50 @@
-#views.py
-from httpx import request
-from rest_framework import viewsets, permissions
-from .models import OrgNode, PrivacyPolicyAcceptance, UserFeedback, UserHomepageDB, UserChatDB,TeamData,UserConsent,UserDrillDown,UserDashboard, UserPersonalityData,TeamDataHistory,UserChatSummary
-from .serializers import UserConsentSerializer, HomePageSerializer, ChatSerializer, OrgNodeSerializer, PrivacyPolicyAcceptanceSerializer, UserFeedbackSerializer, TeamDataSerializer, UserPsycoDataSerializer, UserDrillDownSerializer, UserDashboardSerializer, UserPersonalityDataSerializer, UserChatSummerySerializer, UserDashbioardHistorySerializer, TeamDataHistorySerializer
-from rest_framework import generics
-from django.contrib.auth.models import User
-from .serializers import RegisterSerializer
+# views.py
+import json
+import os
+from rest_framework import viewsets, permissions, generics, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
+from rest_framework.permissions import AllowAny, IsAuthenticated, IsAdminUser
+from rest_framework.views import APIView
 from django.shortcuts import get_object_or_404
-from rest_framework.permissions import AllowAny
-import json
-from django.http import JsonResponse
-from .Ai import ai_response, therpy_ai_response, consiler_ai_responce
-from .permissions import IsHierarchicalSuperior
-from django.http import StreamingHttpResponse
-from rest_framework.permissions import IsAuthenticated,IsAdminUser
 from django.db import transaction
+from django.http import StreamingHttpResponse
+from django.contrib.auth.models import User
+
+# Social Auth
+from allauth.socialaccount.providers.google.views import GoogleOAuth2Adapter
+from allauth.socialaccount.providers.oauth2.client import OAuth2Client
+from dj_rest_auth.registration.views import SocialLoginView
+
+# Local Imports
+from .models import (
+    OrgNode, PrivacyPolicyAcceptance, UserHomepageDB, 
+    UserChatDB, TeamData, UserConsent, UserDrillDown, UserDashboard, 
+    UserChatSummary
+)
+from .serializers import (
+    UserConsentSerializer, HomePageSerializer, ChatSerializer, 
+    OrgNodeSerializer, PrivacyPolicyAcceptanceSerializer, UserFeedbackSerializer, 
+    TeamDataSerializer, UserDrillDownSerializer, UserDashboardSerializer, 
+    UserSerializer
+)
+from .Ai import therpy_ai_response, consiler_ai_responce
+from .permissions import IsHierarchicalSuperior
 from .tasks import generate_drill_down_lists
-
-class OldChatsViewSet(viewsets.ModelViewSet):
-    serializer_class = HomePageSerializer 
-    permission_classes = [permissions.IsAuthenticated] 
-    # this will give list of all the titel along with there titels 
-    def get_queryset(self):
-        return UserHomepageDB.objects.filter(owner=self.request.user)
-    # if user wants to star a new chat v take title and ai mode and add it to our UserHomepageDB
-    def perform_create(self, serializer):
-        session = serializer.save(owner=self.request.user) # id will generted by itself 
-        UserChatDB.objects.create( # creating space in other db
-            owner=self.request.user, 
-            chat=session, 
-            content=[],
-            to_be_summarized=False,
-        )
-
 class ChatViewSet(viewsets.ModelViewSet):
     serializer_class = ChatSerializer
     permission_classes = [permissions.IsAuthenticated]
-    def get_queryset(self):# used for filtering the chat history based on chat session id #It is the "Django way" to handle ownership.
+
+    def get_queryset(self):
         chat_id = self.request.query_params.get('chat_id')
         if chat_id is None:
-            # Return nothing if no ID provided, or use UserChatDB.objects.none()
-            error_response = Response({'error': 'Chat ID is required'}, status=400)
-            return error_response 
+             return UserChatDB.objects.none()
+        
+        # Security: Ensure user owns the chat
         chat_session = get_object_or_404(UserHomepageDB, id=chat_id, owner=self.request.user)
-        return UserChatDB.objects.filter(chat=chat_session, owner=self.request.user)# another way of filtering that chat willl be --> UserChatDB.objects.filter(chat__id=chat_id, owner=self.request.user) # this is also correct and works fine, but the above one is more readable and easier to understand for most developers, especially those new to Django. It clearly shows the relationship between the models and the filtering logic. The double underscore syntax can be less intuitive for those who are not familiar with Django's ORM.
-    
-    # need to looka at this from other project whewre streaming works
-    @action(detail=False, methods=['post'])# action decorator to create custom endpoint
+        return UserChatDB.objects.filter(chat=chat_session, owner=self.request.user)
+
+    @action(detail=False, methods=['post'])
     def continue_chat(self, request):
         user_prompt = request.data.get('prompt')
         ai_mode = request.data.get('mode')
@@ -57,65 +53,70 @@ class ChatViewSet(viewsets.ModelViewSet):
         if not user_prompt or not chat_id:
             return Response({'error': 'Prompt and ChatID are required'}, status=400)
     
-        # 1. Get the session and history objects
         chat_session = get_object_or_404(UserHomepageDB, id=chat_id, owner=request.user)
         history_obj = get_object_or_404(UserChatDB, chat=chat_session, owner=request.user)
         current_history = history_obj.content if isinstance(history_obj.content, list) else []
-        #context_window = current_history[:10] if len(current_history) > 10 else current_history
-        if len(current_history) > 10:#call summery function
-            #chat_to_be_summarized = current_history[9:]
-            summary = UserChatSummary.objects.filter(owner=request.user, chat=chat_session,).first()# idt first should be needed here coz there will be only one summary per chat session due to OneToOne relationship, so we can directly use .get() instead of .filter().first()
-            context_window = current_history[:9] + [{"role": "assistant", "content": summary}]
-            # Save the summary to the UserChatSummary model
-            '''UserChatSummary.objects.create(
-                owner=request.user,
-                chat=chat_session,
-                summary=summary
-            )'''
+
+        # Context Window Logic
+        if len(current_history) > 10:
+            summary_obj = UserChatSummary.objects.filter(owner=request.user, chat=chat_session).first()
+            summary_text = summary_obj.content if summary_obj else "No summary available."
+            context_window = current_history[-9:] 
+            context_window.insert(0, {"role": "system", "content": f"Previous Summary: {summary_text}"})
         else:
             context_window = current_history
 
-        
+        # Generator wrapper
         def stream_wrapper():
-            full_reply = "" # Keep track of the full string to save to DB later
+            full_reply = ""
             try:    
-                # Determine which generator to use
                 if ai_mode == "specialist":
-                    gen = therpy_ai_response(user_prompt, context_window, request.user.name)
+                    gen = therpy_ai_response(user_prompt, context_window, request.user.username)
                 else:
-                    gen = consiler_ai_responce(user_prompt, context_window, request.user.name)
+                    gen = consiler_ai_responce(user_prompt, context_window, request.user.username)
 
                 for token in gen:
                     full_reply += token
-                    yield token # Send token to frontend
-            except Exception as e:
-                yield f"\n[Error generating response: {str(e)}]"
-                return# In case of error, we yield an error message and exit the generator
-            # 3. SAVE TO DB
-            current_history.append({"role": "user", "content": user_prompt})
-            current_history.append({"role": "assistant", "content": full_reply})
-            history_obj.to_be_summarized = True
-            history_obj.content = current_history
-            history_obj.save()
-    
-        # 4. Return the Stream
+                    yield token
+                
+                # Database update MUST happen after stream finishes or be handled asynchronously
+                # Doing it here is risky if connection breaks, but acceptable for MVP
+                current_history.append({"role": "user", "content": user_prompt})
+                current_history.append({"role": "assistant", "content": full_reply})
+                history_obj.content = current_history
+                history_obj.to_be_summarized = True
+                history_obj.save()
 
-        return StreamingHttpResponse(stream_wrapper(), headers={'Content-Type': 'text/plain'})    
-        
-    # add delete method to delete chat history if needed
-    # no need coz ModelViewSet already has a .destroy() method mapped to the DELETE HTTP verb
+            except Exception as e:
+                yield f"\n[Error: {str(e)}]"
+
+        return StreamingHttpResponse(stream_wrapper(), headers={'Content-Type': 'text/plain'})
+
     @action(detail=False, methods=['delete'])
     def delete_chat(self, request):
         chat_id = request.data.get('ChatID')
-        try:
-            chat_session = UserHomepageDB.objects.get(id=chat_id, owner=request.user)
-        except UserHomepageDB.DoesNotExist:
-            return Response({'error': f'Chat Session {chat_id} not found for this user.'}, status=404)
-        
+        chat_session = get_object_or_404(UserHomepageDB, id=chat_id, owner=request.user)
         history_obj = get_object_or_404(UserChatDB, chat=chat_session, owner=request.user)
-        history_obj.content = []  # Clear the chat history
+        
+        history_obj.content = []
         history_obj.save()
-        return Response({'status': 'Chat history deleted successfully'})
+        return Response({'status': 'Chat history cleared'})
+
+class OldChatsViewSet(viewsets.ModelViewSet):
+    serializer_class = HomePageSerializer 
+    permission_classes = [permissions.IsAuthenticated] 
+
+    def get_queryset(self):
+        return UserHomepageDB.objects.filter(owner=self.request.user)
+
+    def perform_create(self, serializer):
+        session = serializer.save(owner=self.request.user)
+        UserChatDB.objects.create(
+            owner=self.request.user, 
+            chat=session, 
+            content=[],
+            to_be_summarized=False,
+        )
 
 class UserDrillDownViewSet(viewsets.ModelViewSet):
     serializer_class = UserDrillDownSerializer
@@ -123,13 +124,13 @@ class UserDrillDownViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         return UserDrillDown.objects.filter(owner=self.request.user)
 
-
+'''
 class RegisterView(generics.CreateAPIView): # generic view for user registration built-in create behavior
     queryset = User.objects.all() # queryset set to all users so that we can create new ones
     # Everyone must be able to hit this endpoint to sign up!
     permission_classes = (AllowAny,)
     serializer_class = RegisterSerializer
-
+'''
 class UserFeedbackViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
     serializer_class = UserFeedbackSerializer
@@ -266,8 +267,6 @@ class OrgNodeViewSet(viewsets.ModelViewSet):
         # 1. Permission Check (IsHierarchicalSuperior runs here automatically)
         target_node = self.get_object() 
         requester_node = request.user.org_node
-        
-        # --- SCENARIO 1: I AM LOOKING AT MYSELF (Raw Data) ---
         if target_node.id == requester_node.id:
             try:
                 # FIX: Use lowercase 'node' (field name), not 'OrgNode' (class name)
@@ -346,3 +345,66 @@ class OrgNodeViewSet(viewsets.ModelViewSet):
             return Response({"error": "Node not found"}, status=404)
         except Exception as e:
             return Response({"error": str(e)}, status=500)
+
+class RegisterView(APIView):
+    def post(self, request):
+        serializer = UserSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response({"message": "User created"}, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+class ProfileView(APIView):
+    permission_classes = [IsAuthenticated]
+    def get(self, request):
+        return Response({
+            "email": request.user.email,
+            "message": "Access granted to protected data"
+        })
+'''
+class GoogleLogin(SocialLoginView):
+    adapter_class = GoogleOAuth2Adapter
+    client_class = OAuth2Client
+    callback_url = "http://127.0.0.1:8000/accounts/google/login/callback/"
+
+
+'''
+from allauth.socialaccount.providers.google.views import GoogleOAuth2Adapter
+from allauth.socialaccount.providers.oauth2.client import OAuth2Client
+from dj_rest_auth.registration.views import SocialLoginView
+from django.conf import settings
+from rest_framework_simplejwt.tokens import RefreshToken # <--- Add this import
+
+class GoogleLogin(SocialLoginView):
+    adapter_class = GoogleOAuth2Adapter
+    client_class = OAuth2Client
+
+    def post(self, request, *args, **kwargs):
+        # 1. Trick the serializer (as we discussed before)
+        if request.data.get('access_token') and not request.data.get('id_token'):
+            if isinstance(request.data, dict):
+                request.data['id_token'] = request.data['access_token']
+            else:
+                data = request.data.copy()
+                data['id_token'] = data['access_token']
+                request._full_data = data
+                
+        # 2. Get the default response
+        response = super().post(request, *args, **kwargs)
+
+        # 3. FORCE JWT: If the response is just a 'key' (token), swap it for access/refresh
+        if response.status_code == 200 and 'key' in response.data:
+            # The 'user' object is available on the view after login
+            user = self.user 
+            
+            # Generate the tokens manually
+            refresh = RefreshToken.for_user(user)
+            
+            # Update the response data
+            response.data['access'] = str(refresh.access_token)
+            response.data['refresh'] = str(refresh)
+            
+            # Optional: Remove the 'key' if you don't want it
+            # del response.data['key']
+
+        return response
