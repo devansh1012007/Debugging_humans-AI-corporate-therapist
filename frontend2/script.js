@@ -25,7 +25,7 @@ window.onload = function () {
 
 // --- Authentication Handlers ---
 async function handleGoogleResponse(response) {
-    const res = await fetch('http://localhost:8000/api/auth/google/', {
+    const res = await fetch('https://order-reporter-virtue-experiences.trycloudflare.com/api/auth/google/', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ access_token: response.credential })
@@ -45,10 +45,10 @@ document.getElementById('signInForm').addEventListener('submit', async (e) => {
     const email = e.target.querySelector('input[type="email"]').value;
     const password = e.target.querySelector('input[type="password"]').value;
     
-    const res = await fetch('http://localhost:8000/api/login/', {
+    const res = await fetch('https://order-reporter-virtue-experiences.trycloudflare.com/login/', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username: email, password: password })
+        body: JSON.stringify({ email: email, password: password })
     });
     
     const data = await res.json();
@@ -63,7 +63,7 @@ document.getElementById('signInForm').addEventListener('submit', async (e) => {
 
 // --- UI & Token Helpers ---
 async function displayUserProfile() {
-    const response = await authorizedFetch('http://localhost:8000/Chats/');//const response = await authorizedFetch('http://localhost:8000/api/profile/');
+    const response = await authorizedFetch('https://order-reporter-virtue-experiences.trycloudflare.com/Chats/');//const response = await authorizedFetch('http://localhost:8000/api/profile/');
     if (response.ok) {
         const userData = await response.json();
         /*
@@ -102,7 +102,7 @@ async function authorizedFetch(url, options = {}) {
 async function refreshAccessToken() {
     const refresh = localStorage.getItem('refreshToken');
     if (!refresh) return null;
-    const res = await fetch('http://localhost:8000/api/token/refresh/', {
+    const res = await fetch('https://order-reporter-virtue-experiences.trycloudflare.com/refresh/', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ refresh })
