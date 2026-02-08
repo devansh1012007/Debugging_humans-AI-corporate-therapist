@@ -4,8 +4,8 @@ from rest_framework import serializers
 from rest_framework.validators import UniqueValidator
 from rest_framework.fields import CurrentUserDefault
 from .models import (
-    UserDrillDown, UserFeedback, UserHomepageDB, UserChatDB, UserPersonalityData, 
-    TeamData, PrivacyPolicyAcceptance, UserPsycoData, 
+    Tharipistneeded, UserDrillDown, UserFeedback, UserHomepageDB, UserChatDB, UserPersonalityData, 
+    TeamData, UserPsycoData, 
     Company, UserDashboard, UserDashboardHistory, TeamDataHistory, 
     UserChatSummary, StructureLevel, OrgNode,UserConsent
 )
@@ -83,17 +83,17 @@ class UserFeedbackSerializer(serializers.ModelSerializer):
         fields = ['feedback', 'rating', 'submitted_at', 'owner']
     def create(self, validated_data):
         return UserFeedback.objects.create(**validated_data)
-class PrivacyPolicyAcceptanceSerializer(serializers.ModelSerializer):
+'''class PrivacyPolicyAcceptanceSerializer(serializers.ModelSerializer):
     class Meta:
         model = PrivacyPolicyAcceptance
-        fields = ['user', 'ip_address', 'user_agent', 'accepted_at', 'current_version']
+        fields = ['user', 'ip_address', 'user_agent', 'agreed_at', 'current_version']
         #read_only_fields = ['id', 'accepted_at', 'created_at', 'user']
-
+'''
 class UserConsentSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserConsent
         # We only require 'consent_version' from the user input
-        fields = ['user', 'ip_address', 'user_agent', 'accepted_at', 'current_version']
+        fields = ['user', 'ip_address', 'user_agent', 'agreed_at', 'consent_version']
         #read_only_fields = ['id', 'ip_address', 'user_agent', 'agreed_at', 'user']
 
 # --- HISTORY & SUMMARY SERIALIZERS ---
@@ -125,14 +125,19 @@ class RegisterSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ('first_name', 'password', 'email')
+        fields = ('username', 'password', 'email')
         extra_kwargs = {'password': {'write_only': True}}
 
     def create(self, validated_data):
         user = User.objects.create_user(
-            first_name=validated_data['first_name'],
+            username=validated_data['username'],
             #last_name=validated_data['last_name'],
             email=validated_data['email'],
             password=validated_data['password']
         )
         return user
+
+class TherapistNeededSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Tharipistneeded
+        fields = ['in_need', 'submitted_at', 'owner']

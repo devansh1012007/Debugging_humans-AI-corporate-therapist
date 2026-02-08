@@ -1,6 +1,9 @@
 # views.py
+from datetime import timezone
 import json
+import math
 import os
+#from ollama import chat
 from rest_framework import viewsets, permissions, generics, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -18,17 +21,17 @@ from dj_rest_auth.registration.views import SocialLoginView
 
 # Local Imports
 from .models import (
-    OrgNode, PrivacyPolicyAcceptance, UserHomepageDB, 
+    OrgNode, Tharipistneeded, UserHomepageDB, 
     UserChatDB, TeamData, UserConsent, UserDrillDown, UserDashboard, 
     UserChatSummary
 )
 
 from .serializers import (
-    RegisterSerializer, UserConsentSerializer, HomePageSerializer, ChatSerializer, 
-    OrgNodeSerializer, PrivacyPolicyAcceptanceSerializer, UserFeedbackSerializer, 
+    RegisterSerializer, TherapistNeededSerializer, UserConsentSerializer, HomePageSerializer, ChatSerializer, 
+    OrgNodeSerializer, UserFeedbackSerializer, 
     TeamDataSerializer, UserDrillDownSerializer, UserDashboardSerializer
 )
-from .Ai import therpy_ai_response, consiler_ai_responce
+from .Ai import therpy_ai_response, consiler_ai_responce, summarize_chat_history
 from .permissions import IsHierarchicalSuperior
 from .tasks import generate_drill_down_lists
 class ChatViewSet(viewsets.ModelViewSet):
@@ -56,16 +59,24 @@ class ChatViewSet(viewsets.ModelViewSet):
         chat_session = get_object_or_404(UserHomepageDB, id=chat_id, owner=request.user)
         history_obj = get_object_or_404(UserChatDB, chat=chat_session, owner=request.user)
         current_history = history_obj.content if isinstance(history_obj.content, list) else []
-
+        #current_history = current_history[:-1]
         # Context Window Logic
-        if len(current_history) > 10:
-            summary_obj = UserChatSummary.objects.filter(owner=request.user, chat=chat_session).first()
-            summary_text = summary_obj.content if summary_obj else "No summary available."
-            context_window = current_history[-9:] 
-            context_window.insert(0, {"role": "system", "content": f"Previous Summary: {summary_text}"})
-        else:
-            context_window = current_history
+        a = []
+        context_window = []
+        total_words = 0
+        for chat in current_history[::-1]:# current histroy is chat data/convo
+            words = chat["content"].split()
+            total_words += len(words)
+            estimated_tokens = math.ceil(total_words * 1.5)
+            a.append(chat)
+            if estimated_tokens > 8000:
+                get_chat_summary = summarize_chat_history(current_history[:-len(a)])
+                context_window.append(get_chat_summary)
+                break
 
+        ### here v can later add depalyed summary bringing it from d
+
+        context_window.append(a)
         # Generator wrapper
         def stream_wrapper():
             full_reply = ""
@@ -124,72 +135,17 @@ class UserDrillDownViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         return UserDrillDown.objects.filter(owner=self.request.user)
 
+class UserDashboardViewSet(viewsets.ModelViewSet):
+    serializer_class = UserDashboardSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    def get_queryset(self):
+        return UserDashboard.objects.filter(owner=self.request.user)
 
 class UserFeedbackViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
     serializer_class = UserFeedbackSerializer
     def perform_create(self, serializer):
         serializer.save(owner=self.request.user)
-
-class PrivacyPolicyAcceptanceViewSet(viewsets.ModelViewSet):
-    permission_classes = [AllowAny]
-    serializer_class = PrivacyPolicyAcceptanceSerializer
-    queryset = PrivacyPolicyAcceptance.objects.all()
-    
-    def get_client_ip(self, request):
-        x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
-        if x_forwarded_for:
-            return x_forwarded_for.split(',')[0]
-        return request.META.get('REMOTE_ADDR')
-    
-    def create(self, request, *args, **kwargs):
-        """
-        Overriding create to handle IP capture and Cookie setting
-        """
-        # 1. Standard DRF validation
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-
-        # 2. Save the instance with the extra system data
-        # We pass these into save() so they override the read_only constraints for the save action
-        self.perform_create(serializer)
-
-        # 3. Create the standard DRF JSON response
-        headers = self.get_success_headers(serializer.data)
-        response = Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
-
-        # 4. Attach the Cookie to the response
-        response.set_cookie(
-            key='privacy_policy_version_held',
-            value=serializer.data['privacy_policy_version'],
-            max_age=31536000, # 1 Year
-            httponly=False,   # False so frontend JS can read it to hide the banner
-            samesite='Lax'
-        )
-
-        return response
-
-    def perform_create(self, serializer):
-        # This is where we inject the data not provided by the user
-        serializer.save(
-            ip_address=self.get_client_ip(self.request),
-            user_agent=self.request.META.get('HTTP_USER_AGENT', ''),
-            user=self.request.user if self.request.user.is_authenticated else None
-        )
-
-    def needs_new_consent(request):
-    # 1. Define your current required version (usually in settings.py)
-        CURRENT_VERSION = "v2.0" 
-
-        # 2. Get the version from the user's cookie
-        user_held_version = request.COOKIES.get('privacy_policy_version_held')
-
-        # 3. Compare
-        if not user_held_version or user_held_version != CURRENT_VERSION:
-            return True # Trigger the pop-up/form again
-
-        return False
-    
 
 class UserConsentViewSet(viewsets.ModelViewSet):
     queryset = UserConsent.objects.all()
@@ -260,34 +216,19 @@ class OrgNodeViewSet(viewsets.ModelViewSet):
     def health_dashboard(self, request, pk=None):
         # 1. Permission Check (IsHierarchicalSuperior runs here automatically)
         target_node = self.get_object() 
-        requester_node = request.user.org_node
-        if target_node.id == requester_node.id:
-            try:
-                # FIX: Use lowercase 'node' (field name), not 'OrgNode' (class name)
-                dashboard = UserDashboard.objects.get(node=target_node)
-                
-                # FIX: Must serialize the data before returning
-                serializer = UserDashboardSerializer(dashboard)
-                return Response(serializer.data)
-                
-            except UserDashboard.DoesNotExist:
-                return Response({"view_mode": "PERSONAL", "data": []})
-        
-        # --- SCENARIO 2: I AM LOOKING AT A SUBORDINATE (Team Snapshot) ---
-        else:
-            try:
-                # FIX: We want the TeamData attached to the TARGET (subordinate), not the requester
-                team_data = TeamData.objects.get(node=target_node)
-                
-                serializer = TeamDataSerializer(team_data)
-                return Response(serializer.data)
-                
-            except TeamData.DoesNotExist:
-                return Response({
-                    "view_mode": "TEAM_OVERSIGHT",
-                    "error": "No processed data available yet. Wait for midnight processing."
-                }, status=404)
+        #requester_node = request.user.org_node
 
+        try:
+            # FIX: Use lowercase 'node' (field name), not 'OrgNode' (class name)
+            dashboard = TeamData.objects.get(node=target_node)# this is to see his own team's performance data, not the subordinates data. The subordinate data is in the TeamData model and is accessed in the 'else' block below.
+            
+            # FIX: Must serialize the data before returning
+            serializer = TeamDataSerializer(dashboard)##
+            return Response(serializer.data)
+            
+        except TeamData.DoesNotExist:
+            return Response({"data": ["error", "No dashboard data available yet. Wait for midnight processing."]}, status=404)
+       
     @action(detail=True, methods=['post'], permission_classes=[IsAdminUser])
     def replace_employee(self, request, pk=None):
         """
@@ -386,3 +327,10 @@ class GoogleLogin(SocialLoginView):
             # del response.data['key']
 
         return response
+    
+class TherapistNeededView(viewsets.ModelViewSet):
+    serializer_class = TherapistNeededSerializer
+    permission_classes = [IsAuthenticated]
+    @action(detail=False, methods=['post'])
+    def perform_create(self, serializer):
+        serializer.save(owner=self.request.user, submitted_at=timezone.now(), in_need=True)

@@ -33,3 +33,7 @@ def consiler_ai_responce(user_prompt, messages_list, user_name):
                 yield chunk['message']['content']
     except Exception as e:
         yield f"AI Error: {str(e)}"
+
+
+def summarize_chat_history(chat_history):
+    pass

@@ -13,6 +13,8 @@ SECRET_KEY = os.environ.get('SECRET_KEY', default='django-insecure-!&p4_a3_(x65@
 
 DEBUG = True
 
+#CSRF_TRUSTED_ORIGINS=['*']
+
 ALLOWED_HOSTS = ['*']# very important for docker deployment and for server access
 
 INSTALLED_APPS = [

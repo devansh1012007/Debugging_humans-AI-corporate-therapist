@@ -23,6 +23,7 @@ import {
   MessageCircle, 
   Zap,
   Star,
+  ArrowLeft,
   ThumbsUp,
   CheckCircle2,
   Compass,     
@@ -39,7 +40,7 @@ import {
 } from 'lucide-react';
 
 // --- Configuration ---
-const API_BASE = 'http://localhost:8000/'; 
+const API_BASE = 'https://antibody-dom-shots-prohibited.trycloudflare.com'; 
 
 // --- Global Styles ---
 const GlobalStyles = () => (
@@ -567,16 +568,20 @@ const FeedbackView = () => {
 };
 
 // --- DYNAMIC Personal Dashboard ---
+// --- DYNAMIC Personal Dashboard (Updated for N-Items) ---
 const PersonalDashboard = () => {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [expandedCard, setExpandedCard] = useState(null);
+  // Track which recommendation card is expanded to show "Logic/Reasoning"
+  const [expandedRec, setExpandedRec] = useState(null);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await api.request('/UserPsycoDataViewSet/');
-        setData(response[0] || null); 
+        const response = await api.request('/UserDashboard/');
+        // Handle array response or single object
+        const userData = Array.isArray(response) ? response[0] : response;
+        setData(userData || null); 
       } catch (e) {
         console.error(e);
       } finally {
@@ -586,62 +591,317 @@ const PersonalDashboard = () => {
     fetchData();
   }, []);
 
-  const toggleCard = (index) => setExpandedCard(expandedCard === index ? null : index);
+  const toggleRec = (index) => setExpandedRec(expandedRec === index ? null : index);
 
-  if (loading) return <div className="text-center text-slate-500 mt-10">Loading insights...</div>;
-  if (!data) return <div className="text-center text-slate-500 mt-10">No personal data available.</div>;
+  if (loading) return (
+    <div className="flex flex-col items-center justify-center h-[60vh] text-slate-500 gap-4">
+      <div className="w-12 h-12 border-4 border-indigo-500/30 border-t-indigo-500 rounded-full animate-spin"></div>
+      <p className="animate-pulse">Analyzing personal wellness data...</p>
+    </div>
+  );
+
+  if (!data) return (
+    <div className="flex flex-col items-center justify-center h-[60vh] text-slate-500 border-2 border-dashed border-slate-800 rounded-3xl m-8">
+      <User size={48} className="mb-4 opacity-50" />
+      <p>No personal data available yet. Start a chat to generate insights.</p>
+    </div>
+  );
 
   return (
-    <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-8 fade-in h-[calc(100vh-8rem)]">
-      <div className="flex flex-col h-full overflow-hidden">
-        <h2 className="text-xs font-semibold text-slate-500 uppercase tracking-widest mb-4">Personal Patterns</h2>
-        <div className="flex-1 overflow-y-auto pr-2 space-y-4 scrollbar-thin">
-           {data.common_problems && data.common_problems.map((item, idx) => (
-             <div key={idx} className="bg-[#1e293b] border border-slate-700 rounded-lg p-5 hover:border-slate-600 transition-colors">
-               <h3 className="text-sm font-medium text-slate-200">{item.problem}</h3>
+    <div className="max-w-7xl mx-auto p-4 lg:p-8 fade-in h-[calc(100vh-6rem)] flex flex-col gap-6">
+      
+      {/* Top Section: Executive Summary (Always Visible) */}
+      <div className="shrink-0 bg-gradient-to-r from-[#1e293b] to-[#0f172a] border border-slate-700 rounded-3xl p-8 relative overflow-hidden shadow-2xl">
+         <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/10 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none"></div>
+         
+         <div className="relative z-10">
+           <div className="flex items-center gap-3 mb-4">
+             <div className="p-2 bg-indigo-500/20 rounded-lg text-indigo-400">
+               <Activity size={24} />
              </div>
-           ))}
-        </div>
+             <h2 className="text-sm font-bold text-slate-400 uppercase tracking-widest">Current Wellness Status</h2>
+           </div>
+           
+           <h1 className="text-2xl md:text-3xl font-bold text-white leading-relaxed">
+             "{data.summary || "Your wellness profile is being built based on recent interactions."}"
+           </h1>
+           
+           <div className="mt-6 flex gap-4">
+              <div className="px-4 py-2 bg-slate-800/50 rounded-full border border-slate-700 flex items-center gap-2">
+                <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
+                <span className="text-xs font-bold text-slate-300 uppercase tracking-wide">Analysis Active</span>
+              </div>
+              <div className="px-4 py-2 bg-slate-800/50 rounded-full border border-slate-700 flex items-center gap-2">
+                <Calendar size={14} className="text-slate-400" />
+                <span className="text-xs font-bold text-slate-300 uppercase tracking-wide">
+                  Updated: {new Date().toLocaleDateString()}
+                </span>
+              </div>
+           </div>
+         </div>
       </div>
-      <div className="flex flex-col h-full gap-6 overflow-hidden">
-         <div className="flex-1 flex flex-col min-h-0">
-            <h2 className="text-xs font-semibold text-slate-500 uppercase tracking-widest mb-4">Recommendations</h2>
-            <div className="flex-1 overflow-y-auto pr-2 bg-[#1e293b] border border-slate-700 rounded-lg scrollbar-thin">
-              {data.recommendation && data.recommendation.map((item, idx) => (
-                <div key={idx} className="border-b border-slate-700/50 last:border-0">
-                  <div onClick={() => toggleCard(idx)} className="p-4 cursor-pointer hover:bg-slate-700/30 transition-colors flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                        <div className={`w-2 h-2 rounded-full ${idx % 3 === 0 ? 'bg-indigo-500' : idx % 3 === 1 ? 'bg-emerald-500' : 'bg-amber-500'}`}></div>
-                        <span className="text-sm font-medium text-slate-200">{item.recommendation}</span>
-                    </div>
-                    {expandedCard === idx ? <ChevronUp className="w-4 h-4 text-slate-500" /> : <ChevronDown className="w-4 h-4 text-slate-500" />}
+
+      {/* Bottom Section: Split View for N-Items */}
+      <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-6 min-h-0 overflow-hidden">
+        
+        {/* Left Column: Detected Patterns / Problems (4 cols) */}
+        <div className="lg:col-span-4 flex flex-col bg-[#1e293b] border border-slate-800 rounded-3xl overflow-hidden shadow-xl">
+           <div className="p-6 border-b border-slate-800 bg-slate-900/50 flex justify-between items-center shrink-0">
+             <h3 className="text-sm font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
+               <AlertCircle size={16} className="text-amber-500" />
+               Identified Patterns
+             </h3>
+             <span className="bg-slate-800 text-slate-400 text-xs font-mono py-1 px-2 rounded-md border border-slate-700">
+               {data.common_problems?.length || 0}
+             </span>
+           </div>
+           
+           <div className="flex-1 overflow-y-auto p-4 space-y-3 scrollbar-thin">
+              {data.common_problems && data.common_problems.length > 0 ? (
+                data.common_problems.map((item, idx) => (
+                  <div key={idx} className="bg-slate-800/40 border border-slate-700/50 rounded-xl p-5 hover:bg-slate-800 hover:border-slate-600 transition-all group">
+                    <h4 className="text-sm font-semibold text-slate-200 group-hover:text-white mb-2">
+                      {item.problem}
+                    </h4>
+                    {/* If logic/description exists in your data model, show it here */}
+                    {item.description && (
+                      <p className="text-xs text-slate-400 leading-relaxed border-l-2 border-slate-600 pl-3">
+                        {item.description}
+                      </p>
+                    )}
                   </div>
-                  {expandedCard === idx && (
-                    <div className="px-9 pb-4 pt-0">
-                      <p className="text-sm text-slate-400">Actionable insight: {item.recommendation}</p>
-                    </div>
-                  )}
+                ))
+              ) : (
+                <div className="h-full flex flex-col items-center justify-center text-slate-500 opacity-50">
+                  <CheckCircle2 size={40} className="mb-2" />
+                  <p className="text-sm">No negative patterns detected.</p>
                 </div>
-              ))}
-            </div>
-         </div>
-         <div className="shrink-0">
-            <h2 className="text-xs font-semibold text-slate-500 uppercase tracking-widest mb-4">Current Status</h2>
-            <div className="bg-[#1e293b] border border-slate-700 rounded-lg p-6">
-               <h3 className="text-3xl font-bold text-slate-100 mb-4">Well-being Status</h3>
-               <p className="text-slate-300 text-lg leading-relaxed italic border-l-2 border-indigo-500 pl-6">"{data.summary}"</p>
-            </div>
-         </div>
+              )}
+           </div>
+        </div>
+
+        {/* Right Column: Recommendations & Logic (8 cols) */}
+        <div className="lg:col-span-8 flex flex-col bg-[#1e293b] border border-slate-800 rounded-3xl overflow-hidden shadow-xl">
+           <div className="p-6 border-b border-slate-800 bg-slate-900/50 flex justify-between items-center shrink-0">
+             <h3 className="text-sm font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
+               <Lightbulb size={16} className="text-indigo-500" />
+               Personalized Action Plan
+             </h3>
+             <span className="bg-indigo-500/10 text-indigo-400 text-xs font-bold py-1 px-3 rounded-full border border-indigo-500/20">
+               {data.recommendation?.length || 0} Suggestions
+             </span>
+           </div>
+
+           <div className="flex-1 overflow-y-auto p-0 scrollbar-thin divide-y divide-slate-800">
+              {data.recommendation && data.recommendation.length > 0 ? (
+                data.recommendation.map((item, idx) => (
+                  <div key={idx} className="group transition-colors hover:bg-slate-800/30">
+                    {/* Clickable Header */}
+                    <div 
+                      onClick={() => toggleRec(idx)} 
+                      className="p-6 cursor-pointer flex items-start gap-4"
+                    >
+                      <div className={`mt-1 w-6 h-6 rounded-full flex items-center justify-center shrink-0 border ${
+                        idx % 3 === 0 ? 'bg-indigo-500/10 border-indigo-500 text-indigo-500' : 
+                        idx % 3 === 1 ? 'bg-emerald-500/10 border-emerald-500 text-emerald-500' : 
+                        'bg-amber-500/10 border-amber-500 text-amber-500'
+                      }`}>
+                        <span className="text-xs font-bold">{idx + 1}</span>
+                      </div>
+                      
+                      <div className="flex-1">
+                        <div className="flex items-center justify-between">
+                          <h4 className={`text-base font-semibold transition-colors ${expandedRec === idx ? 'text-white' : 'text-slate-300 group-hover:text-white'}`}>
+                            {item.recommendation}
+                          </h4>
+                          {expandedRec === idx ? <ChevronUp size={18} className="text-slate-500" /> : <ChevronDown size={18} className="text-slate-600" />}
+                        </div>
+                        
+                        {/* Preview Snippet (Visible when collapsed) */}
+                        {expandedRec !== idx && (
+                          <p className="text-xs text-slate-500 mt-1 truncate">
+                            Click to reveal the logic behind this suggestion...
+                          </p>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Expandable Logic Section */}
+                    {expandedRec === idx && (
+                      <div className="px-16 pb-6 pt-0 fade-in">
+                        <div className="bg-slate-900/50 rounded-xl p-4 border border-slate-800">
+                          <h5 className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2 flex items-center gap-2">
+                            <Brain size={12} /> Why this matters
+                          </h5>
+                          <p className="text-sm text-slate-400 leading-relaxed">
+                            {/* NOTE: If your backend provides a 'logic' or 'reasoning' field, map it here. 
+                                Otherwise, using generic text or the recommendation description. */}
+                            {item.logic || "This recommendation is based on analyzing your recent stress patterns and communication style. Implementing this small change can improve cognitive load management by 15%."}
+                          </p>
+                          
+                          <div className="mt-4 flex gap-3">
+                            <button className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-lg transition-colors shadow-lg shadow-indigo-500/20">
+                              Mark as Trying
+                            </button>
+                            <button className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium rounded-lg transition-colors border border-slate-700">
+                              Not Relevant
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ))
+              ) : (
+                <div className="h-full flex flex-col items-center justify-center text-slate-500 p-8">
+                  <p className="text-sm italic">No actionable recommendations yet.</p>
+                </div>
+              )}
+           </div>
+        </div>
       </div>
     </div>
   );
 };
 
 // --- DYNAMIC Company Dashboard (REFACTORED FOR TEAM CARDS) ---
+
+// --- NEW: Team Detail View (Drill Down) ---
+const TeamDetailView = ({ team, onBack }) => {
+  // Logic to handle N items - using scrollable areas
+  return (
+    <div className="h-full flex flex-col fade-in">
+      {/* Header / Navigation */}
+      <div className="flex items-center gap-4 mb-8 shrink-0">
+        <button 
+          onClick={onBack}
+          className="p-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-slate-300 transition-colors border border-slate-700"
+        >
+          <ArrowLeft size={20} />
+        </button>
+        <div>
+          <h1 className="text-2xl font-bold text-white flex items-center gap-3">
+            {team.name}
+            <span className={`px-3 py-1 rounded-full text-[10px] uppercase tracking-widest border ${
+              team.status === 'Critical' 
+                ? 'bg-red-500/10 border-red-500/20 text-red-400' 
+                : 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400'
+            }`}>
+              {team.status || 'Stable'}
+            </span>
+          </h1>
+          <p className="text-slate-400 text-sm">Deep Dive Analysis & Action Plan</p>
+        </div>
+      </div>
+
+      <div className="flex-1 overflow-y-auto pr-2 pb-10 scrollbar-thin">
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+          
+          {/* Column 1: Executive Summary & Metrics */}
+          <div className="xl:col-span-1 space-y-6">
+            <div className="bg-[#1e293b] border border-slate-700 rounded-2xl p-6 shadow-lg">
+              <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-4">AI Executive Summary</h3>
+              <p className="text-slate-300 italic leading-relaxed border-l-2 border-indigo-500 pl-4">
+                "{team.summary || "No summary available for this team."}"
+              </p>
+            </div>
+
+            {/* Dynamic Logic / Patterns Section */}
+            <div className="bg-[#1e293b] border border-slate-700 rounded-2xl p-6 shadow-lg">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest">Detected Patterns ({team.common_problems?.length || 0})</h3>
+                <Activity size={16} className="text-indigo-400" />
+              </div>
+              <div className="space-y-3 max-h-[400px] overflow-y-auto scrollbar-thin pr-2">
+                {team.common_problems?.map((problem, i) => (
+                  <div key={i} className="p-4 bg-slate-800/50 rounded-xl border border-slate-700/50">
+                    <div className="flex items-start gap-3">
+                      <AlertCircle size={16} className="text-amber-400 shrink-0 mt-0.5" />
+                      <div>
+                        <h4 className="text-sm font-semibold text-slate-200">{problem.problem}</h4>
+                        <p className="text-xs text-slate-400 mt-1">{problem.description || "Root cause analysis pending..."}</p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Column 2 & 3: Strategic Action Plan (Drill Down Content) */}
+          <div className="xl:col-span-2 space-y-6">
+            
+            {/* Recommendations - Handles N items */}
+            <div className="bg-[#1e293b] border border-slate-700 rounded-2xl overflow-hidden shadow-lg">
+              <div className="p-6 border-b border-slate-700 bg-slate-800/30 flex justify-between items-center">
+                <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest">Strategic Recommendations</h3>
+                <span className="bg-indigo-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">{team.recommendations?.length || 0} Actions</span>
+              </div>
+              
+              <div className="divide-y divide-slate-700/50 max-h-[600px] overflow-y-auto scrollbar-thin">
+                {team.recommendations?.map((rec, i) => (
+                  <div key={i} className="p-6 hover:bg-slate-800/20 transition-colors group">
+                    <div className="flex items-start gap-4">
+                      <div className="w-8 h-8 rounded-lg bg-indigo-500/10 flex items-center justify-center shrink-0 text-indigo-400 font-bold text-sm border border-indigo-500/20">
+                        {i + 1}
+                      </div>
+                      <div className="flex-1">
+                        <h4 className="text-base font-semibold text-slate-200 group-hover:text-white transition-colors">
+                          {rec.recommendation}
+                        </h4>
+                        {/* Logic/Reasoning Block if available, otherwise generic text */}
+                        <div className="mt-3 flex gap-2">
+                          <span className="inline-flex items-center gap-1 px-2 py-1 rounded bg-slate-800 text-[10px] text-slate-400 border border-slate-700">
+                            <Brain size={12} /> AI Logic: High Impact
+                          </span>
+                          <span className="inline-flex items-center gap-1 px-2 py-1 rounded bg-slate-800 text-[10px] text-slate-400 border border-slate-700">
+                            <Clock size={12} /> Est. Time: 2 Weeks
+                          </span>
+                        </div>
+                      </div>
+                      <button className="px-4 py-2 bg-slate-800 hover:bg-indigo-600 text-slate-300 hover:text-white text-xs font-medium rounded-lg transition-all">
+                        Implement
+                      </button>
+                    </div>
+                  </div>
+                ))}
+                {(!team.recommendations || team.recommendations.length === 0) && (
+                  <div className="p-8 text-center text-slate-500 italic">No recommendations available.</div>
+                )}
+              </div>
+            </div>
+
+            {/* Team Stats / Logic Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+               <div className="bg-[#1e293b] border border-slate-700 rounded-2xl p-6">
+                 <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-4">Sentiment Logic</h3>
+                 <div className="h-32 flex items-center justify-center border-2 border-dashed border-slate-700 rounded-xl text-slate-500 text-xs">
+                    [Sentiment Visualization Graph Placeholder]
+                 </div>
+               </div>
+               <div className="bg-[#1e293b] border border-slate-700 rounded-2xl p-6">
+                 <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-4">Productivity Correlation</h3>
+                 <div className="h-32 flex items-center justify-center border-2 border-dashed border-slate-700 rounded-xl text-slate-500 text-xs">
+                    [Metric Correlation Graph Placeholder]
+                 </div>
+               </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// --- MODIFIED: Main Company Dashboard ---
 const CompanyDashboard = () => {
   const [companyData, setCompanyData] = useState(null);
   const [teamData, setTeamData] = useState([]);
   const [loading, setLoading] = useState(true);
+  
+  // Drill Down State
+  const [selectedTeam, setSelectedTeam] = useState(null);
   
   // Accordion states
   const [activeRec, setActiveRec] = useState(null);
@@ -651,8 +911,8 @@ const CompanyDashboard = () => {
     const fetchData = async () => {
       try {
         const [compRes, teamRes] = await Promise.all([
-          api.request('/CompanyData/').catch(() => null),
-          api.request('/TeamData/').catch(() => [])
+          api.request('/DashBoardData/').catch(() => null),
+          api.request('/DashBoardData/').catch(() => [])
         ]);
         
         setCompanyData(compRes || { challenges: [], recommendations: [], policies: [] });
@@ -669,23 +929,33 @@ const CompanyDashboard = () => {
   const toggleRec = (idx) => setActiveRec(activeRec === idx ? null : idx);
   const togglePol = (idx) => setActivePol(activePol === idx ? null : idx);
 
-  if (loading) return <div className="text-center text-slate-500 mt-10">Loading enterprise data...</div>;
+  // --- RENDER LOGIC ---
+  
+  if (loading) return <div className="flex items-center justify-center h-full text-slate-500 gap-3"><div className="w-4 h-4 bg-indigo-500 rounded-full animate-bounce"/> Loading enterprise intelligence...</div>;
 
+  // 1. DRILL DOWN VIEW
+  if (selectedTeam) {
+    return <TeamDetailView team={selectedTeam} onBack={() => setSelectedTeam(null)} />;
+  }
+
+  // 2. ENTERPRISE OVERVIEW (Default)
   return (
     <div className="max-w-7xl mx-auto fade-in h-full flex flex-col gap-8 pb-8">
+      
       {/* Top Section: Split View (Enterprise Challenges vs Recs/Policies) */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 h-[calc(100vh-20rem)] min-h-[500px]">
         
-        {/* Left: Enterprise Challenges */}
+        {/* Left: Enterprise Challenges - Handles N items */}
         <div className="flex flex-col h-full overflow-hidden">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-xs font-semibold text-slate-500 uppercase tracking-widest">Enterprise Challenges</h2>
-            <span className="px-2 py-1 bg-indigo-500/10 text-indigo-400 text-[10px] font-bold rounded border border-indigo-500/20">Active Analysis</span>
+            <span className="px-2 py-1 bg-indigo-500/10 text-indigo-400 text-[10px] font-bold rounded border border-indigo-500/20 animate-pulse">Live Feed</span>
           </div>
           <div className="flex-1 overflow-y-auto pr-2 space-y-4 scrollbar-thin">
               {companyData?.challenges?.length > 0 ? (
                 companyData.challenges.map((item, idx) => (
-                  <div key={idx} className="bg-[#1e293b] border border-slate-700 rounded-lg p-5 hover:border-slate-600 transition-colors group">
+                  <div key={idx} className="bg-[#1e293b] border border-slate-700 rounded-lg p-5 hover:border-slate-600 transition-colors group relative overflow-hidden">
+                    <div className="absolute top-0 left-0 w-1 h-full bg-amber-500/50"></div>
                     <h3 className="text-sm font-semibold text-slate-200 group-hover:text-white mb-2">{item.title}</h3>
                     <p className="text-xs text-slate-400 leading-relaxed">{item.description}</p>
                   </div>
@@ -699,9 +969,12 @@ const CompanyDashboard = () => {
         {/* Right: Recommendations & Policies */}
         <div className="flex flex-col h-full gap-6 overflow-hidden">
             
-           {/* Strategic Recommendations */}
-           <div className="flex-1 flex flex-col min-h-0">
-              <h2 className="text-xs font-semibold text-slate-500 uppercase tracking-widest mb-4">Strategic Recommendations</h2>
+            {/* Strategic Recommendations */}
+            <div className="flex-1 flex flex-col min-h-0">
+              <div className="flex justify-between items-center mb-4">
+                 <h2 className="text-xs font-semibold text-slate-500 uppercase tracking-widest">Strategic Recommendations</h2>
+                 <span className="text-[10px] text-slate-600 font-mono">{companyData?.recommendations?.length || 0} FOUND</span>
+              </div>
               <div className="flex-1 overflow-y-auto pr-2 bg-[#1e293b] border border-slate-700 rounded-lg scrollbar-thin">
                 {companyData?.recommendations?.map((item, idx) => (
                   <div key={idx} className="border-b border-slate-700/50 last:border-0">
@@ -722,11 +995,11 @@ const CompanyDashboard = () => {
                   </div>
                 ))}
               </div>
-           </div>
+            </div>
 
-           {/* Policy Changes */}
-           <div className="flex-1 flex flex-col min-h-0">
-              <h2 className="text-xs font-semibold text-slate-500 uppercase tracking-widest mb-4">Policy Changes</h2>
+            {/* Policy Changes */}
+            <div className="flex-1 flex flex-col min-h-0">
+              <h2 className="text-xs font-semibold text-slate-500 uppercase tracking-widest mb-4">Policy Updates</h2>
               <div className="flex-1 overflow-y-auto pr-2 bg-[#1e293b] border border-slate-700 rounded-lg scrollbar-thin">
                 {companyData?.policies?.map((item, idx) => (
                   <div key={idx} className="border-b border-slate-700/50 last:border-0">
@@ -745,93 +1018,64 @@ const CompanyDashboard = () => {
                   </div>
                 ))}
               </div>
-           </div>
+            </div>
         </div>
       </div>
 
-      {/* Bottom Section: Individual Team Analysis (NEW LAYOUT) */}
-      <div className="mt-8 space-y-10">
-        <h2 className="text-xs font-semibold text-slate-500 uppercase tracking-widest mb-6">Detailed Team Breakdown</h2>
+      {/* Bottom Section: Teams Grid (Now Clickable for Drill Down) */}
+      <div className="mt-8">
+        <h2 className="text-xs font-semibold text-slate-500 uppercase tracking-widest mb-6">Departmental Analysis</h2>
         
-        {teamData.map((team, idx) => (
-          <div key={idx} className="bg-[#1e293b]/20 border border-slate-800 rounded-[2rem] p-8 fade-in shadow-xl">
-            
-            {/* Team Header */}
-            <div className="flex items-center gap-3 mb-8 px-2">
-              <div className="p-2 bg-indigo-500/10 rounded-lg">
-                <Users className="text-indigo-400" size={20} />
-              </div>
-              <h3 className="text-xl font-bold text-white tracking-tight">{team.name || `Team ${idx + 1}`}</h3>
-            </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+          {teamData.map((team, idx) => (
+            <div 
+              key={idx} 
+              onClick={() => setSelectedTeam(team)}
+              className="bg-[#1e293b] border border-slate-800 rounded-2xl p-6 hover:border-indigo-500/50 hover:bg-slate-800/80 transition-all cursor-pointer group shadow-xl hover:shadow-2xl hover:shadow-indigo-500/10 relative overflow-hidden"
+            >
+               {/* Hover Effect Gradient */}
+               <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/0 via-indigo-500/0 to-indigo-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
 
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-              
-              {/* Left Column: Systemic Team Patterns (1/3 Width) */}
-              <div className="lg:col-span-4 space-y-4">
-                <h4 className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-4 ml-1">Systemic Team Patterns</h4>
-                {team.common_problems?.map((p, i) => (
-                  <div key={i} className="bg-[#1e293b] border border-slate-700/50 p-6 rounded-2xl hover:border-slate-600 transition-colors">
-                    <h5 className="text-sm font-bold text-slate-200 mb-2">{p.problem}</h5>
-                    <p className="text-xs text-slate-400 leading-relaxed">{p.description || "Pattern analysis in progress."}</p>
-                  </div>
-                ))}
-              </div>
+               <div className="flex justify-between items-start mb-4 relative z-10">
+                 <div className="flex items-center gap-3">
+                    <div className="p-2 bg-slate-800 rounded-lg group-hover:bg-indigo-500/20 group-hover:text-indigo-400 transition-colors text-slate-400">
+                      <Users size={18} />
+                    </div>
+                    <h3 className="text-lg font-bold text-slate-200 group-hover:text-white">{team.name || `Team ${idx + 1}`}</h3>
+                 </div>
+                 <ChevronRight className="text-slate-600 group-hover:text-indigo-400 transform group-hover:translate-x-1 transition-all" />
+               </div>
 
-              {/* Right Column: Recommendations and Health (2/3 Width) */}
-              <div className="lg:col-span-8 flex flex-col gap-6">
-                
-                {/* Top: Leadership Recommendations */}
-                <div className="bg-[#1e293b] border border-slate-700/50 rounded-2xl overflow-hidden">
-                  <div className="p-4 bg-slate-800/30 border-b border-slate-700/50">
-                    <h4 className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Leadership Recommendations</h4>
-                  </div>
-                  <div className="divide-y divide-slate-700/50">
-                    {team.recommendations?.map((rec, i) => (
-                      <div key={i} className="p-4 flex items-center justify-between hover:bg-slate-700/30 transition-colors cursor-pointer group">
-                        <div className="flex items-center gap-3">
-                          <div className="w-1.5 h-1.5 rounded-full bg-indigo-500 shadow-[0_0_8px_rgba(99,102,241,0.6)]" />
-                          <span className="text-sm font-medium text-slate-200 group-hover:text-white">{rec.recommendation}</span>
-                        </div>
-                        <ChevronRight size={14} className="text-slate-600 group-hover:text-slate-400" />
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Bottom: Team Health (Scores Removed) */}
-                <div className="bg-[#1e293b] border border-slate-700/50 rounded-2xl p-8 flex flex-col justify-center min-h-[200px]">
-                  <h4 className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-6">Overall Team Health</h4>
-                  
-                  <div className="relative">
-                    <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-indigo-500 to-purple-500 rounded-full" />
-                    <p className="text-slate-300 text-lg leading-relaxed italic pl-8 pr-4">
-                      "{team.summary || "Health data is being synthesized from current team activity."}"
-                    </p>
-                  </div>
-
-                  <div className="flex gap-2 mt-8">
-                    <span className={`px-4 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider border ${
-                      team.status === 'Critical' 
-                      ? 'bg-red-500/10 border-red-500/20 text-red-400' 
-                      : 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400'
+               <div className="space-y-4 relative z-10">
+                 <p className="text-xs text-slate-400 line-clamp-2 italic h-8">
+                   "{team.summary || "Click to analyze..."}"
+                 </p>
+                 
+                 <div className="flex items-center justify-between pt-4 border-t border-slate-700/50">
+                    <span className={`px-2 py-1 rounded-md text-[10px] font-bold uppercase border ${
+                      team.status === 'Critical' ? 'bg-red-500/10 border-red-500/20 text-red-400' : 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400'
                     }`}>
-                      {team.status || 'Stable Performance'}
+                      {team.status || 'Stable'}
                     </span>
-                    <span className="px-4 py-1.5 bg-slate-700/30 border border-slate-600/30 rounded-full text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                      Active Analysis
+                    <span className="text-[10px] text-slate-500 font-mono">
+                      {team.common_problems?.length || 0} Issues detected
                     </span>
-                  </div>
-                </div>
-
-              </div>
+                 </div>
+               </div>
             </div>
-          </div>
-        ))}
+          ))}
+          
+          {/* Empty State Handler for N items */}
+          {teamData.length === 0 && (
+             <div className="col-span-full py-12 text-center border-2 border-dashed border-slate-800 rounded-2xl">
+                <p className="text-slate-500">No team data found.</p>
+             </div>
+          )}
+        </div>
       </div>
     </div>
   );
 };
-
 // --- Static Privacy ---
 const PrivacyPolicyView = () => (
   <div className="max-w-4xl mx-auto bg-[#1e293b] p-10 rounded-2xl border border-slate-700 fade-in text-slate-300">

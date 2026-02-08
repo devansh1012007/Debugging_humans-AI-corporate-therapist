@@ -6,27 +6,41 @@ def ai_model(chats):
     pass
 
 def generate_drill_down_lists(target):
-        subordinates = target.children.all()
-        drill_down_list, created = UserDrillDown.objects.get_or_create(
-            owner=target.owner,
-            defaults={'content': []}
-        )
-        #OneToOneField in models
-        drill_down = []
-        # the 1st ideaa is of the target itselfs
-        drill_down.append({
-            "node_id": target.id,##### from here frontent can get the id of the node and make api calls to get data for that node
-            "name": target.name,
-            "has_team": target.children.exists() 
+    # 1. Fetch direct subordinates
+    subordinates = target.children.all()
+    
+    # 2. Get or create the container for this specific user
+    # Note: Using 'owner' to match your UserDrillDown model
+    drill_down_list, created = UserDrillDown.objects.get_or_create(
+        owner=target.user,
+        defaults={'content': []}
+    )
+
+    # 3. Build the new list
+    new_drill_down = []
+    
+    # Add the current user (The "Root" of this view)
+    new_drill_down.append({
+        "node_id": target.id,
+        "name": target.name,
+        "title": target.structure_level.name if target.structure_level else "No Title",
+        "has_team": subordinates.exists() 
+    })
+
+    # Add all direct reports
+    for child in subordinates:
+        new_drill_down.append({
+            "node_id": child.id,
+            "name": child.name,
+            "title": child.structure_level.name if child.structure_level else "No Title",
+            "has_team": child.children.exists() 
         })
-        for child in subordinates:
-            drill_down.append({
-                "node_id": child.id,
-                "name": child.name,
-                "has_team": child.children.exists() 
-            })
-        drill_down_list.content = drill_down
-        drill_down_list.save()
+
+    # 4. Save the new list directly (Overwriting the old one)
+    drill_down_list.content = new_drill_down
+    drill_down_list.save()
+    
+    return new_drill_down
 
 
 def get_direct_reports_ids(root_id, include_self=True):
@@ -77,7 +91,7 @@ def process_midnight_snapshots():
                     chats.append(chat.content)
             # pass chats to ai model and get avg back
             TeamData = ai_model(chats)
-            processed_data = {
+            processed_data = {# cut this bs and the format of setup_dev_data
                 "employee_name": employee.name,
                 "employee_title": employee.OrgNode.structure_level.name,
                 "team_size": direct_reports.count(),

@@ -54,10 +54,8 @@ class OrgNode(models.Model):
 
 # --- USER DATA MODELS ---
 
-class UserDashboard(OwnedModel):
-    # Removed direct User link to avoid conflicts. Access via Node -> User
-    #node = models.OneToOneField(OrgNode, on_delete=models.CASCADE, related_name='user_dashboard')
-    owner = models.ForeignKey(User, on_delete=models.CASCADE)
+class UserDashboard(models.Model):
+    owner = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
     content = models.JSONField()
 
 # Fixed Typo: Dashbioard -> Dashboard
@@ -75,7 +73,7 @@ class UserDrillDown(OwnedModel):
 
 class TeamData(models.Model):
     node = models.OneToOneField(OrgNode, on_delete=models.CASCADE, related_name='team_data')
-    content = models.JSONField(default=dict)
+    content = models.JSONField(default=list)
 
 class TeamDataHistory(models.Model):
     # Changed 'owner' to 'node_ref' to avoid confusion with User model
@@ -98,7 +96,7 @@ class UserFeedback(OwnedModel):
     feedback = models.TextField()
     rating = models.IntegerField(default=5)
     submitted_at = models.DateTimeField(auto_now_add=True)
-
+'''
 class PrivacyPolicyAcceptance(models.Model):
     #user = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True)
     ip_address = models.GenericIPAddressField(null=True)
@@ -108,7 +106,7 @@ class PrivacyPolicyAcceptance(models.Model):
 
     def __str__(self):
         return f"Consent {self.consent_version} by {self.ip_address}"
-    
+'''    
 class UserConsent(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True)
     ip_address = models.GenericIPAddressField(null=True)
@@ -118,3 +116,8 @@ class UserConsent(models.Model):
 
     def __str__(self):
         return f"Consent {self.consent_version} by {self.ip_address}"
+    
+
+class Tharipistneeded(OwnedModel):
+    in_need = models.BooleanField(default=False)
+    submitted_at = models.DateTimeField(auto_now_add=True)
