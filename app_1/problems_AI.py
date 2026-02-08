@@ -2,23 +2,130 @@
 # problems_AI.py
 import ollama
 import pydantic
+from ollama import Client
+import os
 
-# example chat data
-# [{"Prompt": "I feel tired", "Response": "Can you explain more?"},{"Prompt": "I am jsut drained from work and I feel like there is nothing to lean on", "Response": "Why do you feel this way?"}]
-#example of exiting problem 
-# exiting problems = [{problem : highly stressed, suggestion : u should take breaks and practice 1,2,3,4,5}, {problem : overwork, suggestion : set boundries}]
-# i will give ai chat data and say assess the problems in the chat and check if that problem already exits in db, if not add the problem with suggestion to improve from the Response that ai has given and return me the list of prob 
-# Example output = [{problem : highly stressed, suggestion : u should take breaks and practice 1,2,3,4,5}, {problem : overwork, suggestion : set boundries}, {problem : loneliness, suggestion : join social groups and engage more with people}]
 from typing import List
 from pydantic import BaseModel
 # this will be updated  soon
 class Problem(BaseModel):
     problem: str
-    suggestion: str
+    description: str
+
+class positivepoint(BaseModel):
+    positive: str
+
+class positivepointlister(BaseModel):
+    positives : list[positivepoint]
+
+class recommendation(BaseModel):
+    recommendation : str
+
+class recommendationsLister(BaseModel):
+    recommendations : list[recommendation]
 
 class ProblemList(BaseModel):
-    problems: List[Problem]
+    common_problems: List[Problem]
 
+class policy_change(BaseModel):
+    title : str
+    description : str
+
+class policy_changesLister(BaseModel):
+    policy_changes : list[policy_change]
+
+class userDashboardLister(BaseModel):
+    positives : List[positivepoint]
+    recommendations : List[recommendation]
+    common_problems : List[Problem]
+
+class TeamDashbordLister(BaseModel):
+    policy_changes : list[policy_change]
+    common_problems : List[Problem]
+    recommendations : List[recommendation]
+
+def UserDashboard(chats, exiting_data):
+    exiting_data_str = str(exiting_data)
+    prompt = f"""   
+
+    Existing Database:
+    {exiting_data_str}
+
+    Chat Data to Analyze:
+    {chats}
+
+    """
+    ai_url = os.environ.get('AI_SERVER_URL', 'http://192.168.29.162:11434')
+    client = Client(host=ai_url,)#timeout=httpx.Timeout(180.0) 
+    try:
+        response_obj = client.chat(model='llama3.2:1b',
+                                   messages=[{'role': 'user', 'content': prompt}],
+                                   format=userDashboardLister.model_json_schema(),
+                                   )
+        output = userDashboardLister.model_validate_json(response_obj['message']['content'])
+        '''if hasattr(response_obj, 'message'):
+            final_text = response_obj.message.content
+        elif isinstance(response_obj, dict):
+            final_text = response_obj.get('message', {}).get('content', '')
+        else:
+            final_text = str(response_obj)'''
+
+    except Exception as e:
+        output = f"Error: {str(e)}"
+    return {
+        "content": output
+        }
+
+def TeamDashboard(chats, exiting_data):
+    exiting_data_str = str(exiting_data)
+    prompt = f"""   
+
+    Existing Database:
+    {exiting_data_str}
+
+    Chat Data to Analyze:
+    {chats}
+
+    """
+    ai_url = os.environ.get('AI_SERVER_URL', 'http://192.168.29.162:11434')
+    client = Client(host=ai_url,)#timeout=httpx.Timeout(180.0) 
+    try:
+        response_obj = client.chat(model='llama3.2:1b',
+                                   messages=[{'role': 'user', 'content': prompt}],
+                                   format=TeamDashbordLister.model_json_schema(),
+                                   )
+        
+        output = TeamDashbordLister.model_validate_json(response_obj['message']['content'])
+
+
+        '''if hasattr(response_obj, 'message'):
+            final_text = response_obj.message.content
+        elif isinstance(response_obj, dict):
+            final_text = response_obj.get('message', {}).get('content', '')
+        else:
+            final_text = str(response_obj)
+        '''
+    except Exception as e:
+        output = f"Error: {str(e)}"
+    return {
+        "content": output
+        }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+'''
 def prob_lister(chat_data, existing_probs):
     # Convert existing problems to a string for the prompt
     existing_str = str(existing_probs)
@@ -55,7 +162,7 @@ class teamProblem(BaseModel):
 class teamProblemList(BaseModel):
     problems: List[teamProblem]
 
-def common_problem_lister(total_team_problems):
+def common_problem_lister(total_team_problems):## team problems 
     existing_str = str(total_team_problems)
     
     prompt = f"""
@@ -82,19 +189,18 @@ def common_problem_lister(total_team_problems):
     return output.problems
 
 
-def team_summary(abt_user):
+def positive_points(chats):
     prompt = f"""
-    You are an analytical assistant. 
-    1. Analyze the following chat data to provide a concise summary of the team's overall psychological and lifestyle challenges.
-    2. Provide actionable recommendations to address these challenges.
-
-    Chat Data to Analyze:
-    {abt_user}
+    you are analytical assistant, list all the good possitive points about the user but NOT THE ASSISTANT from the given data :
+    {chats}
     """
-
     response = ollama.chat(
         model='llama3.2:1b', 
         messages=[{'role': 'user', 'content': prompt}],
     )
-
     return response['message']['content']
+
+def policy_changes():
+    pass
+
+'''

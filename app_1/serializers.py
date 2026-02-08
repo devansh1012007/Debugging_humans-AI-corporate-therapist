@@ -83,18 +83,13 @@ class UserFeedbackSerializer(serializers.ModelSerializer):
         fields = ['feedback', 'rating', 'submitted_at', 'owner']
     def create(self, validated_data):
         return UserFeedback.objects.create(**validated_data)
-'''class PrivacyPolicyAcceptanceSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = PrivacyPolicyAcceptance
-        fields = ['user', 'ip_address', 'user_agent', 'agreed_at', 'current_version']
-        #read_only_fields = ['id', 'accepted_at', 'created_at', 'user']
-'''
+
 class UserConsentSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserConsent
         # We only require 'consent_version' from the user input
         fields = ['user', 'ip_address', 'user_agent', 'agreed_at', 'consent_version']
-        #read_only_fields = ['id', 'ip_address', 'user_agent', 'agreed_at', 'user']
+        read_only_fields = ['id', 'ip_address', 'user_agent', 'agreed_at', 'user']
 
 # --- HISTORY & SUMMARY SERIALIZERS ---
 
@@ -140,4 +135,10 @@ class RegisterSerializer(serializers.ModelSerializer):
 class TherapistNeededSerializer(serializers.ModelSerializer):
     class Meta:
         model = Tharipistneeded
-        fields = ['in_need', 'submitted_at', 'owner']
+        fields = '__all__'
+        # Add this to prevent the "This field is required" error
+        extra_kwargs = {
+            'owner': {'read_only': True}, 
+            'submitted_at': {'read_only': True},
+            'in_need': {'read_only': True}
+        }

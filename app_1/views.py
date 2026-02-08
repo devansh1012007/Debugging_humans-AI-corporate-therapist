@@ -1,5 +1,5 @@
 # views.py
-from datetime import timezone
+from django.utils import timezone
 import json
 import math
 import os
@@ -13,7 +13,7 @@ from django.shortcuts import get_object_or_404
 from django.db import transaction
 from django.http import StreamingHttpResponse
 from django.contrib.auth.models import User
-
+from rest_framework.decorators import authentication_classes
 # Social Auth
 from allauth.socialaccount.providers.google.views import GoogleOAuth2Adapter
 from allauth.socialaccount.providers.oauth2.client import OAuth2Client
@@ -61,6 +61,7 @@ class ChatViewSet(viewsets.ModelViewSet):
         current_history = history_obj.content if isinstance(history_obj.content, list) else []
         #current_history = current_history[:-1]
         # Context Window Logic
+        
         a = []
         context_window = []
         total_words = 0
@@ -73,6 +74,8 @@ class ChatViewSet(viewsets.ModelViewSet):
                 get_chat_summary = summarize_chat_history(current_history[:-len(a)])
                 context_window.append(get_chat_summary)
                 break
+        ### here v can later add depalyed summary bringing it from d
+        context_window.append(a)
 
         ### here v can later add depalyed summary bringing it from d
 
@@ -92,8 +95,8 @@ class ChatViewSet(viewsets.ModelViewSet):
                 
                 # Database update MUST happen after stream finishes or be handled asynchronously
                 # Doing it here is risky if connection breaks, but acceptable for MVP
-                current_history.append({"role": "user", "content": user_prompt})
-                current_history.append({"role": "assistant", "content": full_reply})
+                current_history.append({"role": "user", "message": user_prompt})
+                current_history.append({"role": "assistant", "message": full_reply})
                 history_obj.content = current_history
                 history_obj.to_be_summarized = True
                 history_obj.save()
@@ -192,19 +195,26 @@ class UserConsentViewSet(viewsets.ModelViewSet):
             user_agent=self.request.META.get('HTTP_USER_AGENT', ''),
             user=self.request.user if self.request.user.is_authenticated else None
         )
-
-    def needs_new_consent(request):
-    # 1. Define your current required version (usually in settings.py)
-        CURRENT_VERSION = "v2.0" 
+    @action(detail=False, methods=['post'])
+    @authentication_classes([]) # <--- THIS IS THE FIX. It disables auth/CSRF for this check.
+    def needs_new_consent(self, request):
+        """
+        Endpoint to check if the user needs to provide consent.
+        """
+        # 1. Define your current required version
+        CURRENT_VERSION = "v1.0-2026" 
 
         # 2. Get the version from the user's cookie
         user_held_version = request.COOKIES.get('consent_version_held')
 
-        # 3. Compare
-        if not user_held_version or user_held_version != CURRENT_VERSION:
-            return True # Trigger the pop-up/form again
+        print(f"DEBUG: Cookie received: {user_held_version}") # Check your server console for this print
 
-        return False
+        # 3. Compare
+        needs_consent = False
+        if not user_held_version or user_held_version != CURRENT_VERSION:
+            needs_consent = True
+
+        return Response({'needs_consent': needs_consent})
 
 
 class OrgNodeViewSet(viewsets.ModelViewSet):
@@ -329,8 +339,12 @@ class GoogleLogin(SocialLoginView):
         return response
     
 class TherapistNeededView(viewsets.ModelViewSet):
+    queryset = Tharipistneeded.objects.all()
     serializer_class = TherapistNeededSerializer
     permission_classes = [IsAuthenticated]
-    @action(detail=False, methods=['post'])
     def perform_create(self, serializer):
-        serializer.save(owner=self.request.user, submitted_at=timezone.now(), in_need=True)
+        serializer.save(
+            owner=self.request.user, 
+            submitted_at=timezone.now(), 
+            in_need=True
+        )

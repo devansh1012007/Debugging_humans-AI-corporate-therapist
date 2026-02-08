@@ -3,18 +3,17 @@ from django.contrib.auth.models import User
 from app_1.models import Company, StructureLevel, OrgNode, UserDashboard, TeamData
 from app_1.tasks import generate_drill_down_lists
 import random
-
+UserDashboard.objects.all().delete()
+TeamData.objects.all().delete()
+OrgNode.objects.all().delete()
+User.objects.exclude(is_superuser=True).delete()
+Company.objects.all().delete()
 class Command(BaseCommand):
     help = 'Generates a realistic Indian corporate hierarchy with mental health data'
 
     def handle(self, *args, **kwargs):
         self.stdout.write("Cleaning old data...")
         # Optional: Uncomment if you want to wipe data every time
-        UserDashboard.objects.all().delete()
-        TeamData.objects.all().delete()
-        OrgNode.objects.all().delete()
-        User.objects.exclude(is_superuser=True).delete()
-        Company.objects.all().delete()
 
         # --- 1. Setup Company & Levels ---
         comp, _ = Company.objects.get_or_create(name="Techy Solutions")
@@ -1048,7 +1047,7 @@ class Command(BaseCommand):
         # CEO Team Dashboard
         TeamData.objects.create(
             node=node_rajesh,
-            content={
+            content=[{
                 "common_problems": [
                     {"problem": "Cross-Department Silos", "description": "Engineering, Sales, and HR operating independently leading to misalignment on priorities and duplicated efforts"},
                     {"problem": "Burnout Epidemic", "description": "60% of employees showing signs of emotional exhaustion with increasing sick leave and turnover intentions"},
@@ -1074,13 +1073,13 @@ class Command(BaseCommand):
                     {"title": "Sabbatical Program", "description": "Offer 4-week paid sabbatical after 5 years of service for long-term employee renewal and retention"},
                     {"title": "Manager Support Ratio", "description": "Limit manager to direct report ratio to maximum 8:1 to ensure adequate time for people management and support"}
                 ]
-            }
+            }]
         )
 
         # VP Engineering Team Dashboard
         TeamData.objects.create(
             node=node_priya,
-            content={
+            content=[{
                 "common_problems": [
                     {"problem": "On-Call Burnout", "description": "Engineers experiencing sleep disruption and constant hypervigilance due to 24/7 on-call rotation expectations"},
                     {"problem": "Technical Debt Overwhelm", "description": "Accumulating shortcuts and workarounds creating anxiety about system stability and future maintainability"},
@@ -1106,13 +1105,13 @@ class Command(BaseCommand):
                     {"title": "Post-Incident Recovery", "description": "Mandatory day off after major incidents for engineers who led troubleshooting and resolution"},
                     {"title": "Remote Work Flexibility", "description": "Allow permanent remote work option for engineering roles to improve work-life balance and reduce commute stress"}
                 ]
-            }
+            }]
         )
 
         # VP Sales Team Dashboard
         TeamData.objects.create(
             node=node_vikram,
-            content={
+            content=[{
                 "common_problems": [
                     {"problem": "Quota Pressure Culture", "description": "Intense quarterly pressure creating boom-bust stress cycles and short-term thinking over sustainable performance"},
                     {"problem": "Client Entertainment Burnout", "description": "Expected evening and weekend client entertainment causing work-life boundary erosion and health impacts"},
@@ -1138,13 +1137,13 @@ class Command(BaseCommand):
                     {"title": "Right to Disconnect", "description": "No expectation of responses to client emails/calls between 8 PM - 8 AM or on weekends"},
                     {"title": "Sales Therapy Program", "description": "Provide access to therapists specializing in sales stress, rejection resilience, and performance anxiety"}
                 ]
-            }
+            }]
         )
 
         # Director HR Team Dashboard
         TeamData.objects.create(
             node=node_anjali,
-            content={
+            content=[{
                 "common_problems": [
                     {"problem": "Vicarious Trauma Exposure", "description": "HR team absorbing emotional distress from employee crisis situations, harassment cases, and terminations without adequate support"},
                     {"problem": "Ethical Conflict Stress", "description": "Caught between employee advocacy and business priorities creating moral distress and role confusion"},
@@ -1170,13 +1169,13 @@ class Command(BaseCommand):
                     {"title": "HR Recovery Days", "description": "Provide additional PTO days specifically for HR team recovery from emotionally demanding periods"},
                     {"title": "Professional Development Budget", "description": "Increase budget for HR certifications, conferences, and mental health specialized training"}
                 ]
-            }
+            }]
         )
 
         # Manager Team Dashboards
         TeamData.objects.create(
             node=node_arjun,
-            content={
+            content=[{
                 "common_problems": [
                     {"problem": "On-Call Alert Fatigue", "description": "Team members experiencing sleep deprivation from nighttime production alerts affecting health and performance"},
                     {"problem": "Context Switching Overhead", "description": "Engineers pulled into too many meetings and interruptions preventing deep focus work on complex problems"},
@@ -1192,12 +1191,12 @@ class Command(BaseCommand):
                     {"title": "No-Meeting Mornings", "description": "Block 9 AM - 12 PM daily for focused engineering work without meeting interruptions"},
                     {"title": "Technical Debt Sprints", "description": "Dedicate first sprint of each quarter exclusively to technical debt reduction and refactoring"}
                 ]
-            }
+            }]
         )
 
         TeamData.objects.create(
             node=node_meera,
-            content={
+            content=[{
                 "common_problems": [
                     {"problem": "Design-Engineering Friction", "description": "Constant tension over feasibility, timelines, and quality standards causing team stress and conflict"},
                     {"problem": "Perfectionism Paralysis", "description": "Engineers spending excessive time on pixel-perfect implementation causing delays and diminishing returns"},
@@ -1213,12 +1212,12 @@ class Command(BaseCommand):
                     {"title": "Polish Time Limits", "description": "Timebox visual refinement to maximum 20% of feature development time"},
                     {"title": "Framework Stability Policy", "description": "Evaluate new frameworks annually, not reactively, to reduce constant technology churn"}
                 ]
-            }
+            }]
         )
 
         TeamData.objects.create(
             node=node_karthik,
-            content={
+            content=[{
                 "common_problems": [
                     {"problem": "Long Sales Cycle Uncertainty", "description": "9-12 month enterprise deals creating prolonged stress and difficulty with revenue forecasting"},
                     {"problem": "Travel Lifestyle Impact", "description": "15-20 days monthly travel disrupting health routines, sleep, and family relationships"},
@@ -1234,12 +1233,12 @@ class Command(BaseCommand):
                     {"title": "Compensation Restructure", "description": "Shift to 65/35 base/commission split to reduce income volatility anxiety"},
                     {"title": "Deal Support System", "description": "Provide access to sports psychology or performance coaching for high-pressure situations"}
                 ]
-            }
+            }]
         )
 
         TeamData.objects.create(
             node=node_divya,
-            content={
+            content=[{
                 "common_problems": [
                     {"problem": "Volume Overwhelm", "description": "Managing 40+ small accounts simultaneously creating constant urgency and organizational chaos"},
                     {"problem": "Call Rejection Accumulation", "description": "Hearing 'no' 50+ times daily eroding confidence and emotional resilience over time"},
@@ -1255,12 +1254,12 @@ class Command(BaseCommand):
                     {"title": "Screen Break Requirements", "description": "Mandate 10-minute break every 90 minutes away from screens for health protection"},
                     {"title": "Metric Focus Shift", "description": "Emphasize quality conversations and conversion rates over pure activity volume"}
                 ]
-            }
+            }]
         )
 
         TeamData.objects.create(
             node=node_rahul,
-            content={
+            content=[{
                 "common_problems": [
                     {"problem": "Requisition Overload", "description": "15+ concurrent open positions with aggressive timelines creating impossible workload expectations"},
                     {"problem": "Candidate Ghosting Impact", "description": "Emotional investment in candidates who disappear at offer stage causing disappointment and frustration"},
@@ -1276,13 +1275,13 @@ class Command(BaseCommand):
                     {"title": "Hiring Manager Alignment", "description": "Require completed intake questionnaire before opening requisitions to set clear expectations"},
                     {"title": "Recovery Time Policy", "description": "Provide 1-week break after major hiring campaigns for recruiter recovery"}
                 ]
-            }
+            }]
         )
 
         # Team Lead Team Dashboards
         TeamData.objects.create(
             node=node_sanjay,
-            content={
+            content=[{
                 "common_problems": [
                     {"problem": "On-Call Sleep Disruption", "description": "Team responding to production alerts 2-3 times nightly during on-call weeks destroying sleep quality and recovery"},
                     {"problem": "Technical Debt Guilt", "description": "Team knowing architectural shortcuts will cause future problems creating chronic background worry"},
@@ -1298,12 +1297,12 @@ class Command(BaseCommand):
                     {"title": "Technical Debt Budget", "description": "Allocate minimum 20% of sprint capacity for addressing technical debt"},
                     {"title": "Requirement Stability", "description": "Freeze requirements 48 hours after sprint planning with formal change request process"}
                 ]
-            }
+            }]
         )
 
         TeamData.objects.create(
             node=node_pooja,
-            content={
+            content=[{
                 "common_problems": [
                     {"problem": "Gateway Critical Path Pressure", "description": "Being dependency for all services creating constant pressure to never fail and high anxiety"},
                     {"problem": "Performance Micro-optimization", "description": "Team spending excessive time optimizing latency with diminishing returns and increasing stress"},
@@ -1319,12 +1318,12 @@ class Command(BaseCommand):
                     {"title": "Knowledge Distribution", "description": "Require pairing and documentation for all critical system components"},
                     {"title": "Gateway Architecture Review", "description": "Quarterly architecture review to identify and eliminate single points of failure"}
                 ]
-            }
+            }]
         )
 
         TeamData.objects.create(
             node=node_aditya,
-            content={
+            content=[{
                 "common_problems": [
                     {"problem": "Design Handoff Incompleteness", "description": "Receiving partial designs mid-development causing rework frustration and timeline slippage"},
                     {"problem": "Browser Compatibility Rabbit Holes", "description": "Obscure browser bugs consuming disproportionate debugging time and energy"},
@@ -1340,12 +1339,12 @@ class Command(BaseCommand):
                     {"title": "Browser Testing Automation", "description": "Invest in cloud testing services to reduce manual browser debugging burden"},
                     {"title": "Innovation Time", "description": "Allocate 10% time for exploring new frontend technologies and creative projects"}
                 ]
-            }
+            }]
         )
 
         TeamData.objects.create(
             node=node_neha,
-            content={
+            content=[{
                 "common_problems": [
                     {"problem": "App Store Rejection Fear", "description": "Anxiety about Apple/Google rejection causing excessive pre-submission testing and delays"},
                     {"problem": "Platform Fragmentation Exhaustion", "description": "Supporting both iOS and Android with different paradigms causing mental context switching"},
@@ -1361,12 +1360,12 @@ class Command(BaseCommand):
                     {"title": "Cross-Platform Strategy", "description": "Evaluate React Native or Flutter to reduce platform maintenance burden"},
                     {"title": "Beta Testing Requirements", "description": "Mandate minimum 2-week beta period before production releases"}
                 ]
-            }
+            }]
         )
 
         TeamData.objects.create(
             node=node_manish,
-            content={
+            content=[{
                 "common_problems": [
                     {"problem": "Long Cycle Forecasting Difficulty", "description": "9-12 month deals making accurate revenue forecasting impossible and creating leadership tension"},
                     {"problem": "Executive Presentation Anxiety", "description": "High-stakes C-suite meetings causing significant pre-presentation stress and self-doubt"},
@@ -1382,12 +1381,12 @@ class Command(BaseCommand):
                     {"title": "Forecast Methodology", "description": "Implement multi-quarter rolling forecasts to account for long sales cycles"},
                     {"title": "Executive Skills Training", "description": "Provide annual executive presence and C-suite engagement training"}
                 ]
-            }
+            }]
         )
 
         TeamData.objects.create(
             node=node_sneha,
-            content={
+            content=[{
                 "common_problems": [
                     {"problem": "High-Volume Rejection Fatigue", "description": "Team hearing 'no' hundreds of times daily accumulating emotional toll despite individual resilience"},
                     {"problem": "Metric Surveillance Anxiety", "description": "Constant activity monitoring creating performance pressure and sense of being watched"},
@@ -1403,12 +1402,12 @@ class Command(BaseCommand):
                     {"title": "Peer Support Sessions", "description": "Weekly team sessions for processing rejection and celebrating resilience"},
                     {"title": "Script Evolution", "description": "Quarterly script updates with team input to maintain freshness and engagement"}
                 ]
-            }
+            }]
         )
 
         TeamData.objects.create(
             node=node_rohit,
-            content={
+            content=[{
                 "common_problems": [
                     {"problem": "Campus Season Intensity", "description": "3-month recruitment blitz with constant travel and events causing complete team exhaustion"},
                     {"problem": "Candidate Rejection Burden", "description": "Disappointing hundreds of hopeful students causing compassion fatigue and emotional drain"},
@@ -1424,7 +1423,7 @@ class Command(BaseCommand):
                     {"title": "Post-Season Recovery", "description": "Mandatory 1-week break after campus season completion for team recovery"},
                     {"title": "Role Diversification", "description": "Expand campus recruiter responsibilities to include employer branding and intern programs year-round"}
                 ]
-            }
+            }]
         )
 
         # Final summary

@@ -12,7 +12,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.environ.get('SECRET_KEY', default='django-insecure-!&p4_a3_(x65@1c*m_93#dztsav#1lj!m0s4z0d@b$wkn8s$l7')
 
 DEBUG = True
-
+CORS_ALLOW_CREDENTIALS = True
 #CSRF_TRUSTED_ORIGINS=['*']
 
 ALLOWED_HOSTS = ['*']# very important for docker deployment and for server access
