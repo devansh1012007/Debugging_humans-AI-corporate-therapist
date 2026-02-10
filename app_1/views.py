@@ -34,6 +34,7 @@ from .serializers import (
 from .Ai import therpy_ai_response, consiler_ai_responce, summarize_chat_history
 from .permissions import IsHierarchicalSuperior
 from .tasks import generate_drill_down_lists
+
 class ChatViewSet(viewsets.ModelViewSet):
     serializer_class = ChatSerializer
     permission_classes = [permissions.IsAuthenticated]
