@@ -1,74 +1,127 @@
+# app_1/models.py
+from django.db import models
 # models.py
 from django.db import models
 from django.contrib.auth.models import User
 import uuid
 
-# Create your models here.
-
-#model 0 (base model)
 class OwnedModel(models.Model):
     owner = models.ForeignKey(User, on_delete=models.CASCADE)
-    
     class Meta:
-        abstract = True # This tells Django not to create a table for this base class
+        abstract = True
 
-
-# modele 1 
-# for user home page
-# it has things like user's list of old chat
-class UserHomepageDB (OwnedModel):
-    title = models.CharField(max_length=255, default="New Chat") # v need to add the name of problem here when our ai gets better 
+class UserHomepageDB(OwnedModel):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    AiMode = models.CharField(max_length=20,default="therapy")
+    title = models.CharField(max_length=255, default="New Chat")
+    AiMode = models.CharField(max_length=20, default="therapy")
     last_updated = models.DateTimeField(auto_now=True)
-    class Meta:
-        # This makes the newest chats appear 1st
-        ordering = ['-last_updated']
-    def __str__(self):
-        return f"{self.owner.username} - {self.title}"
-# frontend will take this data when user clicked on it and the send it back 
 
-# modele 2 
-# for chat interface
-# it has all the data of old chat + prompt from the user
 class UserChatDB(OwnedModel):
-    chat = models.OneToOneField(UserHomepageDB, on_delete=models.CASCADE, related_name="history") # this is unique chat id 
-    content = models.JSONField(default=list)# so that all the json msg are in list
+    chat = models.OneToOneField(UserHomepageDB, on_delete=models.CASCADE, related_name="history")
+    content = models.JSONField(default=list)
+    to_be_summarized = models.BooleanField(default=False)
+
+class UserChatSummary(OwnedModel):
+    content = models.JSONField()
+    chat = models.OneToOneField(UserHomepageDB, on_delete=models.CASCADE, related_name="summary")
+
+# --- BASE MODEL ---
+
+
+class Company(models.Model):
+    name = models.CharField(max_length=255, unique=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    def __str__(self): return self.name
+
+class StructureLevel(models.Model):
+    company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name='levels')
+    name = models.CharField(max_length=100) 
+    level_rank = models.IntegerField(help_text="1 is highest (CEO)")
+
+    class Meta:
+        ordering = ['level_rank']
+
+class OrgNode(models.Model):
+    # Removed 'owner' - 'user' is sufficient to know who holds the position
+    user = models.OneToOneField(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='org_node')
+    name = models.CharField(max_length=255)
+    company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name='nodes')
+    structure_level = models.ForeignKey(StructureLevel, on_delete=models.PROTECT)
+    parent = models.ForeignKey('self', on_delete=models.SET_NULL, null=True, blank=True, related_name='children')
+
+    def __str__(self):
+        return f"{self.name} ({self.structure_level.name})"
+
+# --- USER DATA MODELS ---
+
+class UserDashboard(models.Model):
+    owner = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+    content = models.JSONField()
+
+# Fixed Typo: Dashbioard -> Dashboard
+class UserDashboardHistory(models.Model):
+    owner = models.OneToOneField(User, on_delete=models.CASCADE)
+    #dashboard = models.ForeignKey(UserDashboard, on_delete=models.CASCADE, related_name='history')
+    timestamp = models.DateTimeField(auto_now_add=True)
+    content = models.JSONField()
+
+class UserDrillDown(OwnedModel):
+    # owner is inherited
+    content = models.JSONField(default=list)
+
+# --- TEAM DATA MODELS ---
+
+class TeamData(models.Model):
+    node = models.OneToOneField(OrgNode, on_delete=models.CASCADE, related_name='team_data')
+    content = models.JSONField(default=list)
+
+class TeamDataHistory(models.Model):
+    # Changed 'owner' to 'node_ref' to avoid confusion with User model
+    node = models.OneToOneField(OrgNode, on_delete=models.CASCADE)
+    #team_data = models.ForeignKey(TeamData, on_delete=models.CASCADE, related_name='history_entries')
+    timestamp = models.DateTimeField(auto_now_add=True)
+    content = models.JSONField()
+
+# --- MISC MODELS ---
+
+class UserPsycoData(models.Model):
+    content = models.JSONField()
+
+# Fixed Typo: Summery -> Summary
+
+class UserPersonalityData(OwnedModel):
+    owner = models.OneToOneField(User, on_delete=models.CASCADE)
+    content = models.JSONField()
+
+class UserPersonalityDataHistoric(OwnedModel):
+    content = models.JSONField()
     
+class UserFeedback(OwnedModel):
+    feedback = models.TextField()
+    rating = models.IntegerField(default=5)
+    submitted_at = models.DateTimeField(auto_now_add=True)
+'''
+class PrivacyPolicyAcceptance(models.Model):
+    #user = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True)
+    ip_address = models.GenericIPAddressField(null=True)
+    consent_version = models.CharField(max_length=50, default="v1.0-2026")  # e.g., "v1.0-2023"
+    agreed_at = models.DateTimeField(auto_now_add=True)
+    user_agent = models.TextField(blank=True) # Stores browser info
+
+    def __str__(self):
+        return f"Consent {self.consent_version} by {self.ip_address}"
+'''    
+class UserConsent(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True)
+    ip_address = models.GenericIPAddressField(null=True)
+    consent_version = models.CharField(max_length=50, default="v1.0-2026")  # e.g., "v1.0-2023"
+    agreed_at = models.DateTimeField(auto_now_add=True)
+    user_agent = models.TextField(blank=True) # Stores browser info
+
+    def __str__(self):
+        return f"Consent {self.consent_version} by {self.ip_address}"
     
 
-# modele 3
-# for saving assessments 
-# it will have list the different results of psycology assesment 
-class UserProblems(OwnedModel):
-    content = models.TextField()
-
-
-# modele 4
-# for team related data
-# it will have mainly - people who are in teams
-class TeamMembers(models.Model): # this will be accessed by only admin so do that 
-    teamname = models.CharField(max_length=255, default="team")
-    content = models.JSONField(default=list) # list of all the users 
-
-
-
-# modele 5
-# data for management dashboard 
-# it will have team-wise report data
-# make it readonly after it is genetated (it will happen in views ig)
-# assessable by anyone (idt it will be security threat right ?)
-class TeamData(TeamMembers):
-    summary = models.TextField()
-    recommendation = models.TextField()
-    common_problems = models.JSONField(default=list)
-
-
-
-# module 6
-# data related to webside and app use
-# this is not needed till hackathon
-'''
-class WebsiteData(models.Model):
-    user = models.JSONField()
-'''
+class Tharipistneeded(OwnedModel):
+    in_need = models.BooleanField(default=False)
+    submitted_at = models.DateTimeField(auto_now_add=True)

@@ -4,7 +4,7 @@ djangorestframework
 django-cors-headers
 django-apscheduler
 django-allauth
-dj-rest-auth[with_social]
+dj-rest-auth[Google]
 cryptography
 djangorestframework-simplejwt
 requests
@@ -13,3 +13,7 @@ ollama
 psycopg2-binary 
 pgvector 
 httpx
+starlette
+SpeechRecognition
+gtts
+pydub

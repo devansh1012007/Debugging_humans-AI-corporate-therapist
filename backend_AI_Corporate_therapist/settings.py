@@ -1,18 +1,30 @@
+# settings.py
 from pathlib import Path
 import os
-from datetime import timedelta # Moved import to top for standard practice
+from datetime import timedelta
 from dotenv import load_dotenv
 
+# Load environment variables from a .env file
 load_dotenv()
-env = os.getenv
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = env('SECRET_KEY', default='django-insecure-!&p4_a3_(x65@1c*m_93#dztsav#1lj!m0s4z0d@b$wkn8s$l7')
+SECRET_KEY = os.environ.get('SECRET_KEY', default='django-insecure-!&p4_a3_(x65@1c*m_93#dztsav#1lj!m0s4z0d@b$wkn8s$l7')
 
 DEBUG = True
+CORS_ALLOW_CREDENTIALS = True
+CSRF_TRUSTED_ORIGINS = [
+    'https://wilson-coaching-phenomenon-found.trycloudflare.com',
+    'https://*.trycloudflare.com',
+]
 
-ALLOWED_HOSTS = ['*']# very important for docker deployment and for server access
+ALLOWED_HOSTS = [ # '*' for doker deployment
+    'wilson-coaching-phenomenon-found.trycloudflare.com',
+    'localhost',
+    '127.0.0.1',
+    'host.docker.internal',
+    '.trycloudflare.com',
+]# very important for docker deployment and for server access
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -21,13 +33,24 @@ INSTALLED_APPS = [
     'django.contrib.sessions', # Required for Admin and Allauth handshake
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'rest_framework_simplejwt',# The engine for JWT
+
     # Third Party Apps
     'rest_framework',
+    'rest_framework.authtoken',
+#     'rest_framework_simplejwt', 
     'corsheaders',#for frontend
     
     # Local Apps
     'app_1',
+
+    'django.contrib.sites',
+    'allauth',
+    'allauth.account',
+    'allauth.socialaccount',
+    'allauth.socialaccount.providers.google',
+    'dj_rest_auth',
+    'rest_framework_simplejwt',
+    'dj_rest_auth.registration',
     
 ]
 
@@ -36,9 +59,10 @@ SITE_ID = 1
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware', # for frontend
     'django.middleware.security.SecurityMiddleware',
+    'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
-    'django.contrib.sessions.middleware.SessionMiddleware',
+    'allauth.account.middleware.AccountMiddleware', # for allauth
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
@@ -53,6 +77,7 @@ TEMPLATES = [
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
+                'django.template.context_processors.debug',
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
@@ -73,12 +98,14 @@ DATABASES = {
         'PORT': os.environ.get('DB_PORT', '5432'),
     }
 }
+
 AUTH_PASSWORD_VALIDATORS = [
     { 'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator', },
     { 'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator', },
     { 'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator', },
     { 'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator', },
 ]
+
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 LANGUAGE_CODE = 'en-us'
 TIME_ZONE = 'UTC'
@@ -88,12 +115,14 @@ STATIC_URL = 'static/'
 
 # --- DRF CONFIGURATION (STRICT JWT) ---
 REST_FRAMEWORK = {
-    # This specifically enforces that ONLY JWT is accepted for API views
-    'DEFAULT_AUTHENTICATION_CLASSES': [
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'dj_rest_auth.jwt_auth.JWTCookieAuthentication',
         'rest_framework_simplejwt.authentication.JWTAuthentication',
-        'rest_framework.authentication.SessionAuthentication',
-    ],
+    )
 }
+REST_USE_JWT = True
+JWT_AUTH_COOKIE = None
+JWT_AUTH_REFRESH_COOKIE = None
 
 # --- JWT SETTINGS ---
 SIMPLE_JWT = {
@@ -103,10 +132,40 @@ SIMPLE_JWT = {
     'BLACKLIST_AFTER_ROTATION': True,
     'AUTH_HEADER_TYPES': ('Bearer',),
 }
+##############
+SOCIALACCOUNT_PROVIDERS = {
+    'google': {
+        'SCOPE': [
+            'profile',
+            'email',
+        ],
+        'AUTH_PARAMS': {
+            'access_type': 'online',
+        },
+        'VERIFIED_EMAIL': True,
+        # ADD THIS LINE:
+        'FETCH_USERINFO': False
+    }
+}
+
+AUTHENTICATION_BACKENDS = [
+    'django.contrib.auth.backends.ModelBackend',
+    'allauth.account.auth_backends.AuthenticationBackend',
+]
+
+ACCOUNT_LOGIN_METHODS = {'email'}#
+ACCOUNT_SIGNUP_FIELDS = ['email*', 'username']#
+
+ACCOUNT_UNIQUE_EMAIL = True
+ACCOUNT_EMAIL_VERIFICATION = 'optional' 
 
 
 
+SILENCED_SYSTEM_CHECKS = ['account.W001']
+
+# Static files (CSS, JavaScript, Images)
+STATIC_URL = 'static/'
 LOGIN_REDIRECT_URL = '/'
 LOGOUT_REDIRECT_URL = '/'
-CORS_ALLOW_ALL_ORIGINS = True # for 
+CORS_ALLOW_ALL_ORIGINS = True # for testing purposes only
 #CORS_ALLOWED_ORIGINS = ["http://127.0.0.1:5500",]

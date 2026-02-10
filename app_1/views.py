@@ -1,149 +1,350 @@
-#views.py
-from rest_framework import viewsets, permissions
-from .models import UserHomepageDB, UserChatDB,TeamMembers,TeamData,UserProblems
-from .serializers import HomePageSerializer, ChatSerializer, UserProblemSerializer, TeamMembersSerializer, TeamDataSerializer
-from rest_framework import generics
-from django.contrib.auth.models import User
-from .serializers import RegisterSerializer
+# views.py
+from django.utils import timezone
+import json
+import math
+import os
+#from ollama import chat
+from rest_framework import viewsets, permissions, generics, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
+from rest_framework.permissions import AllowAny, IsAuthenticated, IsAdminUser
+from rest_framework.views import APIView
 from django.shortcuts import get_object_or_404
-from rest_framework.permissions import AllowAny
-import json
-from django.http import JsonResponse
-from .Ai import ai_response
+from django.db import transaction
+from django.http import StreamingHttpResponse
+from django.contrib.auth.models import User
+from rest_framework.decorators import authentication_classes
+# Social Auth
+from allauth.socialaccount.providers.google.views import GoogleOAuth2Adapter
+from allauth.socialaccount.providers.oauth2.client import OAuth2Client
+from dj_rest_auth.registration.views import SocialLoginView
 
+# Local Imports
+from .models import (
+    OrgNode, Tharipistneeded, UserHomepageDB, 
+    UserChatDB, TeamData, UserConsent, UserDrillDown, UserDashboard, 
+    UserChatSummary
+)
 
-
-# Class 1 -> gives data from model 1 (mostly get but dosen't matter)
-class OldChatsViewSet(viewsets.ModelViewSet):
-    serializer_class = HomePageSerializer 
-    permission_classes = [permissions.IsAuthenticated] 
-    # this will give list of all the titel along with there titels 
-    def get_queryset(self):
-        return UserHomepageDB.objects.filter(owner=self.request.user)
-    # if user wants to star a new chat v take title and ai mode and add it to our UserHomepageDB
-    def perform_create(self, serializer):
-        session = serializer.save(owner=self.request.user) # id will generted by itself 
-        UserChatDB.objects.create( # creating space in other db
-            owner=self.request.user, 
-            chat=session, 
-            content=[]
-        )
-# Class 2 -> gives and take data to ai and front end chat interface
-
+from .serializers import (
+    RegisterSerializer, TherapistNeededSerializer, UserConsentSerializer, HomePageSerializer, ChatSerializer, 
+    OrgNodeSerializer, UserFeedbackSerializer, 
+    TeamDataSerializer, UserDrillDownSerializer, UserDashboardSerializer
+)
+from .Ai import therpy_ai_response, consiler_ai_responce, summarize_chat_history
+from .permissions import IsHierarchicalSuperior
+from .tasks import generate_drill_down_lists
 
 class ChatViewSet(viewsets.ModelViewSet):
     serializer_class = ChatSerializer
     permission_classes = [permissions.IsAuthenticated]
-    
-    #lookup_field = 'chat__id'
-    # v should add a filter by chat_id
-    # chat_session = UserHomepageDB.objects.get(id=chat_id, owner=request.user)
-    # return chat_session
-    def get_queryset(self):
-        return UserChatDB.objects.filter(owner=self.request.user)
-    #we don't need to filter the chat by id because we are not using any url parameter here; but chat_id method still works(need to experiment)
 
-    
-    @action(detail=False, methods=['post'])# maybe v should also add patch but udt its needed)# @action decorator to create a custom action and v want use perform_create or perform_update here bcoz we are not creating or updating any model instance directly
-    def continue_chat(self, request):
+    def get_queryset(self):
+        chat_id = self.request.query_params.get('chat_id')
+        if chat_id is None:
+             return UserChatDB.objects.none()
         
+        # Security: Ensure user owns the chat
+        chat_session = get_object_or_404(UserHomepageDB, id=chat_id, owner=self.request.user)
+        return UserChatDB.objects.filter(chat=chat_session, owner=self.request.user)
+
+    @action(detail=False, methods=['post'])
+    def continue_chat(self, request):
         user_prompt = request.data.get('prompt')
         ai_mode = request.data.get('mode')
         chat_id = request.data.get('ChatID')
     
-        
-
-        try:
-            chat_session = UserHomepageDB.objects.get(id=chat_id, owner=request.user)
-            # chat_session = chat_session[20:] # for returning last 10 chats 
-        except UserHomepageDB.DoesNotExist:
-            return Response({'error': f'Chat Session {chat_id} not found for this user.'}, status=404)
-
-        
-        history_obj, created = UserChatDB.objects.get_or_create(
-            chat=chat_session,
-            owner=request.user,
-            defaults={'content': []} 
-        )
-        user_username = request.user.username
         if not user_prompt or not chat_id:
             return Response({'error': 'Prompt and ChatID are required'}, status=400)
-
-        if ai_mode == "therapy":
-            model_override = "therapy-ai"
-        else:
-            model_override = ""
-        # 1. Get History
-        history_obj = get_object_or_404(UserChatDB, chat__id=chat_id, owner=request.user)
-        # Ensure it is a list, defaulting to empty
+    
+        chat_session = get_object_or_404(UserHomepageDB, id=chat_id, owner=request.user)
+        history_obj = get_object_or_404(UserChatDB, chat=chat_session, owner=request.user)
         current_history = history_obj.content if isinstance(history_obj.content, list) else []
-        #print("Current History:", current_history)
-        #print("User Prompt:", user_prompt)
-        #print("AI Mode:", model_override)
-        payload = {
-            "message": user_prompt,
-            "conversation" : current_history,# can cause issues
-            "user_profile": "name:" + user_username,
-            "workspace_context": "employee in an Indian startup or hight intencity work enviroment",
-            "model_override": model_override
-        }
-             
-        try:
-            
-            ai_result = ai_response(payload) 
-            #print("AI Result:", ai_result)
-            # Check for error key from our safe Ai.py
-            if "error" in ai_result:
-                raise ValueError(ai_result["error"])
-
-            ai_message_text = ai_result.get('response', '')
-            
-            if not ai_message_text:
-                raise ValueError("AI returned an empty response")
-        except Exception as e:
-            return Response({'error': f'AI Error: {str(e)}'}, status=500)
-
-            
-        current_history.append({
-            "role": "user", 
-            "message": user_prompt
-        })
         
-        # Append AI Message Object
-        current_history.append({
-            "role": "assistant", 
-            "message": ai_message_text
-        })
+        # Context Window Logic 
+        a = []
+        context_window = []
+        total_words = 0
+        
+        for chat in current_history:
+            msg_content = chat.get("content") or chat.get("message") or ""
+            
+            normalized_chat = chat.copy()
+            normalized_chat["content"] = msg_content
+            
+            words = msg_content.split()
+            total_words += len(words)
+            estimated_tokens = math.ceil(total_words * 1.5)
+            
+            a.append(normalized_chat)
+            
+            if estimated_tokens > 4000:
+                get_chat_summary = summarize_chat_history(current_history[:-len(a)])
+                context_window.append(get_chat_summary)
+                break
+        
+        if not context_window:
+            context_window = a
+        def stream_wrapper():
+            full_reply = ""
+            try:    
+                if ai_mode == "therapy":
+                    gen = therpy_ai_response(user_prompt, context_window, request.user.username)
+                else:
+                    gen = consiler_ai_responce(user_prompt, context_window, request.user.username)
 
+                for token in gen:
+                    full_reply += token
+                    yield token
+                
+                current_history.append({
+                    "role": "user", 
+                    "content": user_prompt,
+                    "message": user_prompt 
+                })
+                current_history.append({
+                    "role": "assistant", 
+                    "content": full_reply,
+                    "message": full_reply
+                })
+                
+                history_obj.content = current_history
+                history_obj.to_be_summarized = True
+                history_obj.save()
 
-        history_obj.content = current_history
+            except Exception as e:
+                yield f"\n[Error: {str(e)}]"
+
+        return StreamingHttpResponse(stream_wrapper(), headers={'Content-Type': 'text/plain'})
+
+    @action(detail=False, methods=['delete'])
+    def delete_chat(self, request):
+        chat_id = request.data.get('ChatID')
+        chat_session = get_object_or_404(UserHomepageDB, id=chat_id, owner=request.user)
+        history_obj = get_object_or_404(UserChatDB, chat=chat_session, owner=request.user)
+        
+        history_obj.content = []
         history_obj.save()
-        ai_message_text = ai_message_text[:-4]
-        print("response sent: "+ ai_message_text)
-        return Response({'response': ai_message_text})
-class problemsViewSet(viewsets.ModelViewSet):# this will need to be changed later and made someting read only and v need to addewd ai 
-    serializer_class = UserProblemSerializer 
+        return Response({'status': 'Chat history cleared'})
+
+class OldChatsViewSet(viewsets.ModelViewSet):
+    serializer_class = HomePageSerializer 
+    permission_classes = [permissions.IsAuthenticated] 
+
+    def get_queryset(self):
+        return UserHomepageDB.objects.filter(owner=self.request.user)
+
+    def perform_create(self, serializer):
+        session = serializer.save(owner=self.request.user)
+        UserChatDB.objects.create(
+            owner=self.request.user, 
+            chat=session, 
+            content=[],
+            to_be_summarized=False,
+        )
+
+class UserDrillDownViewSet(viewsets.ModelViewSet):
+    serializer_class = UserDrillDownSerializer
     permission_classes = [permissions.IsAuthenticated]
     def get_queryset(self):
-        return UserProblems.objects.filter(owner=self.request.user)
-    # data in this will be updated automaticly from some time set function using django-apscheduler
+        return UserDrillDown.objects.filter(owner=self.request.user)
 
-class TeamMembersViewSet(viewsets.ModelViewSet):
-    permission_classes = [permissions.IsAuthenticated] 
-    serializer_class = TeamMembersSerializer
-    queryset = TeamMembers.objects.all()
+class UserDashboardViewSet(viewsets.ModelViewSet):
+    serializer_class = UserDashboardSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    def get_queryset(self):
+        return UserDashboard.objects.filter(owner=self.request.user)
 
-class TeamDataViewSet(viewsets.ModelViewSet):
-    permission_classes = [permissions.IsAuthenticated] 
-    serializer_class = TeamDataSerializer
-    queryset = TeamData.objects.all()
-    # there will be alot of custom logic later 
+class UserFeedbackViewSet(viewsets.ModelViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = UserFeedbackSerializer
+    def perform_create(self, serializer):
+        serializer.save(owner=self.request.user)
 
-class RegisterView(generics.CreateAPIView): # generic view for user registration built-in create behavior
-    queryset = User.objects.all() # queryset set to all users so that we can create new ones
-    # Everyone must be able to hit this endpoint to sign up!
+class UserConsentViewSet(viewsets.ModelViewSet):
+    queryset = UserConsent.objects.all()
+    serializer_class = UserConsentSerializer
+    permission_classes = [AllowAny] # Unauthenticated users must also be able to consent
+
+    def get_client_ip(self, request):
+        x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+        if x_forwarded_for:
+            return x_forwarded_for.split(',')[0]
+        return request.META.get('REMOTE_ADDR')
+
+    def create(self, request, *args, **kwargs):
+        """
+        Overriding create to handle IP capture and Cookie setting
+        """
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        self.perform_create(serializer)
+
+        headers = self.get_success_headers(serializer.data)
+        response = Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+
+        response.set_cookie(
+            key='consent_version_held',
+            value=serializer.data['consent_version'],
+            max_age=31536000, # 1 Year
+            httponly=False,   # False so frontend JS can read it to hide the banner
+            samesite='Lax'
+        )
+
+        return response
+
+    def perform_create(self, serializer):
+        serializer.save(
+            ip_address=self.get_client_ip(self.request),
+            user_agent=self.request.META.get('HTTP_USER_AGENT', ''),
+            user=self.request.user if self.request.user.is_authenticated else None
+        )
+    @action(detail=False, methods=['post'])
+    @authentication_classes([]) 
+    def needs_new_consent(self, request):
+        CURRENT_VERSION = "v1.0-2026" 
+
+        user_held_version = request.COOKIES.get('consent_version_held')
+
+        print(f"DEBUG: Cookie received: {user_held_version}")
+
+        
+        needs_consent = False
+        if not user_held_version or user_held_version != CURRENT_VERSION:
+            needs_consent = True
+
+        return Response({'needs_consent': needs_consent})
+
+
+class OrgNodeViewSet(viewsets.ModelViewSet):
+    queryset = OrgNode.objects.all()
+    serializer_class = OrgNodeSerializer
+    permission_classes = [IsAuthenticated, IsHierarchicalSuperior]
+
+    @action(detail=True, methods=['get'])
+    def health_dashboard(self, request, pk=None):
+        target_node = self.get_object() 
+        #requester_node = request.user.org_node
+
+        try:
+            dashboard = TeamData.objects.get(node=target_node)# this is to see his own team's performance data, not the subordinates data. The subordinate data is in the TeamData model and is accessed in the 'else' block below.
+            
+            serializer = TeamDataSerializer(dashboard)##
+            return Response(serializer.data)
+            
+        except TeamData.DoesNotExist:
+            return Response({"data": ["error", "No dashboard data available yet. Wait for midnight processing."]}, status=404)
+       
+    @action(detail=True, methods=['post'], permission_classes=[IsAdminUser])
+    def replace_employee(self, request, pk=None):
+        """
+        Logic:
+        - 'pk' is the OLD person (leaving).
+        - 'replacement_id' is the NEW person (taking the seat).
+        """
+        old_node_id = pk
+        new_node_id = request.data.get('replacement') # Expecting ID (e.g., 5), not User object
+
+        if not new_node_id:
+            return Response({"error": "replacement ID is required"}, status=400)
+
+        try:
+            with transaction.atomic():
+                # FIX: Query by ID (pk), not by User, to ensure we get the node specifically
+                old_node = OrgNode.objects.get(pk=old_node_id)
+                new_node = OrgNode.objects.get(pk=new_node_id)
+
+                # Step 1: Validate Company Match
+                if old_node.company != new_node.company:
+                    return Response({"error": "Cannot cross-promote between companies"}, status=400)
+
+                # Step 2: "Inheritance" - New Node moves up to Old Node's spot
+                # We give the New Person the Old Person's Rank & Boss
+                new_node.structure_level = old_node.structure_level
+                
+                # Handling the Parent logic
+                # If New Node was reporting to Old Node, New Node's parent becomes Old Node's parent.
+                new_node.parent = old_node.parent 
+                
+                new_node.save()
+
+                # Step 3: "Adoption" - Move Old Node's children to New Node
+                # All people who used to report to Old Node now report to New Node.
+                # FIX: Use 'id' to exclude, it's safer.
+                old_node.children.exclude(id=new_node.id).update(parent=new_node)
+
+                # Step 4: Fire the Old Node
+                # This deletes the Old Node row. 
+                # Note: Because 'UserDashboard' is OneToOne with CASCADE, the old user's dashboard is deleted.
+                old_node.delete()
+                generate_drill_down_lists(new_node.OrgNode)
+                return Response({
+                    "message": f"Success. {new_node.user.username} has replaced {old_node.user.username}."
+                })
+
+        except OrgNode.DoesNotExist:
+            return Response({"error": "Node not found"}, status=404)
+        except Exception as e:
+            return Response({"error": str(e)}, status=500)
+
+# for jwt token auth and registration
+class RegisterView(generics.CreateAPIView):
+    queryset = User.objects.all()
     permission_classes = (AllowAny,)
     serializer_class = RegisterSerializer
 
+
+from allauth.socialaccount.providers.google.views import GoogleOAuth2Adapter
+from allauth.socialaccount.providers.oauth2.client import OAuth2Client
+from dj_rest_auth.registration.views import SocialLoginView
+from django.conf import settings
+from rest_framework_simplejwt.tokens import RefreshToken # <--- Add this import
+
+class GoogleLogin(SocialLoginView):
+    adapter_class = GoogleOAuth2Adapter
+    client_class = OAuth2Client
+
+    def post(self, request, *args, **kwargs):
+        # 1. Trick the serializer (as we discussed before)
+        if request.data.get('access_token') and not request.data.get('id_token'):
+            if isinstance(request.data, dict):
+                request.data['id_token'] = request.data['access_token']
+            else:
+                data = request.data.copy()
+                data['id_token'] = data['access_token']
+                request._full_data = data
+                
+        # 2. Get the default response
+        response = super().post(request, *args, **kwargs)
+
+        # 3. FORCE JWT: If the response is just a 'key' (token), swap it for access/refresh
+        if response.status_code == 200 and 'key' in response.data:
+            # The 'user' object is available on the view after login
+            user = self.user 
+            
+            # Generate the tokens manually
+            refresh = RefreshToken.for_user(user)
+            
+            # Update the response data
+            response.data['access'] = str(refresh.access_token)
+            response.data['refresh'] = str(refresh)
+            
+            # Optional: Remove the 'key' if you don't want it
+            # del response.data['key']
+
+        return response
+    
+class TherapistNeededView(viewsets.ModelViewSet):
+    queryset = Tharipistneeded.objects.all()
+    serializer_class = TherapistNeededSerializer
+    permission_classes = [IsAuthenticated]
+    def perform_create(self, serializer):
+        serializer.save(
+            owner=self.request.user, 
+            submitted_at=timezone.now(), 
+            in_need=True
+        )
+
+
+#class Download(viewsets.ModelViewSet):

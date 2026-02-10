@@ -28,10 +28,12 @@ services:
       - DB_HOST=db
       - DB_PORT=5432
       # CRITICAL CHANGE: Use 'ai-server' instead of '127.0.0.1'
-      - AI_SERVER_URL=http://26.217.98.105:8001/chat
+      - AI_SERVER_URL=http://26.217.98.105:8001/chat # http://26.217.98.105:8001/chat
     depends_on:
       db:
         condition: service_healthy
     extra_hosts:
       # This maps the hostname 'ai-server' to the host machine's IP
       - "ai-server:26.217.98.105"
+      #192.168.29.162
+      #26.217.98.105
