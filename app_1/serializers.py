@@ -41,6 +41,10 @@ class UserPersonalityDataSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserPersonalityData
         fields = ['content', 'owner']
+        
+class UserPersonalityDataHistoricSerializer(serializers.ModelSerializer):
+        owner = serializers.HiddenField(default=serializers.CurrentUserDefault())
+        fields = ['content', 'owner']
 
 class UserDashboardSerializer(serializers.ModelSerializer):
     owner = serializers.HiddenField(default=serializers.CurrentUserDefault())# 

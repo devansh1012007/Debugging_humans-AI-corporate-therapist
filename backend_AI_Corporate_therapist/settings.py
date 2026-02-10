@@ -13,9 +13,18 @@ SECRET_KEY = os.environ.get('SECRET_KEY', default='django-insecure-!&p4_a3_(x65@
 
 DEBUG = True
 CORS_ALLOW_CREDENTIALS = True
-#CSRF_TRUSTED_ORIGINS=['*']
+CSRF_TRUSTED_ORIGINS = [
+    'https://wilson-coaching-phenomenon-found.trycloudflare.com',
+    'https://*.trycloudflare.com',
+]
 
-ALLOWED_HOSTS = ['*']# very important for docker deployment and for server access
+ALLOWED_HOSTS = [ # '*' for doker deployment
+    'wilson-coaching-phenomenon-found.trycloudflare.com',
+    'localhost',
+    '127.0.0.1',
+    'host.docker.internal',
+    '.trycloudflare.com',
+]# very important for docker deployment and for server access
 
 INSTALLED_APPS = [
     'django.contrib.admin',

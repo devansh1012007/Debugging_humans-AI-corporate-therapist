@@ -65,20 +65,28 @@ class ChatViewSet(viewsets.ModelViewSet):
         a = []
         context_window = []
         total_words = 0
-        for chat in current_history[::-1]:# current histroy is chat data/convo
+        for chat in current_history:# current histroy is chat data/convo
+            words = chat["content"].split()
+            total_words += len(words)
+            estimated_tokens = math.ceil(total_words * 1.5)
+            a.append(chat)
+            if estimated_tokens > 4000:
+                get_chat_summary = summarize_chat_history(current_history[:-len(a)])
+                context_window.append(get_chat_summary)
+                break
+            else:
+                context_window.append(a)
+        a = []
+        total_words = 0
+        for chat in context_window:# current histroy is chat data/convo
             words = chat["content"].split()
             total_words += len(words)
             estimated_tokens = math.ceil(total_words * 1.5)
             a.append(chat)
             if estimated_tokens > 8000:
-                get_chat_summary = summarize_chat_history(current_history[:-len(a)])
-                context_window.append(get_chat_summary)
                 break
+        context_window = a
         ### here v can later add depalyed summary bringing it from d
-        context_window.append(a)
-
-        ### here v can later add depalyed summary bringing it from d
-
         context_window.append(a)
         # Generator wrapper
         def stream_wrapper():

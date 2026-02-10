@@ -84,14 +84,18 @@ class TeamDataHistory(models.Model):
 
 # --- MISC MODELS ---
 
-class UserPsycoData(OwnedModel):
+class UserPsycoData(models.Model):
     content = models.JSONField()
 
 # Fixed Typo: Summery -> Summary
 
 class UserPersonalityData(OwnedModel):
+    owner = models.OneToOneField(User, on_delete=models.CASCADE)
     content = models.JSONField()
 
+class UserPersonalityDataHistoric(OwnedModel):
+    content = models.JSONField()
+    
 class UserFeedback(OwnedModel):
     feedback = models.TextField()
     rating = models.IntegerField(default=5)

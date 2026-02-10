@@ -3,13 +3,13 @@ import requests
 import ollama
 import os
 
-AI_SERVER_URL = os.getenv('AI_SERVER_URL', 'http://localhost:11434')
+AI_SERVER_URL = os.getenv('AI_CHAT_ENDPOINT', 'http://localhost:11434')
 #AI_CHAT_ENDPOINT = os.getenv('AI_CHAT_ENDPOINT', 'http://26.217.98.105:8001/chat')
 
 def therpy_ai_response(user_prompt, messages_list, user_name):
     # Streaming response using Ollama
     try:
-        response = requests.post("http://172.25.184.106:8001/chat/stream",
+        response = requests.post("http://26.80.229.208:8001/chat/stream",
             json={
             "message": user_prompt,
             "conversation": messages_list,
@@ -28,7 +28,7 @@ def therpy_ai_response(user_prompt, messages_list, user_name):
 def consiler_ai_responce(user_prompt, messages_list, user_name):
     # Example using external request if needed, otherwise fallback to Ollama
     try:
-        response = requests.post("http://172.25.184.106:8001/chat/stream",
+        response = requests.post("http://26.80.229.208:8001/chat/stream",
             json={
             "message": user_prompt,
             "conversation": messages_list,
@@ -51,7 +51,7 @@ def summarize_chat_history(conversations):
     }
 
     response = requests.post(
-        "http://172.25.184.106:8001/summarizer",
+        "http://26.80.229.208:8001/summarizer",
         json=payload
     )
     return response.json()["output"]
@@ -64,12 +64,12 @@ def personality_extractor(conversations,existing_personality_profile):
     }
 
     response = requests.post(
-        "http://172.25.189.172:8001/personality_extractor",
+        "http://26.80.229.208:8001/personality_extractor",
         json = payload
     )
     return response.json()["output"]
 
-
+"""
 #AI.py
 #from ollama import Client
 import httpx
@@ -90,7 +90,7 @@ def ai_response(payload):
     #print(f"Raw Response Content: {response_obj.text}")
     return data
 
-
+"""
 
 
 

@@ -44,72 +44,128 @@ class TeamDashbordLister(BaseModel):
     common_problems : List[Problem]
     recommendations : List[recommendation]
 
-def UserDashboard(chats, exiting_data):
+def UserDashboard_data(chats, exiting_data):
     exiting_data_str = str(exiting_data)
     prompt = f"""   
+    You are a personal mental health and wellness counselor.
 
-    Existing Database:
-    {exiting_data_str}
+    You will receive:
+    1. A list of chat summaries from a user's therapy/counseling sessions
+    2. Existing personal data (if any) from previous analyses
 
-    Chat Data to Analyze:
-    {chats}
+    Your task is to provide a personal mental health dashboard for this individual.
 
+    CRITICAL: You MUST respond with ONLY a valid JSON object. No explanations, no preamble, no markdown formatting, no ```json``` tags. Just the raw JSON object.
+
+    The JSON structure must be EXACTLY:
+    [{
+        "positives": [
+            {
+                "positive": "A positive observation about the person's mental health, coping strategies, or growth"
+            }
+        ],
+        "common_problems": [
+            {
+                "problem": "Short problem name",
+                "description": "Detailed description of the challenge this person is facing"
+            }
+        ],
+        "recommendations": [
+            {
+                "recommendation": "Specific, actionable recommendation for personal wellbeing improvement"
+            }
+        ]
+    }]
+
+    ANALYSIS GUIDELINES:
+    1. **positives**: Highlight strengths and progress (3-6 items)
+    2. **common_problems**: Identify recurring personal challenges (3-8 items)
+    3. **recommendations**: Provide personalized strategies (5-10 items)
+
+    Now analyze the following data:
+    Chat summaries: {chats}
+    Existing personal data: {exiting_data_str}
+
+    Remember: Return ONLY the JSON object, nothing else.
     """
-    ai_url = os.environ.get('AI_SERVER_URL', 'http://192.168.29.162:11434')
+    ai_url = os.environ.get('AI_CHAT_ENDPOINT', 'http://192.168.29.162:11434')
     client = Client(host=ai_url,)#timeout=httpx.Timeout(180.0) 
     try:
-        response_obj = client.chat(model='llama3.2:1b',
+        response_obj = client.chat(model='gemma3:4b',
                                    messages=[{'role': 'user', 'content': prompt}],
                                    format=userDashboardLister.model_json_schema(),
                                    )
         output = userDashboardLister.model_validate_json(response_obj['message']['content'])
-        '''if hasattr(response_obj, 'message'):
-            final_text = response_obj.message.content
-        elif isinstance(response_obj, dict):
-            final_text = response_obj.get('message', {}).get('content', '')
-        else:
-            final_text = str(response_obj)'''
+
 
     except Exception as e:
         output = f"Error: {str(e)}"
-    return {
-        "content": output
-        }
+    return output
 
-def TeamDashboard(chats, exiting_data):
+def TeamDashboard_data(chats, exiting_data):
     exiting_data_str = str(exiting_data)
     prompt = f"""   
+    You are an organizational psychologist and HR analyst. 
 
-    Existing Database:
-    {exiting_data_str}
+    You will receive:
+    1. A list of problems faced by team members, along with solotion and there positives
+    2. Ignore the possitive qualities and use the other data
+    3. Existing team data (if any) from previous analyses
 
-    Chat Data to Analyze:
-    {chats}
+    Your task is to analyze the team's collective mental health, workplace issues, and needs.
 
+    CRITICAL: You MUST respond with ONLY a valid JSON object. No explanations, no preamble, no markdown formatting, no ```json``` tags. Just the raw JSON object.
+
+    The JSON structure must be EXACTLY:
+    [{
+        "policy_changes": 
+            [{
+                "title": "Brief policy title",
+                "description": "Detailed description of the policy change needed"
+            }]
+        ,
+        "common_problems": 
+            [{
+                "problem": "Short problem name",
+                "description": "Detailed description of the problem affecting the team"
+            }]
+        ,
+        "recommendations": 
+            [{
+                "recommendation": "Specific actionable recommendation for leadership"
+            }]
+                
+    }]
+
+    ANALYSIS GUIDELINES:
+    1. **policy_changes**: Identify needed organizational policies (3-8 items)
+       - Focus on preventive measures and cultural changes.(give more emphasise more on CULTURAL CHANGES )
+    
+    2. **common_problems**: Identify recurring themes across team members (3-8 items)
+       - Include severity indicators in descriptions
+    
+    3. **recommendations**: Provide actionable next steps for managers (3-8 items)
+       - Each should be specific and implementable
+
+    Now analyze the following data:
+    list of exiting problems and solutions of all the employees : {chats}
+    Existing team data: {exiting_data_str}
+
+    Remember: Return ONLY the JSON object, nothing else.
     """
-    ai_url = os.environ.get('AI_SERVER_URL', 'http://192.168.29.162:11434')
+    ai_url = os.environ.get('AI_CHAT_ENDPOINT', 'http://192.168.29.162:11434')
     client = Client(host=ai_url,)#timeout=httpx.Timeout(180.0) 
     try:
-        response_obj = client.chat(model='llama3.2:1b',
+        response_obj = client.chat(model='gemma3:4b',
                                    messages=[{'role': 'user', 'content': prompt}],
                                    format=TeamDashbordLister.model_json_schema(),
                                    )
         
         output = TeamDashbordLister.model_validate_json(response_obj['message']['content'])
 
-
-        '''if hasattr(response_obj, 'message'):
-            final_text = response_obj.message.content
-        elif isinstance(response_obj, dict):
-            final_text = response_obj.get('message', {}).get('content', '')
-        else:
-            final_text = str(response_obj)
-        '''
     except Exception as e:
         output = f"Error: {str(e)}"
-    return {
-        "content": output
-        }
+    return output
 
 
 
