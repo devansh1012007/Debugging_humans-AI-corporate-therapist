@@ -70,16 +70,121 @@ def mid_night():# this is for chat summry--> but rn i am not to use it ,also i n
                 )
                 history_obj.to_be_summarized = False
                 history_obj.save()
-
+'''
 def get_report():
     users = User.objects.all()
     for user in users:
         User_data, created = UserDashboard.objects.get_or_create(
             owner=user,
-            defaults={'content': []}
+            defaults={'content': [{previous_assessments = {
+  "Personality": {
+    "Does the user tend not to worry excessively?": "Disagree",
+    "Does the user generally like most people they meet?": "Neutral",
+    "Does the user have a very active imagination?": "Agree",
+    "Is the user known for prudence and common sense?": "Neutral",
+    "Does the user often get angry about how people treat them?": "Disagree",
+    "Does the user shy away from crowds of people?": "Neutral",
+    "Are aesthetic and artistic concerns relatively unimportant to the user?": "Agree",
+    "Is the user not crafty or sly by nature?": "Agree",
+    "Does the user prefer keeping options open rather than planning everything in advance?": "Disagree",
+    "Does the user rarely feel lonely or sad?": "Neutral",
+    "Is the user dominant, forceful, and assertive?": "Neutral",
+    "Does the user feel life would be uninteresting without strong emotions?": "Agree",
+    "Do some people perceive the user as selfish or egotistical?": "Disagree",
+    "Does the user try to perform all assigned tasks conscientiously?": "Agree",
+    "Does the user dread making social blunders when interacting with others?": "Neutral",
+    "Does the user have a leisurely style in work and play?": "Neutral",
+    "Is the user fairly set in their ways?": "Disagree",
+    "Does the user prefer cooperating with others rather than competing?": "Agree",
+    "Is the user easy-going and somewhat lackadaisical?": "Neutral",
+    "Does the user rarely overindulge in anything?": "Neutral",
+    "Does the user often crave excitement?": "Disagree",
+    "Does the user enjoy playing with theories or abstract ideas?": "Agree",
+    "Does the user not mind bragging about talents and accomplishments?": "Neutral",
+    "Is the user good at pacing themselves to complete tasks on time?": "Agree",
+    "Does the user often feel helpless and want others to solve their problems?": "Disagree",
+    "Has the user never literally jumped for joy?": "Neutral",
+    "Is the user often the life of the party?": "Neutral",
+    "Does the user feel little concern for others?": "Disagree",
+    "Is the user always prepared?": "Agree",
+    "Does the user get stressed out easily?": "Neutral",
+    "Does the user have a rich vocabulary?": "Agree",
+    "Does the user tend not to talk much?": "Neutral",
+    "Is the user interested in people?": "Agree",
+    "Does the user leave their belongings around?": "Neutral",
+    "Is the user relaxed most of the time?": "Disagree",
+    "Does the user have difficulty understanding abstract ideas?": "Neutral",
+    "Does the user feel comfortable around people?": "Neutral",
+    "Does the user insult people?": "Disagree",
+    "Does the user pay attention to details?": "Agree",
+    "Does the user worry about things?": "Neutral",
+    "Does the user have a vivid imagination?": "Agree",
+    "Does the user prefer to keep in the background?": "Neutral",
+    "Is the user generally uninterested in others?": "Disagree",
+    "Does the user like order?": "Agree",
+    "Is the user quiet around strangers?": "Neutral",
+    "Does the user make people feel at ease?": "Agree",
+    "Is the user exacting or precise in their work?": "Agree",
+    "Does the user often feel sad or blue?": "Disagree",
+    "Is the user full of ideas?": "Agree"
+  },
+  "Burnout": {
+    "Does the user feel emotionally exhausted because of their work?": "Neutral",
+    "Does the user feel worn out at the end of a working day?": "Neutral",
+    "Does the user feel tired upon waking and facing a new workday?": "Disagree",
+    "Can the user easily understand the actions of colleagues or supervisors?": "Agree",
+    "Does the user feel they treat some colleagues impersonally, like objects?": "Disagree",
+    "Does the user find working with people all day stressful?": "Neutral",
+    "Is the user afraid their work is making them emotionally harder?": "Disagree",
+    "Does the user feel full of energy?": "Agree",
+    "Does the user feel frustrated by their work?": "Disagree",
+    "Does the user feel they work too hard?": "Neutral",
+    "Is the user uninterested in what is going on with many colleagues?": "Disagree",
+    "Does the user find direct contact with people at work too stressful?": "Disagree",
+    "Does the user find it easy to create a relaxed work atmosphere?": "Agree",
+    "Does the user feel stimulated after working closely with colleagues?": "Neutral",
+    "Has the user achieved many rewarding work objectives?": "Agree",
+    "Is the user relaxed when dealing with emotional problems at work?": "Disagree",
+    "Does the user feel colleagues blame them for their problems?": "Disagree"
+  },
+  "Depression": {
+    "Does the user experience a depressed mood such as sadness or hopelessness?": "Neutral",
+    "Does the user experience feelings of guilt?": "Disagree",
+    "Does the user experience suicidal thoughts or behaviors?": "Disagree",
+    "Does the user have difficulty falling asleep?": "Agree",
+    "Does the user experience disturbed sleep during the night?": "Agree",
+    "Does the user wake up early due to sleep disturbance?": "Agree",
+    "Has the user's interest in work or activities decreased?": "Disagree",
+    "Does the user show psychomotor slowing?": "Neutral",
+    "Does the user experience agitation or restlessness?": "Neutral",
+    "Does the user experience psychological anxiety?": "Agree",
+    "Does the user experience physical anxiety symptoms?": "Agree",
+    "Does the user experience gastrointestinal symptoms?": "Disagree",
+    "Does the user experience general physical symptoms?": "Agree",
+    "Does the user experience sexual or genital symptoms?": "Neutral",
+    "Does the user show excessive concern about health?": "Disagree"
+  },
+  "Anxiety": {
+    "Does the user experience an anxious mood?": "Agree",
+    "Does the user experience tension or nervousness?": "Agree",
+    "Does the user experience fears?": "Neutral",
+    "Does the user experience insomnia related to anxiety?": "Agree",
+    "Does the user have difficulty concentrating due to anxiety?": "Agree",
+    "Does the user experience depressed mood related to anxiety?": "Agree",
+    "Does the user experience muscular symptoms?": "Disagree",
+    "Does the user experience sensory symptoms?": "Neutral",
+    "Does the user experience cardiovascular symptoms?": "Neutral",
+    "Does the user experience respiratory symptoms?": "Neutral",
+    "Does the user experience gastrointestinal symptoms related to anxiety?": "Neutral",
+    "Does the user experience genitourinary symptoms related to anxiety?": "Neutral",
+    "Does the user experience autonomic symptoms?": "Agree"
+  }
+}}]}
         )
         Personal_list = User_data.content if isinstance(User_data.content, list) else []
 
+        
+'''
 
 
 

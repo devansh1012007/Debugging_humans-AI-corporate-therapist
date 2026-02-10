@@ -18,7 +18,7 @@ router.register(r'UserConsent', UserConsentViewSet, basename='UserConsent')
 router.register(r'UserDrillDown', UserDrillDownViewSet, basename='UserDrillDown')
 router.register(r'UserDashboard', UserDashboardViewSet, basename='UserDashboard')
 router.register(r'TherapistNeeded', TherapistNeededView, basename='TherapistNeeded')
-
+#router.register(r'Download', Download, basename='TherapistNeeded')
 urlpatterns = [
     path('', include(router.urls)),
     #path('accounts/', include('allauth.urls')), 

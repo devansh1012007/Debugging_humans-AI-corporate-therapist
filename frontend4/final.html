@@ -202,7 +202,7 @@ input:focus, textarea:focus, select:focus {
     <script>
 const API_BASE = 'http://localhost:8000/'; 
 const CURRENT_CONSENT_VERSION = 'v1.0-2026';
-const GOOGLE_CLIENT_ID = 'YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com';
+const GOOGLE_CLIENT_ID = '420454232320-8mse8aona778k5jktdcs847c98bfsabu.apps.googleusercontent.com';
 
 class ApiClient {
     constructor() {
@@ -1118,12 +1118,27 @@ async function initializeApp() {
 
 async function loadChatHistory(sessionId) {
     try {
+        // 1. Fetch the data
         const chatData = await api.request(`/ChatData/?chat_id=${sessionId}`);
-        if (chatData && chatData.length > 0) {
-            state.messages = chatData[0].content || [];
+        
+        // 2. Validate we received a list with at least one session object
+        if (Array.isArray(chatData) && chatData.length > 0) {
+            
+            // 3. Extract the raw history list from the first result
+            const rawHistory = chatData[0].content || [];
+
+            // 4. Normalize the data (Fixing the key mismatch)
+            // Backend saves as 'message', but sometimes you might expect 'content'
+            state.messages = rawHistory.map(msg => ({
+                role: msg.role,
+                // Check 'message' first (per your save logic), fall back to 'content'
+                content: msg.message || msg.content || "" 
+            }));
+
         } else {
             state.messages = [];
         }
+        
         render();
     } catch (error) {
         console.error('Error loading chat:', error);
@@ -1177,6 +1192,11 @@ async function handleSendMessage(event) {
                 ChatID: state.activeSessionId
             })
         });
+
+
+        if (!response.ok) {
+            throw new Error(`Server Error: ${response.statusText}`);
+        }
 
         const reader = response.body.getReader();
         const decoder = new TextDecoder();

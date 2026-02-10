@@ -60,40 +60,35 @@ class ChatViewSet(viewsets.ModelViewSet):
         chat_session = get_object_or_404(UserHomepageDB, id=chat_id, owner=request.user)
         history_obj = get_object_or_404(UserChatDB, chat=chat_session, owner=request.user)
         current_history = history_obj.content if isinstance(history_obj.content, list) else []
-        #current_history = current_history[:-1]
-        # Context Window Logic
         
+        # Context Window Logic 
         a = []
         context_window = []
         total_words = 0
-        for chat in current_history:# current histroy is chat data/convo
-            words = chat["content"].split()
+        
+        for chat in current_history:
+            msg_content = chat.get("content") or chat.get("message") or ""
+            
+            normalized_chat = chat.copy()
+            normalized_chat["content"] = msg_content
+            
+            words = msg_content.split()
             total_words += len(words)
             estimated_tokens = math.ceil(total_words * 1.5)
-            a.append(chat)
+            
+            a.append(normalized_chat)
+            
             if estimated_tokens > 4000:
                 get_chat_summary = summarize_chat_history(current_history[:-len(a)])
                 context_window.append(get_chat_summary)
                 break
-            else:
-                context_window.append(a)
-        a = []
-        total_words = 0
-        for chat in context_window:# current histroy is chat data/convo
-            words = chat["content"].split()
-            total_words += len(words)
-            estimated_tokens = math.ceil(total_words * 1.5)
-            a.append(chat)
-            if estimated_tokens > 8000:
-                break
-        context_window = a
-        ### here v can later add depalyed summary bringing it from d
-        context_window.append(a)
-        # Generator wrapper
+        
+        if not context_window:
+            context_window = a
         def stream_wrapper():
             full_reply = ""
             try:    
-                if ai_mode == "specialist":
+                if ai_mode == "therapy":
                     gen = therpy_ai_response(user_prompt, context_window, request.user.username)
                 else:
                     gen = consiler_ai_responce(user_prompt, context_window, request.user.username)
@@ -102,10 +97,17 @@ class ChatViewSet(viewsets.ModelViewSet):
                     full_reply += token
                     yield token
                 
-                # Database update MUST happen after stream finishes or be handled asynchronously
-                # Doing it here is risky if connection breaks, but acceptable for MVP
-                current_history.append({"role": "user", "message": user_prompt})
-                current_history.append({"role": "assistant", "message": full_reply})
+                current_history.append({
+                    "role": "user", 
+                    "content": user_prompt,
+                    "message": user_prompt 
+                })
+                current_history.append({
+                    "role": "assistant", 
+                    "content": full_reply,
+                    "message": full_reply
+                })
+                
                 history_obj.content = current_history
                 history_obj.to_be_summarized = True
                 history_obj.save()
@@ -174,19 +176,14 @@ class UserConsentViewSet(viewsets.ModelViewSet):
         """
         Overriding create to handle IP capture and Cookie setting
         """
-        # 1. Standard DRF validation
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        # 2. Save the instance with the extra system data
-        # We pass these into save() so they override the read_only constraints for the save action
         self.perform_create(serializer)
 
-        # 3. Create the standard DRF JSON response
         headers = self.get_success_headers(serializer.data)
         response = Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
 
-        # 4. Attach the Cookie to the response
         response.set_cookie(
             key='consent_version_held',
             value=serializer.data['consent_version'],
@@ -198,27 +195,21 @@ class UserConsentViewSet(viewsets.ModelViewSet):
         return response
 
     def perform_create(self, serializer):
-        # This is where we inject the data not provided by the user
         serializer.save(
             ip_address=self.get_client_ip(self.request),
             user_agent=self.request.META.get('HTTP_USER_AGENT', ''),
             user=self.request.user if self.request.user.is_authenticated else None
         )
     @action(detail=False, methods=['post'])
-    @authentication_classes([]) # <--- THIS IS THE FIX. It disables auth/CSRF for this check.
+    @authentication_classes([]) 
     def needs_new_consent(self, request):
-        """
-        Endpoint to check if the user needs to provide consent.
-        """
-        # 1. Define your current required version
         CURRENT_VERSION = "v1.0-2026" 
 
-        # 2. Get the version from the user's cookie
         user_held_version = request.COOKIES.get('consent_version_held')
 
-        print(f"DEBUG: Cookie received: {user_held_version}") # Check your server console for this print
+        print(f"DEBUG: Cookie received: {user_held_version}")
 
-        # 3. Compare
+        
         needs_consent = False
         if not user_held_version or user_held_version != CURRENT_VERSION:
             needs_consent = True
@@ -233,15 +224,12 @@ class OrgNodeViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['get'])
     def health_dashboard(self, request, pk=None):
-        # 1. Permission Check (IsHierarchicalSuperior runs here automatically)
         target_node = self.get_object() 
         #requester_node = request.user.org_node
 
         try:
-            # FIX: Use lowercase 'node' (field name), not 'OrgNode' (class name)
             dashboard = TeamData.objects.get(node=target_node)# this is to see his own team's performance data, not the subordinates data. The subordinate data is in the TeamData model and is accessed in the 'else' block below.
             
-            # FIX: Must serialize the data before returning
             serializer = TeamDataSerializer(dashboard)##
             return Response(serializer.data)
             
@@ -357,3 +345,6 @@ class TherapistNeededView(viewsets.ModelViewSet):
             submitted_at=timezone.now(), 
             in_need=True
         )
+
+
+#class Download(viewsets.ModelViewSet):
