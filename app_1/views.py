@@ -44,7 +44,6 @@ class ChatViewSet(viewsets.ModelViewSet):
         if chat_id is None:
              return UserChatDB.objects.none()
         
-        # Security: Ensure user owns the chat
         chat_session = get_object_or_404(UserHomepageDB, id=chat_id, owner=self.request.user)
         return UserChatDB.objects.filter(chat=chat_session, owner=self.request.user)
 

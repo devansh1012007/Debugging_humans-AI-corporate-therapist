@@ -18,7 +18,7 @@ def therpy_ai_response(user_prompt, messages_list, user_name):
         "model_override": "therapy-ai",
     }
     r = requests.post(
-        "http://172.25.174.151:8001/chat/stream",
+        "http://172.25.188.183:8001/chat/stream",
         json=payload,
         stream=True,
         #timeout=30 
@@ -57,7 +57,7 @@ def consiler_ai_responce(user_prompt, messages_list, user_name):
         "workspace_context": "the company is in Tamil Nadu, respect it's believes",
         "model_override": "problem-solver",
     }
-        r = requests.post("http://172.25.163.152:8001/chat/stream",
+        r = requests.post("http://172.25.188.183:8001/chat/stream",
             json=payload,
             stream=True
         )
@@ -76,7 +76,7 @@ def summarize_chat_history(conversations):
     }
 
     response = requests.post(
-        "http://26.80.229.208:8001/summarizer",
+        "http://172.25.188.183:8001/summarizer",
         json=payload
     )
     return response.json()["output"]
@@ -89,7 +89,7 @@ def personality_extractor(conversations,existing_personality_profile):
     }
 
     response = requests.post(
-        "http://26.80.229.208:8001/personality_extractor",
+        "http://172.25.188.183:8001/personality_extractor",
         json = payload
     )
     return response.json()["output"]
@@ -117,6 +117,16 @@ def ai_response(payload):
 
 """
 
+def assesment(existing_profile,conversations):
+    payload = {
+        "prev_ass": existing_profile,
+        "convo": conversations,
+        
+    }
 
-
-
+    response = requests.post(
+        "http://172.25.188.183:8001/assessments",
+        json = payload
+    )
+    response.raise_for_status()
+    return response.json()["result"]

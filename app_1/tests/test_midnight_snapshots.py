@@ -7,7 +7,7 @@ from ..models import (
     UserDashboard, UserDashboardHistory,
     UserChatDB, UserHomepageDB
 )
-from ..tasks import process_midnight_snapshots
+from ..tasks import process_midnight_snapshots,get_report
 
 class MidnightSnapshotTest(TestCase):
     
@@ -62,8 +62,8 @@ class MidnightSnapshotTest(TestCase):
             owner=self.manager_user,
             chat=chat,
             content=[
-                {"role": "user", "content": "I'm feeling stressed"},
-                {"role": "assistant", "content": "Let's talk about that"}
+                {"role": "user", "message": "I'm feeling stressed"},
+                {"role": "assistant", "message": "Let's talk about that"}
             ]
         )
     

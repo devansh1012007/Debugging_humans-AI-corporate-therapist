@@ -7,7 +7,7 @@ from .models import (
     Tharipistneeded, UserDrillDown, UserFeedback, UserHomepageDB, UserChatDB, UserPersonalityData, 
     TeamData, UserPsycoData, 
     Company, UserDashboard, UserDashboardHistory, TeamDataHistory, 
-    UserChatSummary, StructureLevel, OrgNode,UserConsent
+    UserChatSummary, StructureLevel, OrgNode,UserConsent,UserPsycoDataHistory
 )
 
 # --- USER SERIALIZERS ---
@@ -35,7 +35,13 @@ class UserPsycoDataSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserPsycoData
         fields = ['content', 'owner']
-    
+
+class UserPsycoDataHistorySerializer(serializers.ModelSerializer):
+    owner = serializers.HiddenField(default=serializers.CurrentUserDefault())
+    class Meta:
+        model = UserPsycoDataHistory
+        fields = ['content', 'owner']
+
 class UserPersonalityDataSerializer(serializers.ModelSerializer):
     owner = serializers.HiddenField(default=serializers.CurrentUserDefault())
     class Meta:
