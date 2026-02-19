@@ -14,12 +14,12 @@ from django.db import transaction
 from django.http import StreamingHttpResponse
 from django.contrib.auth.models import User
 from rest_framework.decorators import authentication_classes
-# Social Auth
+
 from allauth.socialaccount.providers.google.views import GoogleOAuth2Adapter
 from allauth.socialaccount.providers.oauth2.client import OAuth2Client
 from dj_rest_auth.registration.views import SocialLoginView
 
-# Local Imports
+
 from .models import (
     OrgNode, Tharipistneeded, UserHomepageDB, 
     UserChatDB, TeamData, UserConsent, UserDrillDown, UserDashboard, 
@@ -243,39 +243,28 @@ class OrgNodeViewSet(viewsets.ModelViewSet):
         - 'replacement_id' is the NEW person (taking the seat).
         """
         old_node_id = pk
-        new_node_id = request.data.get('replacement') # Expecting ID (e.g., 5), not User object
+        new_node_id = request.data.get('replacement') 
 
         if not new_node_id:
             return Response({"error": "replacement ID is required"}, status=400)
 
         try:
             with transaction.atomic():
-                # FIX: Query by ID (pk), not by User, to ensure we get the node specifically
+                
                 old_node = OrgNode.objects.get(pk=old_node_id)
                 new_node = OrgNode.objects.get(pk=new_node_id)
 
-                # Step 1: Validate Company Match
                 if old_node.company != new_node.company:
                     return Response({"error": "Cannot cross-promote between companies"}, status=400)
 
-                # Step 2: "Inheritance" - New Node moves up to Old Node's spot
-                # We give the New Person the Old Person's Rank & Boss
                 new_node.structure_level = old_node.structure_level
                 
-                # Handling the Parent logic
-                # If New Node was reporting to Old Node, New Node's parent becomes Old Node's parent.
                 new_node.parent = old_node.parent 
                 
                 new_node.save()
 
-                # Step 3: "Adoption" - Move Old Node's children to New Node
-                # All people who used to report to Old Node now report to New Node.
-                # FIX: Use 'id' to exclude, it's safer.
                 old_node.children.exclude(id=new_node.id).update(parent=new_node)
 
-                # Step 4: Fire the Old Node
-                # This deletes the Old Node row. 
-                # Note: Because 'UserDashboard' is OneToOne with CASCADE, the old user's dashboard is deleted.
                 old_node.delete()
                 generate_drill_down_lists(new_node.OrgNode)
                 return Response({
@@ -294,18 +283,12 @@ class RegisterView(generics.CreateAPIView):
     serializer_class = RegisterSerializer
 
 
-from allauth.socialaccount.providers.google.views import GoogleOAuth2Adapter
-from allauth.socialaccount.providers.oauth2.client import OAuth2Client
-from dj_rest_auth.registration.views import SocialLoginView
-from django.conf import settings
-from rest_framework_simplejwt.tokens import RefreshToken # <--- Add this import
 
 class GoogleLogin(SocialLoginView):
     adapter_class = GoogleOAuth2Adapter
     client_class = OAuth2Client
 
     def post(self, request, *args, **kwargs):
-        # 1. Trick the serializer (as we discussed before)
         if request.data.get('access_token') and not request.data.get('id_token'):
             if isinstance(request.data, dict):
                 request.data['id_token'] = request.data['access_token']
@@ -314,24 +297,17 @@ class GoogleLogin(SocialLoginView):
                 data['id_token'] = data['access_token']
                 request._full_data = data
                 
-        # 2. Get the default response
         response = super().post(request, *args, **kwargs)
 
-        # 3. FORCE JWT: If the response is just a 'key' (token), swap it for access/refresh
         if response.status_code == 200 and 'key' in response.data:
-            # The 'user' object is available on the view after login
             user = self.user 
             
-            # Generate the tokens manually
             refresh = RefreshToken.for_user(user)
             
-            # Update the response data
             response.data['access'] = str(refresh.access_token)
             response.data['refresh'] = str(refresh)
             
-            # Optional: Remove the 'key' if you don't want it
-            # del response.data['key']
-
+            
         return response
     
 class TherapistNeededView(viewsets.ModelViewSet):

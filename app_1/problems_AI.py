@@ -1,10 +1,5 @@
-# app_1/problems_AI.py
-# problems_AI.py
-import ollama
-import pydantic
 from ollama import Client
 import os
-
 from typing import List
 from pydantic import BaseModel
 # this will be updated  soon

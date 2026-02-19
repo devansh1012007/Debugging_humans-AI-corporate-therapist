@@ -12,7 +12,7 @@ def therpy_ai_response(user_prompt, messages_list, user_name):
    
     payload = {
         "message": user_prompt,
-        "conversation": messages_list, # Creates a shallow copy
+        "conversation": messages_list,
         "user_profile": user_name,
         "workspace_context": "the company is in Tamil Nadu, respect it's believes",
         "model_override": "therapy-ai",
@@ -24,7 +24,7 @@ def therpy_ai_response(user_prompt, messages_list, user_name):
         #timeout=30 
     )
     
-    # 2. Iterate through the stream correctly
+    
     
     for line in r.iter_lines():
         if not line:
@@ -49,7 +49,6 @@ def therpy_ai_response(user_prompt, messages_list, user_name):
             break    
 
 def consiler_ai_responce(user_prompt, messages_list, user_name):
-    # Example using external request if needed, otherwise fallback to Ollama
         payload = {
         "message": user_prompt,
         "conversation": messages_list, # Creates a shallow copy

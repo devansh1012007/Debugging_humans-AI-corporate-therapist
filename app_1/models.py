@@ -1,6 +1,4 @@
-# app_1/models.py
-from django.db import models
-# models.py
+
 from django.db import models
 from django.contrib.auth.models import User
 import uuid
@@ -25,7 +23,6 @@ class UserChatSummary(OwnedModel):
     content = models.JSONField()
     chat = models.OneToOneField(UserHomepageDB, on_delete=models.CASCADE, related_name="summary")
 
-# --- BASE MODEL ---
 
 
 class Company(models.Model):

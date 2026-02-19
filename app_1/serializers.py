@@ -10,7 +10,6 @@ from .models import (
     UserChatSummary, StructureLevel, OrgNode,UserConsent,UserPsycoDataHistory
 )
 
-# --- USER SERIALIZERS ---
 
 class HomePageSerializer(serializers.ModelSerializer):
     owner = serializers.HiddenField(default=serializers.CurrentUserDefault()) 
@@ -58,11 +57,7 @@ class UserDashboardSerializer(serializers.ModelSerializer):
         model = UserDashboard
         fields = ['owner', 'content']
 
-# --- ORG SERIALIZERS ---
-
-# RENAMED to avoid conflict with Model 'Company'
 class CompanySerializer(serializers.ModelSerializer):
-    # REMOVED 'owner' because Company model does not have an owner field
     class Meta:
         model = Company
         fields = ['name', 'created_at']
@@ -73,7 +68,6 @@ class StructureLevelSerializer(serializers.ModelSerializer):
         fields = ['company', 'name', 'level_rank']
 
 class OrgNodeSerializer(serializers.ModelSerializer):
-    # Removed 'owner' from fields as we removed it from Model
     class Meta:
         model = OrgNode
         fields = ['id', 'user', 'name', 'company', 'structure_level', 'parent']
@@ -83,10 +77,7 @@ class TeamDataSerializer(serializers.ModelSerializer):
         model = TeamData
         fields = ['node', 'content']
 
-# --- FORM & FEEDBACK SERIALIZERS ---
-
 class UserFeedbackSerializer(serializers.ModelSerializer):
-    # ADDED owner hidden field (Required by OwnedModel)
     owner = serializers.HiddenField(default=serializers.CurrentUserDefault())
     class Meta:
         model = UserFeedback
@@ -97,11 +88,10 @@ class UserFeedbackSerializer(serializers.ModelSerializer):
 class UserConsentSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserConsent
-        # We only require 'consent_version' from the user input
         fields = ['user', 'ip_address', 'user_agent', 'agreed_at', 'consent_version']
         read_only_fields = ['id', 'ip_address', 'user_agent', 'agreed_at', 'user']
 
-# --- HISTORY & SUMMARY SERIALIZERS ---
+
 
 class UserDashboardHistorySerializer(serializers.ModelSerializer):
     class Meta:
@@ -114,13 +104,12 @@ class TeamDataHistorySerializer(serializers.ModelSerializer):
         fields = ['node', 'timestamp', 'content']
 
 class UserChatSummarySerializer(serializers.ModelSerializer):
-    # ADDED owner hidden field
+
     owner = serializers.HiddenField(default=serializers.CurrentUserDefault())
     class Meta:
         model = UserChatSummary
         fields = ['owner', 'content', 'chat']
 
-# --- AUTH SERIALIZER ---
 
 class RegisterSerializer(serializers.ModelSerializer):
     email = serializers.EmailField(
@@ -146,7 +135,6 @@ class TherapistNeededSerializer(serializers.ModelSerializer):
     class Meta:
         model = Tharipistneeded
         fields = '__all__'
-        # Add this to prevent the "This field is required" error
         extra_kwargs = {
             'owner': {'read_only': True}, 
             'submitted_at': {'read_only': True},

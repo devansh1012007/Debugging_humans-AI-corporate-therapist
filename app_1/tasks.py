@@ -262,7 +262,6 @@ def get_report():
 def process_midnight_snapshots():
     users = User.objects.all()
     
-    # --- PART 1: User Dashboard ---
     for user in users:
         chats = []
         personal_doc, created = UserDashboard.objects.get_or_create(
@@ -272,7 +271,6 @@ def process_midnight_snapshots():
         user_chats = UserChatDB.objects.filter(owner=user)
         Personal_list = personal_doc.content if isinstance(personal_doc.content, list) else []
         
-        # Initialize processed_data with existing data as fallback
         processed_data = {
             "content": Personal_list
         }
@@ -280,7 +278,6 @@ def process_midnight_snapshots():
         DashBoardDataAI = None
         total_words = 0
         
-        # LOOP THROUGH CHATS
         for chat in user_chats:
             for item in chat.content: 
                 c = item.get("message", "")   
@@ -289,7 +286,6 @@ def process_midnight_snapshots():
                 estimated_tokens = math.ceil(total_words * 1.5)
                 chats.append(chat)
                 
-                # Condition 1: Batch is large enough
                 if estimated_tokens > 30000:
                     DashBoardDataAI = UserDashboard_data(chats, processed_data)
                     processed_data = {
@@ -358,4 +354,4 @@ def process_midnight_snapshots():
             master_doc.save()
 
 
-# user personality 
+ 
