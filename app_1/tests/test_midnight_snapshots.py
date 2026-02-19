@@ -7,13 +7,12 @@ from ..models import (
     UserDashboard, UserDashboardHistory,
     UserChatDB, UserHomepageDB
 )
-from ..tasks import process_midnight_snapshots
+from ..tasks import process_midnight_snapshots,get_report
 
 class MidnightSnapshotTest(TestCase):
     
     def setUp(self):
         """Create test data"""
-        # Create company structure
         self.company = Company.objects.create(name="Test Corp")
         self.ceo_level = StructureLevel.objects.create(
             company=self.company,
@@ -26,7 +25,6 @@ class MidnightSnapshotTest(TestCase):
             level_rank=2
         )
         
-        # Create users
         self.ceo_user = User.objects.create_user(
             username='ceo',
             password='test123'
@@ -36,7 +34,6 @@ class MidnightSnapshotTest(TestCase):
             password='test123'
         )
         
-        # Create org nodes
         self.ceo_node = OrgNode.objects.create(
             user=self.ceo_user,
             name="CEO Node",
@@ -53,7 +50,6 @@ class MidnightSnapshotTest(TestCase):
             parent=self.ceo_node
         )
         
-        # Create chat data
         chat = UserHomepageDB.objects.create(
             owner=self.manager_user,
             title="Test Chat"
@@ -62,8 +58,8 @@ class MidnightSnapshotTest(TestCase):
             owner=self.manager_user,
             chat=chat,
             content=[
-                {"role": "user", "content": "I'm feeling stressed"},
-                {"role": "assistant", "content": "Let's talk about that"}
+                {"role": "user", "message": "I'm feeling stressed"},
+                {"role": "assistant", "message": "Let's talk about that"}
             ]
         )
     
@@ -71,10 +67,8 @@ class MidnightSnapshotTest(TestCase):
         """Test TeamData JSON format"""
         process_midnight_snapshots()
         
-        # Retrieve saved data
         team_data = TeamData.objects.get(node=self.ceo_node)
         
-        # Print for debugging
         print("\n=== TEAM DATA ===")
         print(json.dumps(team_data.content, indent=2))
         
@@ -90,7 +84,6 @@ class MidnightSnapshotTest(TestCase):
         self.assertIn('common_problems', content)
         self.assertIn('recommendations', content)
         
-        # Validate policy_changes structure
         self.assertIsInstance(content['policy_changes'], list)
         if content['policy_changes']:
             policy = content['policy_changes'][0]
@@ -101,14 +94,11 @@ class MidnightSnapshotTest(TestCase):
         """Test UserDashboard JSON format"""
         process_midnight_snapshots()
         
-        # Retrieve saved data
         dashboard = UserDashboard.objects.get(owner=self.manager_user)
         
-        # Print for debugging
         print("\n=== USER DASHBOARD ===")
         print(json.dumps(dashboard.content, indent=2))
         
-        # Validate structure
         self.assertIsInstance(dashboard.content, list)
         self.assertEqual(len(dashboard.content), 1)
         
@@ -120,7 +110,6 @@ class MidnightSnapshotTest(TestCase):
         self.assertIn('common_problems', content)
         self.assertIn('recommendations', content)
         
-        # Validate positives structure
         self.assertIsInstance(content['positives'], list)
         if content['positives']:
             positive = content['positives'][0]
@@ -130,12 +119,10 @@ class MidnightSnapshotTest(TestCase):
         """Test that history is properly tracked"""
         process_midnight_snapshots()
         
-        # Check team history
         team_history = TeamDataHistory.objects.get(node=self.ceo_node)
         self.assertIsInstance(team_history.content, list)
         self.assertGreater(len(team_history.content), 0)
         
-        # Check user history
         user_history = UserDashboardHistory.objects.get(owner=self.manager_user)
         self.assertIsInstance(user_history.content, list)
         self.assertGreater(len(user_history.content), 0)

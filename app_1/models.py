@@ -1,6 +1,4 @@
-# app_1/models.py
-from django.db import models
-# models.py
+
 from django.db import models
 from django.contrib.auth.models import User
 import uuid
@@ -25,7 +23,6 @@ class UserChatSummary(OwnedModel):
     content = models.JSONField()
     chat = models.OneToOneField(UserHomepageDB, on_delete=models.CASCADE, related_name="summary")
 
-# --- BASE MODEL ---
 
 
 class Company(models.Model):
@@ -58,7 +55,7 @@ class UserDashboard(models.Model):
     owner = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
     content = models.JSONField()
 
-# Fixed Typo: Dashbioard -> Dashboard
+
 class UserDashboardHistory(models.Model):
     owner = models.OneToOneField(User, on_delete=models.CASCADE)
     #dashboard = models.ForeignKey(UserDashboard, on_delete=models.CASCADE, related_name='history')
@@ -80,37 +77,32 @@ class TeamDataHistory(models.Model):
     node = models.OneToOneField(OrgNode, on_delete=models.CASCADE)
     #team_data = models.ForeignKey(TeamData, on_delete=models.CASCADE, related_name='history_entries')
     timestamp = models.DateTimeField(auto_now_add=True)
-    content = models.JSONField()
+    content = models.JSONField(default=list)
 
 # --- MISC MODELS ---
 
 class UserPsycoData(models.Model):
-    content = models.JSONField()
+    owner = models.OneToOneField(User, on_delete=models.CASCADE)
+    content = models.JSONField(default=list)
 
+class UserPsycoDataHistory(models.Model):
+    owner = models.ForeignKey(User, on_delete=models.CASCADE)
+    content = models.JSONField(default=list)
 # Fixed Typo: Summery -> Summary
 
-class UserPersonalityData(OwnedModel):
+class UserPersonalityData(models.Model):
     owner = models.OneToOneField(User, on_delete=models.CASCADE)
-    content = models.JSONField()
+    content = models.JSONField(default=list)
 
-class UserPersonalityDataHistoric(OwnedModel):
-    content = models.JSONField()
+class UserPersonalityDataHistoric(models.Model):
+    owner = models.OneToOneField(User, on_delete=models.CASCADE)
+    content = models.JSONField(default=list)
     
 class UserFeedback(OwnedModel):
     feedback = models.TextField()
     rating = models.IntegerField(default=5)
     submitted_at = models.DateTimeField(auto_now_add=True)
-'''
-class PrivacyPolicyAcceptance(models.Model):
-    #user = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True)
-    ip_address = models.GenericIPAddressField(null=True)
-    consent_version = models.CharField(max_length=50, default="v1.0-2026")  # e.g., "v1.0-2023"
-    agreed_at = models.DateTimeField(auto_now_add=True)
-    user_agent = models.TextField(blank=True) # Stores browser info
 
-    def __str__(self):
-        return f"Consent {self.consent_version} by {self.ip_address}"
-'''    
 class UserConsent(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True)
     ip_address = models.GenericIPAddressField(null=True)

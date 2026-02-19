@@ -1,10 +1,5 @@
-# app_1/problems_AI.py
-# problems_AI.py
-import ollama
-import pydantic
 from ollama import Client
 import os
-
 from typing import List
 from pydantic import BaseModel
 # this will be updated  soon
@@ -34,10 +29,13 @@ class policy_change(BaseModel):
 class policy_changesLister(BaseModel):
     policy_changes : list[policy_change]
 
+class Note(BaseModel):
+    note : str
 class userDashboardLister(BaseModel):
     positives : List[positivepoint]
     recommendations : List[recommendation]
     common_problems : List[Problem]
+    Notes_for_self : List[Note]
 
 class TeamDashbordLister(BaseModel):
     policy_changes : list[policy_change]
@@ -46,7 +44,7 @@ class TeamDashbordLister(BaseModel):
 
 def UserDashboard_data(chats, exiting_data):
     exiting_data_str = str(exiting_data)
-    prompt = f"""   
+    prompt = """   
     You are a personal mental health and wellness counselor.
 
     You will receive:
@@ -74,6 +72,11 @@ def UserDashboard_data(chats, exiting_data):
             {
                 "recommendation": "Specific, actionable recommendation for personal wellbeing improvement"
             }
+        ],
+        "Notes_for_self": [
+        {
+            "note":"add data you whould like to tell the ai who is going to work on the next data set"
+        }
         ]
     }]
 
@@ -81,17 +84,17 @@ def UserDashboard_data(chats, exiting_data):
     1. **positives**: Highlight strengths and progress (3-6 items)
     2. **common_problems**: Identify recurring personal challenges (3-8 items)
     3. **recommendations**: Provide personalized strategies (5-10 items)
-
+    """ +f"""
     Now analyze the following data:
     Chat summaries: {chats}
     Existing personal data: {exiting_data_str}
 
     Remember: Return ONLY the JSON object, nothing else.
     """
-    ai_url = os.environ.get('AI_CHAT_ENDPOINT', 'http://192.168.29.162:11434')
+    ai_url = os.environ.get('AI_CHAT_ENDPOINT', 'http://172.25.188.183:11434')
     client = Client(host=ai_url,)#timeout=httpx.Timeout(180.0) 
     try:
-        response_obj = client.chat(model='gemma3:4b',
+        response_obj = client.chat(model='qwen2.5:3b-instruct',
                                    messages=[{'role': 'user', 'content': prompt}],
                                    format=userDashboardLister.model_json_schema(),
                                    )
@@ -104,7 +107,7 @@ def UserDashboard_data(chats, exiting_data):
 
 def TeamDashboard_data(chats, exiting_data):
     exiting_data_str = str(exiting_data)
-    prompt = f"""   
+    prompt = """   
     You are an organizational psychologist and HR analyst. 
 
     You will receive:
@@ -117,7 +120,7 @@ def TeamDashboard_data(chats, exiting_data):
     CRITICAL: You MUST respond with ONLY a valid JSON object. No explanations, no preamble, no markdown formatting, no ```json``` tags. Just the raw JSON object.
 
     The JSON structure must be EXACTLY:
-    [{
+    {
         "policy_changes": 
             [{
                 "title": "Brief policy title",
@@ -135,7 +138,7 @@ def TeamDashboard_data(chats, exiting_data):
                 "recommendation": "Specific actionable recommendation for leadership"
             }]
                 
-    }]
+    }
 
     ANALYSIS GUIDELINES:
     1. **policy_changes**: Identify needed organizational policies (3-8 items)
@@ -146,17 +149,17 @@ def TeamDashboard_data(chats, exiting_data):
     
     3. **recommendations**: Provide actionable next steps for managers (3-8 items)
        - Each should be specific and implementable
-
+    """+f"""
     Now analyze the following data:
     list of exiting problems and solutions of all the employees : {chats}
     Existing team data: {exiting_data_str}
 
     Remember: Return ONLY the JSON object, nothing else.
     """
-    ai_url = os.environ.get('AI_CHAT_ENDPOINT', 'http://192.168.29.162:11434')
+    ai_url = os.environ.get('AI_CHAT_ENDPOINT', 'http://172.25.188.183:11434')
     client = Client(host=ai_url,)#timeout=httpx.Timeout(180.0) 
     try:
-        response_obj = client.chat(model='gemma3:4b',
+        response_obj = client.chat(model='qwen2.5:3b-instruct',
                                    messages=[{'role': 'user', 'content': prompt}],
                                    format=TeamDashbordLister.model_json_schema(),
                                    )
@@ -260,3 +263,5 @@ def policy_changes():
     pass
 
 '''
+def personality_extractor():
+    pass
