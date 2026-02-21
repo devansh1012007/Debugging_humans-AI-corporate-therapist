@@ -23,8 +23,6 @@ class UserChatSummary(OwnedModel):
     content = models.JSONField()
     chat = models.OneToOneField(UserHomepageDB, on_delete=models.CASCADE, related_name="summary")
 
-
-
 class Company(models.Model):
     name = models.CharField(max_length=255, unique=True)
     created_at = models.DateTimeField(auto_now_add=True)
