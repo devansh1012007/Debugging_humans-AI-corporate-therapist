@@ -91,8 +91,8 @@ def UserDashboard_data(chats, exiting_data):
 
     Remember: Return ONLY the JSON object, nothing else.
     """
-    ai_url = os.environ.get('AI_CHAT_ENDPOINT', 'http://172.25.188.183:11434')
-    client = Client(host=ai_url,)#timeout=httpx.Timeout(180.0) 
+    ai_url = os.environ.get('AI_CHAT_ENDPOINT_6',)
+    client = Client(host=ai_url)#timeout=httpx.Timeout(180.0) 
     try:
         response_obj = client.chat(model='qwen2.5:3b-instruct',
                                    messages=[{'role': 'user', 'content': prompt}],
@@ -156,7 +156,7 @@ def TeamDashboard_data(chats, exiting_data):
 
     Remember: Return ONLY the JSON object, nothing else.
     """
-    ai_url = os.environ.get('AI_CHAT_ENDPOINT', 'http://172.25.188.183:11434')
+    ai_url = os.environ.get('AI_CHAT_ENDPOINT')#'http://172.25.188.183:11434'
     client = Client(host=ai_url,)#timeout=httpx.Timeout(180.0) 
     try:
         response_obj = client.chat(model='qwen2.5:3b-instruct',
