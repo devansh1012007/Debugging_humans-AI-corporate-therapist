@@ -3,23 +3,19 @@ from pathlib import Path
 import os
 from datetime import timedelta
 from dotenv import load_dotenv
-
-# Load environment variables from a .env file
 load_dotenv()
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = os.environ.get('SECRET_KEY', default='django-insecure-!&p4_a3_(x65@1c*m_93#dztsav#1lj!m0s4z0d@b$wkn8s$l7')
+SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY')
 
 DEBUG = True
 CORS_ALLOW_CREDENTIALS = True
 CSRF_TRUSTED_ORIGINS = [
-    'https://wilson-coaching-phenomenon-found.trycloudflare.com',
     'https://*.trycloudflare.com',
 ]
 
 ALLOWED_HOSTS = [ # '*' for doker deployment
-    'wilson-coaching-phenomenon-found.trycloudflare.com',
     'localhost',
     '127.0.0.1',
     'host.docker.internal',
@@ -34,7 +30,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
 
-    # Third Party Apps
+
     'rest_framework',
     'rest_framework.authtoken',
 #     'rest_framework_simplejwt', 
@@ -113,7 +109,6 @@ USE_I18N = True
 USE_TZ = True
 STATIC_URL = 'static/'
 
-# --- DRF CONFIGURATION (STRICT JWT) ---
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'dj_rest_auth.jwt_auth.JWTCookieAuthentication',
@@ -124,7 +119,7 @@ REST_USE_JWT = True
 JWT_AUTH_COOKIE = None
 JWT_AUTH_REFRESH_COOKIE = None
 
-# --- JWT SETTINGS ---
+
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(minutes=30),
     'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
@@ -163,9 +158,8 @@ ACCOUNT_EMAIL_VERIFICATION = 'optional'
 
 SILENCED_SYSTEM_CHECKS = ['account.W001']
 
-# Static files (CSS, JavaScript, Images)
+# static files 
 STATIC_URL = 'static/'
 LOGIN_REDIRECT_URL = '/'
 LOGOUT_REDIRECT_URL = '/'
 CORS_ALLOW_ALL_ORIGINS = True # for testing purposes only
-#CORS_ALLOWED_ORIGINS = ["http://127.0.0.1:5500",]
