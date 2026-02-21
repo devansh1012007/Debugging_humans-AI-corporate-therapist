@@ -2,24 +2,20 @@
 from datetime import date
 from .models import OrgNode, UserChatSummary, UserDashboard, UserDashboard,User, UserChatDB, UserDrillDown, TeamData, TeamDataHistory, UserDashboardHistory,UserPersonalityData,UserPsycoData,UserPsycoDataHistory,UserPersonalityDataHistoric
 from django.shortcuts import get_object_or_404
-from .problems_AI import TeamDashboard_data, UserDashboard_data,personality_extractor
+from .problems_AI import TeamDashboard_data, UserDashboard_data
 from .Ai import summarize_chat_history,assesment
 import math
 def generate_drill_down_lists(target):
-    # 1. Fetch direct subordinates
+   
     subordinates = target.children.all()
     
-    # 2. Get or create the container for this specific user
-    # Note: Using 'owner' to match your UserDrillDown model
     drill_down_list, created = UserDrillDown.objects.get_or_create(
         owner=target.user,
         defaults={'content': []}
     )
 
-    # 3. Build the new list
     new_drill_down = []
     
-    # Add the current user (The "Root" of this view)
     new_drill_down.append({
         "node_id": target.id,
         "name": target.name,
@@ -27,7 +23,6 @@ def generate_drill_down_lists(target):
         "has_team": subordinates.exists() 
     })
 
-    # Add all direct reports
     for child in subordinates:
         new_drill_down.append({
             "node_id": child.id,
@@ -36,7 +31,6 @@ def generate_drill_down_lists(target):
             "has_team": child.children.exists() 
         })
 
-    # 4. Save the new list directly (Overwriting the old one)
     drill_down_list.content = new_drill_down
     drill_down_list.save()
     
@@ -56,7 +50,6 @@ def get_direct_reports_ids(root_id, include_self=True):
 def mid_night():# this is for chat summry--> but rn i am not to use it ,also i need to improve it for updated format of archit's ai 
     users = User.objects.all()
     for user in users:
-        # Get all chat sessions for this user   
         user_chats = UserChatDB.objects.filter(owner=user)
         for chat_session in user_chats:
                 history_obj = get_object_or_404(UserChatDB, chat=chat_session, owner=user, to_be_summarized=True)
@@ -327,9 +320,7 @@ def process_midnight_snapshots():
             )
             
             master_list = master_doc.content if isinstance(master_doc.content, list) else []            
-            '''processed_data={
-                "centent":master_list
-                }'''
+            
             for node_id in target_group_ids:
                 node = OrgNode.objects.get(id=node_id)
                 user_DashBoard = UserDashboard.objects.filter(owner=node.user)

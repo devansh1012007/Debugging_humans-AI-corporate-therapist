@@ -39,7 +39,6 @@ class StructureLevel(models.Model):
         ordering = ['level_rank']
 
 class OrgNode(models.Model):
-    # Removed 'owner' - 'user' is sufficient to know who holds the position
     user = models.OneToOneField(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='org_node')
     name = models.CharField(max_length=255)
     company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name='nodes')
@@ -49,8 +48,6 @@ class OrgNode(models.Model):
     def __str__(self):
         return f"{self.name} ({self.structure_level.name})"
 
-# --- USER DATA MODELS ---
-
 class UserDashboard(models.Model):
     owner = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
     content = models.JSONField()
@@ -58,37 +55,29 @@ class UserDashboard(models.Model):
 
 class UserDashboardHistory(models.Model):
     owner = models.OneToOneField(User, on_delete=models.CASCADE)
-    #dashboard = models.ForeignKey(UserDashboard, on_delete=models.CASCADE, related_name='history')
     timestamp = models.DateTimeField(auto_now_add=True)
     content = models.JSONField()
 
 class UserDrillDown(OwnedModel):
-    # owner is inherited
     content = models.JSONField(default=list)
-
-# --- TEAM DATA MODELS ---
 
 class TeamData(models.Model):
     node = models.OneToOneField(OrgNode, on_delete=models.CASCADE, related_name='team_data')
     content = models.JSONField(default=list)
 
 class TeamDataHistory(models.Model):
-    # Changed 'owner' to 'node_ref' to avoid confusion with User model
     node = models.OneToOneField(OrgNode, on_delete=models.CASCADE)
-    #team_data = models.ForeignKey(TeamData, on_delete=models.CASCADE, related_name='history_entries')
     timestamp = models.DateTimeField(auto_now_add=True)
     content = models.JSONField(default=list)
 
-# --- MISC MODELS ---
 
 class UserPsycoData(models.Model):
     owner = models.OneToOneField(User, on_delete=models.CASCADE)
     content = models.JSONField(default=list)
 
 class UserPsycoDataHistory(models.Model):
-    owner = models.ForeignKey(User, on_delete=models.CASCADE)
+    owner = models.OneToOneField(User, on_delete=models.CASCADE)
     content = models.JSONField(default=list)
-# Fixed Typo: Summery -> Summary
 
 class UserPersonalityData(models.Model):
     owner = models.OneToOneField(User, on_delete=models.CASCADE)

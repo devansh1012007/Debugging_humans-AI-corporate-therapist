@@ -3,12 +3,12 @@ from rest_framework import permissions
 from django.db import connection
 from .models import OrgNode
 class IsHierarchicalSuperior(permissions.BasePermission):
-    def has_object_permission(self, request, view, obj):
+    '''def has_object_permission(self, request, view, obj):
         # Allow Self
         if request.user.org_node.id == obj.id:
             return True
 
-        # Allow Downline (Recursive check)
+        # need to chage it to orm
         requester_id = request.user.org_node.id
         query = """
             WITH RECURSIVE subordinates AS (
@@ -21,20 +21,17 @@ class IsHierarchicalSuperior(permissions.BasePermission):
         """
         with connection.cursor() as cursor:
             cursor.execute(query, [requester_id, obj.id])
-            return bool(cursor.fetchone())
+            return bool(cursor.fetchone())'''
         
-    '''
+    
  
 
     def has_object_permission(self, request, view, obj):
-        requester = request.user.org_node # Assuming the user has a link to OrgNode
-        
-        if not requester:
+        requester = request.user.org_node.id 
+        if not requester:# basic check if user has an id or not 
             return False
-    
-        # The logic: Is the 'obj' (target) a descendant of 'requester'?
-        # We can check this by looking at the target's ancestry.
-        
+        if request.user.org_node.id == obj.id:
+            return True
         def is_descendant(parent, target):
             current = target.parent
             while current is not None:
@@ -45,4 +42,4 @@ class IsHierarchicalSuperior(permissions.BasePermission):
     
         return is_descendant(requester, obj)
     
-    '''
+    

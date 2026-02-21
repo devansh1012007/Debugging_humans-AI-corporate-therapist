@@ -2,14 +2,14 @@
 import requests
 import ollama
 import os
-
-AI_SERVER_URL = os.getenv('AI_CHAT_ENDPOINT', 'http://localhost:11434')
-#AI_CHAT_ENDPOINT = os.getenv('AI_CHAT_ENDPOINT', 'http://26.217.98.105:8001/chat')
+from urllib.parse import urljoin
 import requests
 import json
 
 def therpy_ai_response(user_prompt, messages_list, user_name):
-   
+    AI_SERVER_URL = os.getenv('AI_CHAT_ENDPOINT')
+    endpoint = "chat/stream"
+    full_url = str(urljoin(AI_SERVER_URL, endpoint))
     payload = {
         "message": user_prompt,
         "conversation": messages_list,
@@ -18,13 +18,11 @@ def therpy_ai_response(user_prompt, messages_list, user_name):
         "model_override": "therapy-ai",
     }
     r = requests.post(
-        "http://172.25.188.183:8001/chat/stream",
+        full_url,
         json=payload,
         stream=True,
         #timeout=30 
     )
-    
-    
     
     for line in r.iter_lines():
         if not line:
@@ -56,7 +54,10 @@ def consiler_ai_responce(user_prompt, messages_list, user_name):
         "workspace_context": "the company is in Tamil Nadu, respect it's believes",
         "model_override": "problem-solver",
     }
-        r = requests.post("http://172.25.188.183:8001/chat/stream",
+        endpoint = "chat/stream"
+        AI_SERVER_URL = os.getenv('AI_CHAT_ENDPOINT_2')
+        full_url = str(urljoin(AI_SERVER_URL, endpoint))
+        r = requests.post(full_url,#"http://172.25.188.183:8001/chat/stream"
             json=payload,
             stream=True
         )
@@ -73,9 +74,12 @@ def summarize_chat_history(conversations):
     payload = {
     "conversation": conversations
     }
-
+    endpoint = "summarizer"
+    AI_SERVER_URL = os.getenv('AI_CHAT_ENDPOINT_3')
+    full_url = str(urljoin(AI_SERVER_URL, endpoint))
+        
     response = requests.post(
-        "http://172.25.188.183:8001/summarizer",
+        full_url,
         json=payload
     )
     return response.json()["output"]
@@ -86,45 +90,28 @@ def personality_extractor(conversations,existing_personality_profile):
         "conversations": conversations,
         "existing_personality_profile": existing_personality_profile
     }
-
+    endpoint = "personality_extractor"
+    AI_SERVER_URL = os.getenv('AI_CHAT_ENDPOINT_4')
+    full_url = str(urljoin(AI_SERVER_URL, endpoint))
+    
     response = requests.post(
-        "http://172.25.188.183:8001/personality_extractor",
+        full_url,
         json = payload
     )
     return response.json()["output"]
 
-"""
-#AI.py
-#from ollama import Client
-import httpx
-import requests
-import os
-def ai_response(payload):
-      
-    #ai_url = os.environ.get('AI_SERVER_URL', 'http://192.168.29.162:11434',)##'http://192.168.1.20:11434'--> ram    #http://192.168.29.162:11434 --> devansh
-    #client = Client(host=ai_url,)#timeout=httpx.Timeout(180.0) 
-    try:
-        #response_obj = client.chat(model='llama3.2:1b', messages=history, stream=False)
-        response_obj = requests.post("http://26.217.98.105:8001/chat",json=payload)# 26.217.98.105 --> vpn
-
-    except Exception as e:
-        final_text = f"Error: {str(e)}"
-    data = response_obj.json()
-    #print(f"Status Code: {response_obj.status_code}")
-    #print(f"Raw Response Content: {response_obj.text}")
-    return data
-
-"""
 
 def assesment(existing_profile,conversations):
     payload = {
         "prev_ass": existing_profile,
-        "convo": conversations,
-        
+        "convo": conversations,    
     }
-
+    endpoint = "assessments"
+    AI_SERVER_URL = os.getenv('AI_CHAT_ENDPOINT_5')
+    full_url = str(urljoin(AI_SERVER_URL, endpoint))
+    
     response = requests.post(
-        "http://172.25.188.183:8001/assessments",
+        full_url,
         json = payload
     )
     response.raise_for_status()

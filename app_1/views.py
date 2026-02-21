@@ -23,13 +23,14 @@ from dj_rest_auth.registration.views import SocialLoginView
 from .models import (
     OrgNode, Tharipistneeded, UserHomepageDB, 
     UserChatDB, TeamData, UserConsent, UserDrillDown, UserDashboard, 
-    UserChatSummary
+    UserChatSummary,UserPsycoData,UserPsycoDataHistory,UserPersonalityDataHistoric,UserPersonalityData
 )
 
 from .serializers import (
     RegisterSerializer, TherapistNeededSerializer, UserConsentSerializer, HomePageSerializer, ChatSerializer, 
     OrgNodeSerializer, UserFeedbackSerializer, 
-    TeamDataSerializer, UserDrillDownSerializer, UserDashboardSerializer
+    TeamDataSerializer, UserDrillDownSerializer, UserDashboardSerializer,UserPsycoDataSerializer,
+    UserPsycoDataHistorySerializer,UserPersonalityDataSerializer,UserPersonalityDataHistoricSerializer
 )
 from .Ai import therpy_ai_response, consiler_ai_responce, summarize_chat_history
 from .permissions import IsHierarchicalSuperior
@@ -321,5 +322,30 @@ class TherapistNeededView(viewsets.ModelViewSet):
             in_need=True
         )
 
+class UserPsycoDataViewSet(viewsets.ModelViewSet):
+    serializer_class = UserPsycoDataSerializer
+    permission_classes = [permissions.IsAuthenticated]
 
-#class Download(viewsets.ModelViewSet):
+    def get_queryset(self):
+        return UserPsycoData.objects.filter(owner=self.request.user)
+
+class UserPsycoDataHistoryViewSet(viewsets.ModelViewSet):
+    serializer_class = UserPsycoDataHistorySerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return UserPsycoDataHistory.objects.filter(owner=self.request.user)
+
+class UserPersonalityDataViewSet(viewsets.ModelViewSet):
+    serializer_class = UserPersonalityDataSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return UserPersonalityData.objects.filter(owner=self.request.user)
+
+class UserPersonalityDataHistoricViewSet(viewsets.ModelViewSet):
+    serializer_class = UserPersonalityDataHistoricSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return UserPersonalityDataHistoric.objects.filter(owner=self.request.user)
