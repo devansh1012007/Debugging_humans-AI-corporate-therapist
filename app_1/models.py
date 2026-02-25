@@ -77,6 +77,15 @@ class UserPsycoDataHistory(models.Model):
     owner = models.OneToOneField(User, on_delete=models.CASCADE)
     content = models.JSONField(default=list)
 
+class UserPsycoProcessedData(models.Model):
+    owner = models.OneToOneField(User, on_delete=models.CASCADE)
+    content = models.JSONField(default=list)
+
+class UserPsycoProcessedDataHistory(models.Model):
+    owner = models.OneToOneField(User, on_delete=models.CASCADE)
+    content = models.JSONField(default=list)
+
+
 class UserPersonalityData(models.Model):
     owner = models.OneToOneField(User, on_delete=models.CASCADE)
     content = models.JSONField(default=list)

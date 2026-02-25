@@ -1,0 +1,1719 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Psychologist | Professional Dashboard</title>
+    
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f2fbfa',
+                            100: '#dff5f2',
+                            200: '#bdf0e9',
+                            300: '#8be5da',
+                            400: '#52d1c5',
+                            500: '#35b6ab',
+                            600: '#28938c',
+                            700: '#247671', // Calming sage/teal primary
+                            800: '#215f5c',
+                            900: '#1e4f4d',
+                        },
+                        surface: '#F7F9F8', // Warm, soft off-white
+                        card: '#FFFFFF',
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        heading: ['Lora', 'serif'], // Adding a serif for a more professional, editorial feel
+                    }
+                }
+            }
+        }
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Lora:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+    
+    <style>
+:root {
+    --primary: #247671;
+    --primary-hover: #1e4f4d;
+    --bg-surface: #F7F9F8;
+    --text-main: #334155;
+}
+body {
+    font-family: 'Inter', sans-serif;
+    background-color: var(--bg-surface);
+    color: var(--text-main);
+    letter-spacing: -0.01em;
+}
+h1, h2, h3, .heading-font {
+    font-family: 'Lora', serif;
+    letter-spacing: -0.02em;
+}
+
+::-webkit-scrollbar {
+    width: 6px;
+}
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+::-webkit-scrollbar-thumb {
+    background: rgba(36, 118, 113, 0.2);
+    border-radius: 10px;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: rgba(36, 118, 113, 0.4);
+}
+
+.wellness-card {
+    background: #ffffff;
+    border: 1px solid rgba(0, 0, 0, 0.04);
+    box-shadow: 0 10px 40px -10px rgba(0,0,0,0.05), 0 1px 3px rgba(0,0,0,0.02);
+    border-radius: 24px;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.wellness-input {
+    background: #F8FAFC;
+    border: 1px solid #E2E8F0;
+    transition: all 0.2s ease;
+    color: #334155;
+}
+.wellness-input:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(36, 118, 113, 0.1);
+    background: #ffffff;
+    outline: none;
+}
+
+.btn-premium {
+    background: var(--primary);
+    color: white;
+    box-shadow: 0 4px 14px 0 rgba(36, 118, 113, 0.25);
+    transition: all 0.2s ease;
+}
+.btn-premium:hover {
+    background: var(--primary-hover);
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(36, 118, 113, 0.35);
+}
+
+.transition-all {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-in {
+    animation: fadeIn 0.5s ease-out forwards;
+}
+
+@keyframes pulse-soft {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+}
+.animate-pulse-soft {
+    animation: pulse-soft 2.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+::selection {
+    background: rgba(36, 118, 113, 0.2);
+    color: #1e4f4d;
+}
+
+/* Chat specifics */
+#chat-messages {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(36, 118, 113, 0.2) transparent;
+}
+#chat-messages > div {
+    animation: slideInMessage 0.3s ease-out;
+}
+@keyframes slideInMessage {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+.chat-input-wrapper {
+    margin-left: 18rem; 
+}
+.chat-input-wrapper.sidebar-collapsed {
+    margin-left: 6rem; 
+}
+
+/* Decor blobs */
+.decor-blob {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(80px);
+    opacity: 0.4;
+    z-index: -1;
+    pointer-events: none;
+}
+    </style>
+</head>
+<body class="antialiased selection:bg-brand-200">
+    <div id="root" class="min-h-screen flex flex-col"></div>
+    
+    <script>
+const API_BASE = 'http://localhost:8000/'; 
+const CURRENT_CONSENT_VERSION = 'v1.0-2026';
+const GOOGLE_CLIENT_ID = '420454232320-8mse8aona778k5jktdcs847c98bfsabu.apps.googleusercontent.com';
+
+class ApiClient {
+    constructor() {
+        if (typeof window !== 'undefined') {
+            this.accessToken = localStorage.getItem('access_token');
+            this.refreshToken = localStorage.getItem('refresh_token');
+        } else {
+            this.accessToken = null;
+            this.refreshToken = null;
+        }
+    }
+    setTokens(access, refresh) {
+        this.accessToken = access;
+        this.refreshToken = refresh;
+        localStorage.setItem('access_token', access);
+        localStorage.setItem('refresh_token', refresh);
+    }
+    clearTokens() {
+        this.accessToken = null;
+        this.refreshToken = null;
+        localStorage.removeItem('access_token');
+        localStorage.removeItem('refresh_token');
+    }
+    async request(endpoint, options = {}) {
+        let url = endpoint.startsWith('http') ? endpoint : `${API_BASE}${endpoint}`;
+        const headers = { 'Content-Type': 'application/json', ...options.headers };
+        if (this.accessToken) headers['Authorization'] = `Bearer ${this.accessToken}`;
+        const config = { 
+            ...options, 
+            headers,
+            credentials: 'include' 
+        };
+        
+        console.log(`🌐 API Request: ${options.method || 'GET'} ${url}`);
+        try {
+            let response = await fetch(url, config);
+            console.log(`📡 Response status: ${response.status}`);
+            
+            if (response.status === 401 && this.refreshToken) {
+                console.log('🔄 Token expired, refreshing...');
+                const refreshSuccess = await this.refreshAccessToken();
+                if (refreshSuccess) {
+                    config.headers['Authorization'] = `Bearer ${this.accessToken}`;
+                    response = await fetch(url, config);
+                    console.log(`📡 Retry response status: ${response.status}`);
+                } else {
+                    console.error('❌ Token refresh failed');
+                    this.clearTokens();
+                    window.location.reload(); 
+                    throw new Error('Session expired');
+                }
+            }
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                console.error('❌ API Error:', errorData);
+                throw new Error(errorData.detail || errorData.error || `Error: ${response.status}`);
+            }
+            const data = await response.json();
+            console.log('✅ Response data:', data);
+            return data;
+        } catch (error) { 
+            console.error('❌ Request failed:', error);
+            throw error; 
+        }
+    }
+    async refreshAccessToken() {
+        try {
+            const response = await fetch(`${API_BASE}/refresh/`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ refresh: this.refreshToken }),
+                credentials: 'include'
+            });
+            if (response.ok) {
+                const data = await response.json();
+                this.setTokens(data.access, this.refreshToken); 
+                return true;
+            }
+            return false;
+        } catch (e) { return false; }
+    }
+    async checkServerConsent() {
+        try {
+            const response = await this.request('UserConsent/needs_new_consent/', {
+                method: 'POST',
+                body: JSON.stringify({}) 
+            });
+            
+            if (response && typeof response.needs_consent !== 'undefined') {
+                return response.needs_consent;
+            }
+            return true;
+        } catch (error) {
+            console.error("Failed to check consent status:", error);
+            return true;
+        }
+    }
+}
+const api = new ApiClient();
+
+function Icon({ name, size = 20, className = "" }) {
+    const icons = {
+        messageSquare: '<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>',
+        user: '<path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>',
+        lock: '<rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>',
+        brain: '<path d="M9.5 2A2.5 2.5 0 0 1 12 4.5 2.5 2.5 0 0 1 14.5 2a2.5 2.5 0 0 1 2.5 2.5V7h-5V4.5A2.5 2.5 0 0 1 9.5 2z"/><path d="M12 7v4"/><path d="M12 11a4 4 0 0 0-4 4v3a2 2 0 0 0 2 2h4a2 2 0 0 0 2-2v-3a4 4 0 0 0-4-4z"/>',
+        send: '<line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>',
+        menu: '<line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="18" x2="20" y2="18"/>',
+        x: '<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>',
+        dashboard: '<rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/>',
+        chevronRight: '<polyline points="9 18 15 12 9 6"/>',
+        chevronDown: '<polyline points="6 9 12 15 18 9"/>',
+        users: '<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
+        thumbsUp: '<path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/>',
+        logOut: '<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>',
+        trash: '<polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>',
+        alertCircle: '<circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>',
+        heartHandshake: '<path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/>',
+        activity: '<polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>',
+        lightbulb: '<path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-1 1.5-2.5 1.5-4.1 0-3.2-2.8-5.7-6-5.7-3.2 0-6 2.5-6 5.7 0 1.6.5 3.1 1.5 4.1.8.8 1.3 1.5 1.5 2.5"/><path d="M9 18h6"/><path d="M10 22h4"/>',
+        clipboard: '<path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect>'
+    };
+    
+    const path = icons[name] || '';
+    return `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="${className}">${path}</svg>`;
+}
+
+function initializeGoogleSignIn() {
+    if (typeof google !== 'undefined' && google.accounts) {
+        google.accounts.id.initialize({
+            client_id: GOOGLE_CLIENT_ID,
+            callback: handleGoogleCallback,
+            auto_select: false,
+            cancel_on_tap_outside: true
+        });
+    }
+}
+
+function renderGoogleButton() {
+    if (typeof google !== 'undefined' && google.accounts) {
+        const buttonDiv = document.getElementById('google-signin-button');
+        if (buttonDiv) {
+            google.accounts.id.renderButton(
+                buttonDiv,
+                {
+                    theme: 'outline',
+                    size: 'large',
+                    width: buttonDiv.offsetWidth,
+                    text: 'signin_with',
+                    shape: 'pill'
+                }
+            );
+        }
+    }
+}
+
+async function handleGoogleCallback(response) {
+    console.log('🔐 Google Sign-In callback received');
+    try {
+        const data = await api.request('/auth/google/', {
+            method: 'POST',
+            body: JSON.stringify({ id_token: response.credential })
+        });
+        if (data.access && data.refresh) {
+            api.setTokens(data.access, data.refresh);
+            state.isAuthenticated = true;
+            const needsConsent = await api.checkServerConsent();
+            if (needsConsent) {
+                state.showConsent = true;
+                render();
+            } else {
+                await initializeApp();
+            }
+        } else { throw new Error('Invalid response from server'); }
+    } catch (error) {
+        console.error('❌ Google login error:', error);
+        alert('Google Sign-In failed. Please try again.');
+    }
+}
+
+function ConsentModal({ onConsent }) {
+    return `
+        <div class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center z-50 animate-fade-in p-4">
+            <div class="wellness-card p-10 w-full max-w-2xl relative">
+                <div class="mb-6 pb-4 border-b border-slate-100">
+                    <h2 class="text-3xl font-heading font-bold text-slate-800 mb-2">Privacy & Consent</h2>
+                    <p class="text-slate-500">Please review our privacy policy to continue your wellness journey.</p>
+                </div>
+                
+                <div class="bg-slate-50 rounded-2xl p-6 mb-8 max-h-64 overflow-y-auto border border-slate-100">
+                    <h3 class="text-lg font-semibold text-slate-800 mb-3">Data Collection Notice</h3>
+                    <div class="text-sm text-slate-600 space-y-3 leading-relaxed">
+                        <p>We collect and process the following information to ensure the best experience:</p>
+                        <ul class="list-disc list-inside space-y-2 text-slate-600 ml-2">
+                            <li>Your IP address and user agent for security purposes.</li>
+                            <li>Chat conversations for real-time mental health analysis.</li>
+                            <li>Dashboard metrics and personal wellness data.</li>
+                            <li>Feedback and service ratings.</li>
+                        </ul>
+                        <p class="mt-4">This data is used solely to provide personalized mental health support.</p>
+                        <p class="text-xs text-slate-400 mt-6 pt-4 border-t border-slate-200 font-mono">Consent Version: ${CURRENT_CONSENT_VERSION}</p>
+                    </div>
+                </div>
+                <div class="flex gap-4">
+                    <button onclick="handleConsent()" class="btn-premium flex-1 py-4 rounded-xl font-semibold text-lg tracking-wide">
+                        I Accept & Continue
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+function Login({ onLogin, onSwitchToRegister }) {
+    return `
+        <div class="min-h-screen flex items-center justify-center relative overflow-hidden px-4">
+            <div class="decor-blob bg-brand-200 w-[500px] h-[500px] top-[-10%] left-[-10%]"></div>
+            <div class="decor-blob bg-orange-100 w-[400px] h-[400px] bottom-[-5%] right-[-5%]"></div>
+            
+            <div class="wellness-card max-w-md w-full p-10 animate-fade-in relative z-10">
+                <div class="text-center mb-10">
+                    <div class="mx-auto h-16 w-16 bg-brand-50 rounded-2xl flex items-center justify-center mb-6">
+                        ${Icon({ name: 'brain', size: 32, className: 'text-brand-600' })}
+                    </div>
+                    <h2 class="text-3xl font-heading font-bold text-slate-800 tracking-tight">Welcome Back</h2>
+                    <p class="mt-3 text-slate-500">Sign in to access your wellness space</p>
+                </div>
+                <div class="mb-8">
+                    <div id="google-signin-button" class="w-full h-[44px]"></div>
+                </div>
+                <div class="relative mb-8">
+                    <div class="absolute inset-0 flex items-center">
+                        <div class="w-full border-t border-slate-200"></div>
+                    </div>
+                    <div class="relative flex justify-center text-xs uppercase tracking-widest font-semibold">
+                        <span class="px-4 bg-white text-slate-400">Or continue with email</span>
+                    </div>
+                </div>
+                <form class="space-y-6" onsubmit="handleLogin(event)">
+                    <div class="space-y-4">
+                        <div class="relative group">
+                            <input type="text" id="username" required class="wellness-input block w-full pl-12 pr-4 py-4 rounded-xl placeholder-slate-400" placeholder="Username" />
+                            <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400 group-focus-within:text-brand-500 transition-colors">
+                                ${Icon({ name: 'user', size: 20 })}
+                            </div>
+                        </div>
+                        <div class="relative group">
+                            <input type="password" id="password" required class="wellness-input block w-full pl-12 pr-4 py-4 rounded-xl placeholder-slate-400" placeholder="Password" />
+                            <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400 group-focus-within:text-brand-500 transition-colors">
+                                ${Icon({ name: 'lock', size: 20 })}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="flex items-center justify-end">
+                        <button type="button" onclick="switchToRegister()" class="text-sm font-medium text-brand-600 hover:text-brand-700 transition-colors">Create an account</button>
+                    </div>
+                    <div id="login-error" class="hidden p-4 rounded-xl bg-red-50 text-red-600 text-sm text-center font-medium border border-red-100 animate-pulse-soft"></div>
+                    <button type="submit" class="btn-premium w-full py-4 px-4 text-sm font-semibold rounded-xl tracking-wide uppercase">
+                        Sign In
+                    </button>
+                </form>
+            </div>
+        </div>
+    `;
+}
+
+function Register() {
+    return `
+        <div class="min-h-screen flex items-center justify-center relative overflow-hidden px-4">
+            <div class="decor-blob bg-brand-200 w-[500px] h-[500px] top-[-10%] right-[-10%]"></div>
+            <div class="decor-blob bg-orange-100 w-[400px] h-[400px] bottom-[-5%] left-[-5%]"></div>
+            
+            <div class="wellness-card max-w-md w-full p-10 animate-fade-in relative z-10">
+                <div class="text-center mb-8">
+                    <h2 class="text-3xl font-heading font-bold text-slate-800 tracking-tight">Create Account</h2>
+                    <p class="mt-2 text-slate-500">Join us to start your journey</p>
+                </div>
+                <div class="mb-8">
+                    <div id="google-signin-button" class="w-full"></div>
+                </div>
+                <div class="relative mb-8">
+                    <div class="absolute inset-0 flex items-center">
+                        <div class="w-full border-t border-slate-200"></div>
+                    </div>
+                    <div class="relative flex justify-center text-xs uppercase tracking-widest font-semibold">
+                        <span class="px-4 bg-white text-slate-400">Or register with email</span>
+                    </div>
+                </div>
+                <form class="space-y-5" onsubmit="handleRegister(event)">
+                    <div class="space-y-4">
+                        <input type="text" id="reg-username" required class="wellness-input block w-full px-5 py-4 rounded-xl placeholder-slate-400" placeholder="Username" />
+                        <input type="email" id="reg-email" required class="wellness-input block w-full px-5 py-4 rounded-xl placeholder-slate-400" placeholder="Email Address" />
+                        <input type="password" id="reg-password" required class="wellness-input block w-full px-5 py-4 rounded-xl placeholder-slate-400" placeholder="Password" />
+                    </div>
+                    
+                    <div id="register-error" class="hidden text-red-600 text-sm text-center bg-red-50 p-3 rounded-xl border border-red-100"></div>
+                    
+                    <button type="submit" class="btn-premium w-full py-4 rounded-xl font-semibold tracking-wide uppercase">Register</button>
+                    
+                    <div class="text-center mt-6">
+                        <button type="button" onclick="switchToLogin()" class="text-sm text-slate-500 hover:text-slate-800 transition-colors">
+                            Already have an account? <span class="text-brand-600 font-semibold">Login</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    `;
+}
+
+function Dashboard({ dashboardData }) {
+    const rootContent = dashboardData?.content || {};
+    const data = rootContent._personal_dashboard_data || {};
+    
+    const problems = data.common_problems || [];
+    const positives = data.positive || [];
+    const recommendations = data.recommendation || [];
+    
+    if (!dashboardData || (!problems.length && !positives.length && !recommendations.length)) {
+        return `
+            <div class="max-w-7xl mx-auto animate-fade-in">
+                <div class="wellness-card p-16 text-center border-dashed border-2 border-slate-200 shadow-sm">
+                    <div class="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-6 text-slate-400">
+                        ${Icon({ name: 'activity', size: 40 })}
+                    </div>
+                    <h2 class="text-3xl font-heading font-bold text-slate-800 mb-3">Your Journey Begins Here</h2>
+                    <p class="text-slate-500 max-w-md mx-auto">Start a chat session with your AI companion to generate personalized wellness insights.</p>
+                </div>
+            </div>
+        `;
+    }
+    return `
+        <div class="max-w-7xl mx-auto space-y-8 animate-fade-in pb-10">
+            <div class="mb-2">
+                <h1 class="text-4xl font-heading font-bold text-slate-800 mb-2">Wellness Overview</h1>
+                <p class="text-slate-500 text-lg">Your AI-driven mental health insights for today.</p>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div class="wellness-card p-8 flex flex-col h-full hover:-translate-y-1 transition-transform">
+                    <div class="flex items-center gap-4 mb-6 pb-4 border-b border-slate-100">
+                        <div class="p-3 bg-orange-50 rounded-xl text-orange-500">
+                            ${Icon({ name: 'alertCircle', size: 24 })}
+                        </div>
+                        <h3 class="text-xl font-heading font-semibold text-slate-800">Areas of Focus</h3>
+                    </div>
+                    <div class="space-y-4 flex-1">
+                        ${problems.length > 0 ? problems.map(p => `
+                            <div class="bg-slate-50 border border-slate-100 p-5 rounded-2xl">
+                                <h4 class="text-sm font-bold text-slate-700 mb-2 tracking-wide">${p.problem || 'Identified Issue'}</h4>
+                                <p class="text-sm text-slate-600 leading-relaxed">${p.description || p.suggestion || ''}</p>
+                            </div>
+                        `).join('') : '<p class="text-slate-400 text-center py-4 italic">No specific issues identified right now.</p>'}
+                    </div>
+                </div>
+                
+                <div class="wellness-card p-8 flex flex-col h-full hover:-translate-y-1 transition-transform">
+                    <div class="flex items-center gap-4 mb-6 pb-4 border-b border-slate-100">
+                         <div class="p-3 bg-brand-50 rounded-xl text-brand-600">
+                            ${Icon({ name: 'lightbulb', size: 24 })}
+                        </div>
+                        <h3 class="text-xl font-heading font-semibold text-slate-800">Recommendations</h3>
+                    </div>
+                    <div class="space-y-4 flex-1">
+                        ${recommendations.length > 0 ? recommendations.map(r => `
+                            <div class="bg-slate-50 border border-slate-100 p-5 rounded-2xl flex gap-3">
+                                <span class="text-brand-500 mt-0.5">•</span>
+                                <p class="text-sm text-slate-600 leading-relaxed">${r.recommendation || r}</p>
+                            </div>
+                        `).join('') : '<p class="text-slate-400 text-center py-4 italic">Continue your sessions for personalized recommendations.</p>'}
+                    </div>
+                </div>
+                
+                <div class="wellness-card p-8 flex flex-col h-full hover:-translate-y-1 transition-transform">
+                    <div class="flex items-center gap-4 mb-6 pb-4 border-b border-slate-100">
+                        <div class="p-3 bg-emerald-50 rounded-xl text-emerald-600">
+                            ${Icon({ name: 'thumbsUp', size: 24 })}
+                        </div>
+                        <h3 class="text-xl font-heading font-semibold text-slate-800">Key Strengths</h3>
+                    </div>
+                    <div class="space-y-4 flex-1">
+                        ${positives.length > 0 ? positives.map(p => `
+                            <div class="bg-emerald-50/50 border border-emerald-100 p-5 rounded-2xl">
+                                <p class="text-sm text-emerald-800 font-medium leading-relaxed">${p.positive || p}</p>
+                            </div>
+                        `).join('') : '<p class="text-slate-400 text-center py-4 italic">Data gathering in progress.</p>'}
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+function PsychoReport({ currentData, historyData }) {
+    const data = currentData?.content || null;
+    // Look for the nested content array first, fallback to standard content if structure changes
+    const history = historyData?.content?.content || historyData?.content || [];
+
+    if (!data) {
+        return `
+            <div class="max-w-7xl mx-auto animate-fade-in">
+                <div class="wellness-card p-16 text-center border-dashed border-2 border-slate-200 shadow-sm">
+                    <div class="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-6 text-slate-400">
+                        ${Icon({ name: 'clipboard', size: 40 })}
+                    </div>
+                    <h2 class="text-3xl font-heading font-bold text-slate-800 mb-3">Clinical Report Unavailable</h2>
+                    <p class="text-slate-500 max-w-md mx-auto">Complete more assessments or sessions to generate your detailed psychological data report.</p>
+                </div>
+            </div>
+        `;
+    }
+
+    const bigFive = data.big_five || {};
+    const burnout = data.burnout || {};
+    const depression = data.depression || {};
+    const anxiety = data.anxiety || {};
+    const summary = data.clinical_summary || {};
+
+    return `
+        <div class="max-w-7xl mx-auto space-y-8 animate-fade-in pb-10">
+            <div class="mb-2 flex justify-between items-end">
+                <div>
+                    <h1 class="text-4xl font-heading font-bold text-slate-800 mb-2">Psychological Profile</h1>
+                    <p class="text-slate-500 text-lg">In-depth analysis of your emotional and cognitive wellbeing.</p>
+                </div>
+                ${summary.overall_risk_level ? `
+                <div class="bg-white px-5 py-3 rounded-2xl border border-slate-100 shadow-sm text-right">
+                    <p class="text-xs text-slate-400 font-bold uppercase tracking-wider mb-1">Overall Risk Level</p>
+                    <p class="text-lg font-bold ${summary.overall_risk_level.toLowerCase() === 'high' ? 'text-rose-600' : 'text-emerald-600'}">${summary.overall_risk_level}</p>
+                </div>
+                ` : ''}
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                
+                <div class="wellness-card p-8">
+                    <h3 class="text-xl font-heading font-semibold text-slate-800 mb-6 border-b border-slate-100 pb-3">Big Five Traits</h3>
+                    <div class="space-y-6">
+                        ${Object.entries(bigFive).map(([trait, details]) => {
+                            const percent = (details.raw_score / details.max_possible) * 100;
+                            return `
+                            <div>
+                                <div class="flex justify-between items-end mb-2">
+                                    <span class="font-semibold text-slate-700 text-sm">${trait}</span>
+                                    <span class="text-xs text-slate-500 font-mono">${details.raw_score}/${details.max_possible} (${details.level})</span>
+                                </div>
+                                <div class="w-full bg-slate-100 rounded-full h-2 mb-2 overflow-hidden">
+                                    <div class="bg-brand-500 h-2 rounded-full transition-all duration-1000" style="width: ${percent}%"></div>
+                                </div>
+                                <p class="text-xs text-slate-500 leading-relaxed">${details.interpretation}</p>
+                            </div>
+                            `;
+                        }).join('')}
+                    </div>
+                </div>
+
+                <div class="space-y-8 flex flex-col">
+                    <div class="wellness-card p-8">
+                        <h3 class="text-xl font-heading font-semibold text-slate-800 mb-6 border-b border-slate-100 pb-3">Clinical Indications</h3>
+                        
+                        <div class="space-y-6">
+                            <div class="bg-slate-50 rounded-xl p-5 border border-slate-100">
+                                <div class="flex justify-between mb-2">
+                                    <span class="font-bold text-slate-700">Depression Severity</span>
+                                    <span class="font-bold text-rose-600">${depression.total_score || 0} pts</span>
+                                </div>
+                                <p class="text-sm font-medium text-slate-800 mb-1">${depression.severity || 'Unknown'}</p>
+                                <p class="text-xs text-slate-600">${depression.interpretation || ''}</p>
+                            </div>
+
+                            <div class="bg-slate-50 rounded-xl p-5 border border-slate-100">
+                                <div class="flex justify-between mb-2">
+                                    <span class="font-bold text-slate-700">Anxiety Severity</span>
+                                    <span class="font-bold text-orange-600">${anxiety.total_score || 0} pts</span>
+                                </div>
+                                <p class="text-sm font-medium text-slate-800 mb-1">${anxiety.severity || 'Unknown'}</p>
+                                <p class="text-xs text-slate-600">${anxiety.interpretation || ''}</p>
+                            </div>
+                            
+                            <div class="bg-slate-50 rounded-xl p-5 border border-slate-100">
+                                <div class="flex justify-between mb-2">
+                                    <span class="font-bold text-slate-700">Burnout Indicator</span>
+                                    <span class="font-bold text-brand-700">${burnout.overall_burnout || 'Unknown'}</span>
+                                </div>
+                                <div class="grid grid-cols-3 gap-2 mt-3">
+                                    ${Object.entries(burnout).filter(([k]) => k !== 'overall_burnout').map(([k, v]) => `
+                                        <div class="text-center">
+                                            <p class="text-[10px] uppercase tracking-wider text-slate-500 mb-1 truncate" title="${k}">${k}</p>
+                                            <p class="text-sm font-semibold text-slate-700">${v.level || ''}</p>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            ${summary.active_clinical_flags || summary.recommendation ? `
+            <div class="wellness-card bg-orange-50/50 p-8 border-orange-100">
+                <h3 class="text-lg font-heading font-semibold text-orange-800 mb-3">Clinical Summary & Recommendations</h3>
+                <p class="text-sm text-slate-700 mb-4">${summary.comorbidity_note || ''}</p>
+                <div class="flex flex-col md:flex-row gap-6">
+                    <div class="flex-1">
+                        <strong class="block text-xs uppercase tracking-wider text-orange-600 mb-2">Active Flags</strong>
+                        <ul class="list-disc list-inside text-sm text-slate-700 space-y-1">
+                            ${(summary.active_clinical_flags || []).map(f => `<li>${f}</li>`).join('')}
+                        </ul>
+                    </div>
+                    <div class="flex-1">
+                        <strong class="block text-xs uppercase tracking-wider text-brand-600 mb-2">Recommendation</strong>
+                        <p class="text-sm text-slate-700 font-medium">${summary.recommendation || 'Continue monitoring.'}</p>
+                    </div>
+                </div>
+            </div>
+            ` : ''}
+
+            <div class="mt-12">
+                <h2 class="text-3xl font-heading font-bold text-slate-800 mb-6 border-t border-slate-200 pt-8">Historical Trends</h2>
+                ${history.length > 0 ? `
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                        <div class="wellness-card p-6">
+                            <h4 class="text-sm font-bold text-slate-600 uppercase tracking-wider mb-4">Depression & Anxiety Scores</h4>
+                            <div class="relative h-64 w-full">
+                                <canvas id="chart-clinical"></canvas>
+                            </div>
+                        </div>
+                        <div class="wellness-card p-6">
+                            <h4 class="text-sm font-bold text-slate-600 uppercase tracking-wider mb-4">Personality Traits Over Time</h4>
+                            <div class="relative h-64 w-full">
+                                <canvas id="chart-bigfive"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                ` : `
+                    <div class="wellness-card p-8 text-center bg-slate-50">
+                        <p class="text-slate-500">Not enough historical data to generate trend charts.</p>
+                    </div>
+                `}
+            </div>
+        </div>
+    `;
+}
+
+function TeamDashboard({ teamData, drillDownList }) {
+    const contentArray = teamData?.content || [];
+    const data = (Array.isArray(contentArray) && contentArray.length > 0) ? contentArray[0] : {};
+    
+    const problems = data.common_problems || [];
+    const recommendations = data.recommendations || [];
+    const policyChanges = data.policy_changes || [];
+    
+    const subordinates = drillDownList.slice(1);
+    
+    if (!teamData || (!problems.length && !recommendations.length && !policyChanges.length)) {
+        return `
+            <div class="max-w-7xl mx-auto animate-fade-in">
+                <div class="wellness-card p-16 text-center mb-8 border-dashed border-2 border-slate-200 shadow-sm">
+                     <div class="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-6 text-slate-400">
+                        ${Icon({ name: 'users', size: 40 })}
+                    </div>
+                    <h2 class="text-2xl font-heading font-bold text-slate-800 mb-2">Team Insights Unavailable</h2>
+                    <p class="text-slate-500">Aggregated team wellness data will appear here as your team interacts with the platform.</p>
+                </div>
+                
+                ${renderTeamList(subordinates)}
+            </div>
+        `;
+    }
+    return `
+        <div class="max-w-7xl mx-auto space-y-8 animate-fade-in pb-10">
+            <div class="mb-2">
+                <h1 class="text-4xl font-heading font-bold text-slate-800 mb-2">Team Health Overview</h1>
+                <p class="text-slate-500 text-lg">Aggregated insights to improve team dynamics and wellbeing securely.</p>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div class="wellness-card p-8 flex flex-col h-full hover:-translate-y-1 transition-transform">
+                    <div class="flex items-center gap-4 mb-6 pb-4 border-b border-slate-100">
+                        <div class="p-3 bg-rose-50 rounded-xl text-rose-500">
+                             ${Icon({ name: 'alertCircle', size: 24 })}
+                        </div>
+                        <h3 class="text-xl font-heading font-semibold text-slate-800">Common Issues</h3>
+                    </div>
+                    <div class="space-y-4 flex-1">
+                        ${problems.length > 0 ? problems.map(p => `
+                            <div class="bg-slate-50 border border-slate-100 p-5 rounded-2xl">
+                                <h4 class="text-sm font-bold text-slate-700 mb-2 tracking-wide">${p.problem || 'Issue'}</h4>
+                                <p class="text-sm text-slate-600 leading-relaxed">${p.description || p.suggestion || ''}</p>
+                            </div>
+                        `).join('') : '<p class="text-slate-400 text-center py-4 italic">No prevalent issues identified.</p>'}
+                    </div>
+                </div>
+                
+                <div class="wellness-card p-8 flex flex-col h-full hover:-translate-y-1 transition-transform">
+                    <div class="flex items-center gap-4 mb-6 pb-4 border-b border-slate-100">
+                         <div class="p-3 bg-brand-50 rounded-xl text-brand-600">
+                            ${Icon({ name: 'lightbulb', size: 24 })}
+                        </div>
+                        <h3 class="text-xl font-heading font-semibold text-slate-800">Action Plan</h3>
+                    </div>
+                    <div class="space-y-4 flex-1">
+                        ${recommendations.length > 0 ? recommendations.map(r => `
+                            <div class="bg-slate-50 border border-slate-100 p-5 rounded-2xl flex gap-3">
+                                 <span class="text-brand-500 mt-0.5">•</span>
+                                <p class="text-sm text-slate-600 leading-relaxed">${r.recommendation || r}</p>
+                            </div>
+                        `).join('') : '<p class="text-slate-400 text-center py-4 italic">No current recommendations.</p>'}
+                    </div>
+                </div>
+                
+                <div class="wellness-card p-8 flex flex-col h-full hover:-translate-y-1 transition-transform">
+                    <div class="flex items-center gap-4 mb-6 pb-4 border-b border-slate-100">
+                        <div class="p-3 bg-indigo-50 rounded-xl text-indigo-500">
+                             ${Icon({ name: 'activity', size: 24 })}
+                        </div>
+                        <h3 class="text-xl font-heading font-semibold text-slate-800">Suggested Policies</h3>
+                    </div>
+                    <div class="space-y-4 flex-1">
+                        ${policyChanges.length > 0 ? policyChanges.map(pc => `
+                            <div class="bg-slate-50 border border-slate-100 p-5 rounded-2xl">
+                                <h4 class="text-sm font-bold text-slate-700 mb-2 tracking-wide">${pc.title || 'Policy Idea'}</h4>
+                                <p class="text-sm text-slate-600 leading-relaxed">${pc.description || pc.change || ''}</p>
+                            </div>
+                        `).join('') : '<p class="text-slate-400 text-center py-4 italic">No policy changes suggested.</p>'}
+                    </div>
+                </div>
+            </div>
+            
+            ${renderTeamList(subordinates)}
+        </div>
+    `;
+}
+
+function renderTeamList(subordinates) {
+    return `
+        <div class="wellness-card p-8 mt-8">
+            <h3 class="text-xl font-heading font-bold text-slate-800 mb-6 pb-3 border-b border-slate-100">Your Team</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                ${subordinates.length > 0 ? subordinates.map(member => `
+                     <button onclick="viewSubordinateData('${member.node_id}')" class="group bg-white hover:bg-slate-50 p-5 rounded-2xl flex items-center justify-between transition-all border border-slate-100 hover:border-brand-200 hover:shadow-md">
+                        <div class="flex items-center gap-4">
+                            <div class="w-12 h-12 bg-brand-50 rounded-full flex items-center justify-center group-hover:bg-brand-100 transition-colors">
+                                ${Icon({ name: 'user', size: 20, className: 'text-brand-600' })}
+                            </div>
+                            <div class="text-left">
+                                <h4 class="text-sm font-bold text-slate-800 group-hover:text-brand-700 transition-colors">${member.name}</h4>
+                                <p class="text-xs text-slate-500 mt-0.5">${member.title}</p>
+                                ${member.has_team ? '<span class="inline-block mt-1.5 px-2 py-0.5 bg-indigo-50 text-indigo-600 text-[10px] font-bold uppercase rounded tracking-wider border border-indigo-100">Lead</span>' : ''}
+                            </div>
+                        </div>
+                        ${Icon({ name: 'chevronRight', size: 18, className: 'text-slate-400 group-hover:text-brand-500 transition-colors' })}
+                    </button>
+                `).join('') : '<p class="text-slate-500 text-sm py-4 italic">No team members assigned.</p>'}
+            </div>
+        </div>
+    `;
+}
+
+function SubordinateDashboard({ subordinateData, memberInfo }) {
+    const contentArray = subordinateData?.content || [];
+    const data = (Array.isArray(contentArray) && contentArray.length > 0) ? contentArray[0] : {};
+    
+    const problems = data.common_problems || [];
+    const recommendations = data.recommendations || [];
+    const policyChanges = data.policy_changes || [];
+    
+    if (!subordinateData || (!problems.length && !recommendations.length && !policyChanges.length)) {
+        return `
+            <div class="max-w-7xl mx-auto animate-fade-in">
+                <button onclick="goToTeamDashboard()" class="mb-6 px-4 py-2 bg-white text-slate-600 rounded-xl hover:bg-slate-50 hover:text-slate-800 transition-colors flex items-center gap-2 text-sm font-medium border border-slate-200 shadow-sm">
+                    <span>←</span> Back to Team
+                </button>
+                <div class="wellness-card p-16 text-center border-dashed border-2 border-slate-200 shadow-sm">
+                    <div class="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-6 text-slate-400">
+                        ${Icon({ name: 'lock', size: 40 })}
+                    </div>
+                    <h2 class="text-2xl font-heading font-bold text-slate-800 mb-3">Restricted or Unavailable Data</h2>
+                    <p class="text-slate-500 max-w-lg mx-auto">This member's data is either protected for privacy reasons or has not yet been generated.</p>
+                </div>
+            </div>
+        `;
+    }
+    return `
+        <div class="max-w-7xl mx-auto space-y-8 animate-fade-in pb-10">
+            <button onclick="goToTeamDashboard()" class="px-4 py-2 bg-white text-slate-600 rounded-xl hover:bg-slate-50 hover:text-slate-800 transition-colors flex items-center gap-2 text-sm font-medium border border-slate-200 shadow-sm inline-flex">
+                <span>←</span> Back to Team
+            </button>
+            
+            <div class="mb-2">
+                <h1 class="text-4xl font-heading font-bold text-slate-800 mb-2">${memberInfo?.name || 'Team Member'}</h1>
+                <p class="text-slate-500 text-lg flex items-center gap-2">
+                    <span class="opacity-80">Role:</span> 
+                    <span class="font-semibold bg-white px-3 py-1 rounded-lg border border-slate-200 text-sm shadow-sm">${memberInfo?.title || 'Team Member'}</span>
+                </p>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                 <div class="wellness-card p-8 flex flex-col h-full hover:-translate-y-1 transition-transform">
+                    <div class="flex items-center gap-4 mb-6 pb-4 border-b border-slate-100">
+                        <div class="p-3 bg-rose-50 rounded-xl text-rose-500">
+                             ${Icon({ name: 'alertCircle', size: 24 })}
+                        </div>
+                        <h3 class="text-xl font-heading font-semibold text-slate-800">Challenges</h3>
+                    </div>
+                    <div class="space-y-4 flex-1">
+                        ${problems.length > 0 ? problems.map(p => `
+                            <div class="bg-slate-50 border border-slate-100 p-5 rounded-2xl">
+                                <h4 class="text-sm font-bold text-slate-700 mb-2 tracking-wide">${p.problem || 'Issue'}</h4>
+                                <p class="text-sm text-slate-600 leading-relaxed">${p.description || p.suggestion || ''}</p>
+                            </div>
+                        `).join('') : '<p class="text-slate-400 text-center py-4 italic">No challenges identified.</p>'}
+                    </div>
+                </div>
+                
+                <div class="wellness-card p-8 flex flex-col h-full hover:-translate-y-1 transition-transform">
+                     <div class="flex items-center gap-4 mb-6 pb-4 border-b border-slate-100">
+                         <div class="p-3 bg-brand-50 rounded-xl text-brand-600">
+                            ${Icon({ name: 'lightbulb', size: 24 })}
+                        </div>
+                        <h3 class="text-xl font-heading font-semibold text-slate-800">Guidance</h3>
+                    </div>
+                    <div class="space-y-4 flex-1">
+                        ${recommendations.length > 0 ? recommendations.map(r => `
+                            <div class="bg-slate-50 border border-slate-100 p-5 rounded-2xl flex gap-3">
+                                <span class="text-brand-500 mt-0.5">•</span>
+                                <p class="text-sm text-slate-600 leading-relaxed">${r.recommendation || r}</p>
+                            </div>
+                        `).join('') : '<p class="text-slate-400 text-center py-4 italic">No specific guidance.</p>'}
+                    </div>
+                </div>
+                
+                <div class="wellness-card p-8 flex flex-col h-full hover:-translate-y-1 transition-transform">
+                     <div class="flex items-center gap-4 mb-6 pb-4 border-b border-slate-100">
+                        <div class="p-3 bg-indigo-50 rounded-xl text-indigo-500">
+                             ${Icon({ name: 'activity', size: 24 })}
+                        </div>
+                        <h3 class="text-xl font-heading font-semibold text-slate-800">Impact</h3>
+                    </div>
+                    <div class="space-y-4 flex-1">
+                        ${policyChanges.length > 0 ? policyChanges.map(pc => `
+                            <div class="bg-slate-50 border border-slate-100 p-5 rounded-2xl">
+                                <h4 class="text-sm font-bold text-slate-700 mb-2 tracking-wide">${pc.title || 'Policy'}</h4>
+                                <p class="text-sm text-slate-600 leading-relaxed">${pc.description || pc.change || ''}</p>
+                            </div>
+                        `).join('') : '<p class="text-slate-400 text-center py-4 italic">No policy impact flagged.</p>'}
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+function ChatInterface({ messages, activeSessionId }) {
+    return `
+        <div id="chat-messages" class="flex-1 overflow-y-auto px-6 py-8 space-y-6 pb-40 max-w-4xl mx-auto w-full">
+            ${messages.length === 0 ? `
+                <div class="flex items-center justify-center h-full">
+                    <div class="text-center text-slate-400 space-y-4">
+                        <div class="w-20 h-20 bg-white rounded-full flex items-center justify-center mx-auto shadow-sm border border-slate-100 text-brand-300">
+                            ${Icon({ name: 'messageSquare', size: 36 })}
+                        </div>
+                        <p class="text-lg font-medium text-slate-500">Your safe space to talk.<br> Start a conversation.</p>
+                    </div>
+                </div>
+            ` : messages.map(msg => `
+                <div class="flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}">
+                    <div class="${msg.role === 'user' 
+                        ? 'bg-brand-600 text-white rounded-2xl rounded-br-sm' 
+                        : 'bg-white text-slate-700 rounded-2xl rounded-bl-sm border border-slate-100'} 
+                        px-6 py-4 max-w-[85%] text-[15px] shadow-sm leading-relaxed">
+                        <p class="whitespace-pre-wrap">${msg.content}</p>
+                    </div>
+                </div>
+            `).join('')}
+            <div id="streaming-message"></div>
+        </div>
+        
+        <div class="fixed bottom-0 left-0 right-0 bg-surface/90 backdrop-blur-lg border-t border-slate-200 px-6 py-6 z-40">
+            <div class="chat-input-wrapper ${state.sidebarCollapsed ? 'sidebar-collapsed' : ''} transition-all duration-300">
+                <form onsubmit="handleSendMessage(event)" class="flex items-center gap-3 max-w-4xl mx-auto w-full relative">
+                    <input 
+                        type="text" 
+                        id="chat-input" 
+                        placeholder="Type your message..." 
+                        class="flex-1 pl-6 pr-16 py-4 bg-white border border-slate-200 rounded-full text-slate-700 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500 transition-all text-[15px] shadow-sm" 
+                    />
+                    <button 
+                        type="submit" 
+                        class="absolute right-2 top-1/2 -translate-y-1/2 p-3 bg-brand-600 hover:bg-brand-700 rounded-full transition-all hover:scale-105 active:scale-95 shadow-md text-white flex-shrink-0">
+                        ${Icon({ name: 'send', size: 18 })}
+                    </button>
+                </form>
+            </div>
+        </div>
+    `;
+}
+
+function FeedbackForm() {
+    return `
+        <div class="max-w-2xl mx-auto animate-fade-in pt-10">
+            <div class="wellness-card p-10 relative overflow-hidden">
+                <div class="absolute top-0 left-0 w-full h-1.5 bg-brand-500"></div>
+                
+                <h2 class="text-3xl font-heading font-bold text-slate-800 mb-2 mt-2">We Value Your Feedback</h2>
+                <p class="text-slate-500 mb-8">Help us improve your wellness experience by sharing your thoughts.</p>
+                
+                <form onsubmit="handleFeedbackSubmit(event)" class="space-y-6">
+                    <div>
+                        <label class="block text-sm font-bold text-slate-600 mb-2 uppercase tracking-wide">Your Message</label>
+                        <textarea id="feedback-text" rows="6" required class="wellness-input w-full px-5 py-4 rounded-xl resize-none" placeholder="Tell us what you think..."></textarea>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold text-slate-600 mb-2 uppercase tracking-wide">Rating</label>
+                        <div class="relative">
+                            <select id="feedback-rating" class="wellness-input w-full px-5 py-4 rounded-xl appearance-none cursor-pointer text-slate-700">
+                                <option value="5">★★★★★ - Excellent</option>
+                                <option value="4">★★★★☆ - Good</option>
+                                <option value="3">★★★☆☆ - Average</option>
+                                <option value="2">★★☆☆☆ - Poor</option>
+                                <option value="1">★☆☆☆☆ - Very Poor</option>
+                            </select>
+                            <div class="absolute right-5 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+                                ${Icon({ name: 'chevronDown', size: 16 })}
+                            </div>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn-premium w-full py-4 rounded-xl font-semibold text-lg tracking-wide uppercase mt-4">
+                        Submit Feedback
+                    </button>
+                </form>
+                <div id="feedback-success" class="hidden mt-6 p-4 bg-emerald-50 border border-emerald-100 text-emerald-700 rounded-xl text-center font-medium animate-pulse-soft"></div>
+            </div>
+        </div>
+    `;
+}
+
+let state = {
+    isAuthenticated: false,
+    currentView: 'login',
+    showConsent: false,
+    sessions: [],
+    activeSessionId: null,
+    messages: [],
+    drillDownList: [],
+    hasTeam: false,
+    dashboardData: null,
+    teamData: null,
+    subordinateData: null,
+    currentSubordinateInfo: null,
+    sidebarCollapsed: true,
+    newChatModalOpen: false,
+    // New tab data
+    psychoData: null,
+    psychoHistory: null
+};
+
+async function handleConsent() {
+    console.log('📝 Submitting consent...');
+    try {
+        await api.request('/UserConsent/', {
+            method: 'POST',
+            body: JSON.stringify({ consent_version: CURRENT_CONSENT_VERSION })
+        });
+        console.log('✅ Consent accepted');
+        state.showConsent = false;
+        
+        await initializeApp();
+    } catch (error) {
+        console.error('❌ Consent error:', error);
+        alert('Error submitting consent. Please try again.');
+    }
+}
+
+async function handleLogin(event) {
+    event.preventDefault();
+    const username = document.getElementById('username').value;
+    const password = document.getElementById('password').value;
+    const errorDiv = document.getElementById('login-error');
+    
+    console.log('🔐 Attempting login...');
+    
+    try {
+        const data = await api.request('/login/', {
+            method: 'POST',
+            body: JSON.stringify({ username, password })
+        });
+        
+        if (data.access && data.refresh) {
+            api.setTokens(data.access, data.refresh);
+            state.isAuthenticated = true;
+            
+            const needsConsent = await api.checkServerConsent();
+            if (needsConsent) {
+                state.showConsent = true;
+                render();
+            } else {
+                await initializeApp();
+            }
+        } else {
+            throw new Error('Invalid response from server');
+        }
+    } catch (error) {
+        console.error('❌ Login error:', error);
+        errorDiv.textContent = 'Invalid credentials or server error';
+        errorDiv.classList.remove('hidden');
+    }
+}
+
+async function handleRegister(event) {
+    event.preventDefault();
+    const username = document.getElementById('reg-username').value;
+    const email = document.getElementById('reg-email').value;
+    const password = document.getElementById('reg-password').value;
+    const errorDiv = document.getElementById('register-error');
+    
+    try {
+        await api.request('/register/', {
+            method: 'POST',
+            body: JSON.stringify({ username, email, password })
+        });
+        alert('Registration successful! Please login.');
+        switchToLogin();
+    } catch (error) {
+        errorDiv.textContent = error.message || 'Registration failed';
+        errorDiv.classList.remove('hidden');
+    }
+}
+
+function switchToRegister() {
+    state.currentView = 'register';
+    render();
+}
+function switchToLogin() {
+    state.currentView = 'login';
+    render();
+}
+
+async function initializeApp() {
+    console.log('🚀 Starting app initialization...');
+    try {
+        const drillDownData = await api.request('/UserDrillDown/');
+        if (drillDownData && drillDownData.length > 0) {
+            state.drillDownList = drillDownData[0].content || [];
+            state.hasTeam = state.drillDownList.length > 0 && state.drillDownList[0].has_team;
+        }
+        
+        const sessions = await api.request('/Chats/');
+        if (Array.isArray(sessions)) {
+            state.sessions = sessions.sort((a, b) => new Date(b.last_updated) - new Date(a.last_updated));
+        } else {
+            state.sessions = [];
+        }
+        
+        const dashboardArr = await api.request('/UserDashboard/');
+        if (dashboardArr && dashboardArr.length > 0) {
+            state.dashboardData = dashboardArr[0];
+        }
+
+        // Fetch new psycho data
+        try {
+            const pData = await api.request('/UserPsycoProcessedData/');
+            state.psychoData = Array.isArray(pData) ? pData[0] : pData;
+        } catch(e) { console.error('Error fetching psycho data', e); }
+
+        try {
+            const pHistory = await api.request('/UserPsycoProcessedDataHistory/');
+            state.psychoHistory = Array.isArray(pHistory) ? pHistory[0] : pHistory;
+        } catch(e) { console.error('Error fetching history data', e); }
+
+        state.currentView = 'dashboard';
+        render();
+    } catch (error) {
+        console.error('❌ Initialization error:', error);
+        state.currentView = 'dashboard';
+        render();
+    }
+}
+
+async function loadChatHistory(sessionId) {
+    try {
+        const chatData = await api.request(`/ChatData/?chat_id=${sessionId}`);
+        if (Array.isArray(chatData) && chatData.length > 0) {
+            const rawHistory = chatData[0].content || [];
+            state.messages = rawHistory.map(msg => ({
+                role: msg.role,
+                content: msg.message || msg.content || "" 
+            }));
+        } else {
+            state.messages = [];
+        }
+        render();
+    } catch (error) {
+        console.error('Error loading chat:', error);
+        state.messages = [];
+        render();
+    }
+}
+
+async function handleSendMessage(event) {
+    event.preventDefault();
+    const input = document.getElementById('chat-input');
+    const message = input.value.trim();
+    
+    if (!message) return;
+    if (!state.activeSessionId) {
+        try {
+            const newSession = await api.request('/Chats/', {
+                method: 'POST',
+                body: JSON.stringify({
+                    title: message.substring(0, 30) + '...',
+                    AiMode: 'therapy'
+                })
+            });
+            state.activeSessionId = newSession.id;
+            
+            const sessions = await api.request('/Chats/');
+            state.sessions = sessions.sort((a, b) => new Date(b.last_updated) - new Date(a.last_updated));
+        } catch (error) {
+            console.error('Error creating session:', error);
+            return;
+        }
+    }
+    state.messages.push({ role: 'user', content: message });
+    input.value = '';
+    render();
+    try {
+        const response = await fetch(`${API_BASE}/ChatData/continue_chat/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${api.accessToken}`
+            },
+            body: JSON.stringify({
+                prompt: message,
+                mode: 'therapy',
+                ChatID: state.activeSessionId
+            })
+        });
+        if (!response.ok) {
+            throw new Error(`Server Error: ${response.statusText}`);
+        }
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let aiResponse = '';
+        
+        const streamingDiv = document.getElementById('streaming-message');
+        streamingDiv.innerHTML = `
+            <div class="flex justify-start animate-fade-in">
+                <div class="bg-white border border-slate-100 text-slate-700 rounded-2xl rounded-bl-sm px-6 py-4 max-w-[85%] text-[15px] shadow-sm leading-relaxed">
+                    <p class="whitespace-pre-wrap inline" id="ai-response"></p>
+                    <span class="inline-block w-1.5 h-4 ml-1 align-middle bg-brand-400 animate-pulse-soft rounded-sm"></span>
+                </div>
+            </div>
+        `;
+        
+        while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            
+            const chunk = decoder.decode(value);
+            aiResponse += chunk;
+            document.getElementById('ai-response').textContent = aiResponse;
+            
+            const chatMessages = document.getElementById('chat-messages');
+            if(chatMessages) chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+        state.messages.push({ role: 'assistant', content: aiResponse });
+        
+        const sessions = await api.request('/Chats/');
+        state.sessions = sessions.sort((a, b) => new Date(b.last_updated) - new Date(a.last_updated));
+        
+        render();
+    } catch (error) {
+        console.error('Error sending message:', error);
+    }
+}
+
+async function handleFeedbackSubmit(event) {
+    event.preventDefault();
+    const feedback = document.getElementById('feedback-text').value;
+    const rating = document.getElementById('feedback-rating').value;
+    
+    try {
+        await api.request('/UserFeedback/', {
+            method: 'POST',
+            body: JSON.stringify({ feedback, rating: parseInt(rating) })
+        });
+        
+        document.getElementById('feedback-success').textContent = 'Thank you for your feedback!';
+        document.getElementById('feedback-success').classList.remove('hidden');
+        document.getElementById('feedback-text').value = '';
+        
+        setTimeout(() => {
+            document.getElementById('feedback-success').classList.add('hidden');
+        }, 3000);
+    } catch (error) {
+        console.error('Feedback error:', error);
+    }
+}
+
+async function handleHumanHelp() {
+    if (!confirm('Request human therapist assistance? Your information will be shared with our support team.')) {
+        return;
+    }
+    try {
+        const userData = await api.request('/UserDrillDown/');
+        const userName = userData[0]?.content[0]?.name || 'Anonymous';
+        await api.request('/TherapistNeeded/', {
+            method: 'POST',
+            body: JSON.stringify({ users_in_need: [userName] })
+        });
+        alert('Your request has been submitted. A human therapist will contact you soon.');
+    } catch (error) {
+        console.error('Human help error:', error);
+        alert('Failed to submit request. Please try again.');
+    }
+}
+
+function handleLogout() {
+    api.clearTokens();
+    state = {
+        isAuthenticated: false,
+        currentView: 'login',
+        showConsent: false,
+        sessions: [],
+        activeSessionId: null,
+        messages: [],
+        drillDownList: [],
+        hasTeam: false,
+        dashboardData: null,
+        teamData: null,
+        subordinateData: null,
+        currentSubordinateInfo: null,
+        sidebarCollapsed: true,
+        newChatModalOpen: false,
+        psychoData: null,
+        psychoHistory: null
+    };
+    render();
+}
+
+async function navigateTo(view) {
+    state.currentView = view;
+    
+    if (view === 'teamDashboard' && state.drillDownList.length > 0) {
+        const userId = state.drillDownList[0].node_id;
+        try {
+            const teamData = await api.request(`/DashBoardData/${userId}/health_dashboard/`);
+            state.teamData = teamData;
+        } catch (error) {
+            console.error('Error loading team dashboard:', error);
+            state.teamData = null;
+        }
+    }
+    
+    render();
+}
+
+async function viewSubordinateData(nodeId) {
+    try {
+        const memberInfo = state.drillDownList.find(m => m.node_id === nodeId);
+        state.currentSubordinateInfo = memberInfo;
+        const data = await api.request(`/DashBoardData/${nodeId}/health_dashboard/`);
+        state.subordinateData = data;
+        state.currentView = 'subordinateDashboard';
+        render();
+    } catch (error) {
+        console.error('Error loading subordinate data:', error);
+        state.subordinateData = null;
+        state.currentView = 'subordinateDashboard';
+        render();
+    }
+}
+
+function goToTeamDashboard() {
+    navigateTo('teamDashboard');
+}
+
+function handleSessionClick(sessionId) {
+    state.activeSessionId = sessionId;
+    state.currentView = 'chat';
+    loadChatHistory(sessionId);
+}
+
+async function handleDeleteChat(sessionId) {
+    if (!confirm('Delete this chat session?')) return;
+    try {
+        await api.request(`/Chats/${sessionId}/`, { method: 'DELETE' });
+        const sessions = await api.request('/Chats/');
+        state.sessions = sessions.sort((a, b) => new Date(b.last_updated) - new Date(a.last_updated));
+        if (state.activeSessionId === sessionId) {
+            state.activeSessionId = null;
+            state.messages = [];
+        }
+        render();
+    } catch (error) {
+        console.error('Delete error:', error);
+    }
+}
+
+function toggleSidebar() {
+    state.sidebarCollapsed = !state.sidebarCollapsed;
+    render();
+}
+
+function openNewChatModal() {
+    state.newChatModalOpen = true;
+    render();
+}
+function closeNewChatModal() {
+    state.newChatModalOpen = false;
+    render();
+}
+
+async function handleCreateNewChat(event) {
+    event.preventDefault();
+    const title = document.getElementById('new-chat-title').value;
+    const mode = document.getElementById('new-chat-mode').value;
+    
+    try {
+        const newSession = await api.request('/Chats/', {
+            method: 'POST',
+            body: JSON.stringify({ title, AiMode: mode })
+        });
+        const sessions = await api.request('/Chats/');
+        state.sessions = sessions.sort((a, b) => new Date(b.last_updated) - new Date(a.last_updated));
+        
+        state.activeSessionId = newSession.id;
+        state.messages = [];
+        state.currentView = 'chat';
+        state.newChatModalOpen = false;
+        render();
+    } catch (error) {
+        console.error('Create chat error:', error);
+    }
+}
+
+// Logic for rendering Chart.js on the Psycho Report tab
+function initPsychoCharts() {
+    if (state.currentView !== 'psychoReport') return;
+    // Handle the double-nested content structure for the charts
+    const historyData = state.psychoHistory?.content?.content || state.psychoHistory?.content || [];
+    if (!Array.isArray(historyData) || historyData.length === 0) return;
+
+    // Sort by date just in case
+    const sorted = [...historyData].sort((a, b) => new Date(a.date) - new Date(b.date));
+    const labels = sorted.map(item => item.date);
+
+    // Chart 1: Clinical (Depression & Anxiety)
+    const depData = sorted.map(item => item.content?.depression?.total_score || 0);
+    const anxData = sorted.map(item => item.content?.anxiety?.total_score || 0);
+
+    const ctxClinical = document.getElementById('chart-clinical');
+    if (ctxClinical) {
+        new Chart(ctxClinical, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [
+                    {
+                        label: 'Depression',
+                        data: depData,
+                        borderColor: '#e11d48', // rose-600
+                        backgroundColor: 'rgba(225, 29, 72, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    },
+                    {
+                        label: 'Anxiety',
+                        data: anxData,
+                        borderColor: '#ea580c', // orange-600
+                        backgroundColor: 'rgba(234, 88, 12, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { position: 'bottom', labels: { font: { family: 'Inter' } } } },
+                scales: {
+                    y: { beginAtZero: true, grid: { color: '#f1f5f9' } },
+                    x: { grid: { display: false } }
+                }
+            }
+        });
+    }
+
+    // Chart 2: Big Five Traits
+    const neurData = sorted.map(item => item.content?.big_five?.Neuroticism?.raw_score || 0);
+    const extData = sorted.map(item => item.content?.big_five?.Extraversion?.raw_score || 0);
+    const openData = sorted.map(item => item.content?.big_five?.["Openness to Experience"]?.raw_score || 0);
+    const agreeData = sorted.map(item => item.content?.big_five?.Agreeableness?.raw_score || 0);
+    const consData = sorted.map(item => item.content?.big_five?.Conscientiousness?.raw_score || 0);
+
+    const ctxBigFive = document.getElementById('chart-bigfive');
+    if (ctxBigFive) {
+        new Chart(ctxBigFive, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [
+                    { label: 'Neuroticism', data: neurData, borderColor: '#8b5cf6', tension: 0.3 }, // violet
+                    { label: 'Extraversion', data: extData, borderColor: '#0ea5e9', tension: 0.3 }, // sky
+                    { label: 'Openness', data: openData, borderColor: '#10b981', tension: 0.3 }, // emerald
+                    { label: 'Agreeableness', data: agreeData, borderColor: '#f59e0b', tension: 0.3 }, // amber
+                    { label: 'Conscientiousness', data: consData, borderColor: '#64748b', tension: 0.3 } // slate
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 10, family: 'Inter' } } } },
+                scales: {
+                    y: { max: 5, min: 0, grid: { color: '#f1f5f9' } },
+                    x: { grid: { display: false } }
+                }
+            }
+        });
+    }
+}
+
+function render() {
+    const root = document.getElementById('root');
+    
+    if (state.showConsent) {
+        root.innerHTML = ConsentModal({ onConsent: handleConsent });
+        return;
+    }
+    if (!state.isAuthenticated) {
+        if (state.currentView === 'register') {
+            root.innerHTML = Register();
+        } else {
+            root.innerHTML = Login({ onLogin: handleLogin, onSwitchToRegister: switchToRegister });
+        }
+        setTimeout(() => {
+            initializeGoogleSignIn();
+            renderGoogleButton();
+        }, 100);
+        return;
+    }
+
+    let mainContent = '';
+    switch (state.currentView) {
+        case 'dashboard':
+            mainContent = Dashboard({ dashboardData: state.dashboardData });
+            break;
+        case 'psychoReport':
+            mainContent = PsychoReport({ currentData: state.psychoData, historyData: state.psychoHistory });
+            break;
+        case 'teamDashboard':
+            mainContent = TeamDashboard({ teamData: state.teamData, drillDownList: state.drillDownList });
+            break;
+        case 'subordinateDashboard':
+            mainContent = SubordinateDashboard({ subordinateData: state.subordinateData, memberInfo: state.currentSubordinateInfo });
+            break;
+        case 'chat':
+            mainContent = ChatInterface({ messages: state.messages, activeSessionId: state.activeSessionId });
+            break;
+        case 'feedback':
+            mainContent = FeedbackForm();
+            break;
+    }
+
+    root.innerHTML = `
+        <div class="flex flex-1 overflow-hidden">
+             <aside class="${state.sidebarCollapsed ? 'w-24' : 'w-72'} bg-white border-r border-slate-100 flex flex-col py-6 transition-all duration-300 z-50 shadow-sm relative">
+                <div class="flex items-center justify-between mb-8 px-6">
+                    ${!state.sidebarCollapsed ? `
+                        <div class="flex items-center gap-3">
+                            <div class="w-9 h-9 rounded-xl bg-brand-50 flex items-center justify-center text-brand-600">
+                                ${Icon({ name: 'brain', size: 22 })}
+                            </div>
+                            <h1 class="text-xl font-heading font-bold text-slate-800 tracking-tight">AI Wellness</h1>
+                        </div>
+                    ` : `
+                         <div class="w-10 h-10 rounded-xl bg-brand-50 flex items-center justify-center text-brand-600 mx-auto">
+                            ${Icon({ name: 'brain', size: 24 })}
+                        </div>
+                    `}
+                    ${!state.sidebarCollapsed ? `
+                    <button onclick="toggleSidebar()" class="p-2 hover:bg-slate-50 rounded-lg transition-colors text-slate-400 hover:text-slate-600">
+                        ${Icon({ name: 'menu', size: 20 })}
+                    </button>
+                    ` : ''}
+                </div>
+                ${state.sidebarCollapsed ? `
+                     <button onclick="toggleSidebar()" class="mb-8 w-full p-2 hover:bg-slate-50 transition-colors text-slate-400 hover:text-slate-600 flex justify-center">
+                        ${Icon({ name: 'menu', size: 20 })}
+                    </button>
+                ` : ''}
+                
+                <div class="space-y-2 px-4">
+                    <button onclick="navigateTo('dashboard')" class="w-full py-3.5 rounded-xl flex items-center px-4 ${state.currentView === 'dashboard' ? 'bg-brand-50 text-brand-700 font-semibold' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'} transition-all group">
+                        ${Icon({ name: 'dashboard', size: 20, className: state.currentView === 'dashboard' ? 'text-brand-600' : 'group-hover:scale-110 transition-transform' })}
+                        ${!state.sidebarCollapsed ? '<span class="ml-4 text-sm tracking-wide">Dashboard</span>' : ''}
+                    </button>
+                    
+                    <button onclick="navigateTo('psychoReport')" class="w-full py-3.5 rounded-xl flex items-center px-4 ${state.currentView === 'psychoReport' ? 'bg-brand-50 text-brand-700 font-semibold' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'} transition-all group">
+                        ${Icon({ name: 'clipboard', size: 20, className: state.currentView === 'psychoReport' ? 'text-brand-600' : 'group-hover:scale-110 transition-transform' })}
+                        ${!state.sidebarCollapsed ? '<span class="ml-4 text-sm tracking-wide">Wellness Report</span>' : ''}
+                    </button>
+
+                    ${state.hasTeam ? `
+                        <button onclick="navigateTo('teamDashboard')" class="w-full py-3.5 rounded-xl flex items-center px-4 ${state.currentView === 'teamDashboard' ? 'bg-brand-50 text-brand-700 font-semibold' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'} transition-all group">
+                            ${Icon({ name: 'users', size: 20, className: state.currentView === 'teamDashboard' ? 'text-brand-600' : 'group-hover:scale-110 transition-transform' })}
+                            ${!state.sidebarCollapsed ? '<span class="ml-4 text-sm tracking-wide">Team View</span>' : ''}
+                        </button>
+                    ` : ''}
+                    
+                    <button onclick="openNewChatModal()" class="w-full py-3.5 rounded-xl flex items-center px-4 ${state.currentView === 'chat' ? 'bg-brand-50 text-brand-700 font-semibold' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'} transition-all group">
+                        ${Icon({ name: 'messageSquare', size: 20, className: state.currentView === 'chat' ? 'text-brand-600' : 'group-hover:scale-110 transition-transform' })}
+                        ${!state.sidebarCollapsed ? '<span class="ml-4 text-sm tracking-wide">New Session</span>' : ''}
+                    </button>
+                    
+                    <button onclick="navigateTo('feedback')" class="w-full py-3.5 rounded-xl flex items-center px-4 ${state.currentView === 'feedback' ? 'bg-brand-50 text-brand-700 font-semibold' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'} transition-all group">
+                        ${Icon({ name: 'thumbsUp', size: 20, className: state.currentView === 'feedback' ? 'text-brand-600' : 'group-hover:scale-110 transition-transform' })}
+                        ${!state.sidebarCollapsed ? '<span class="ml-4 text-sm tracking-wide">Feedback</span>' : ''}
+                    </button>
+                </div>
+
+                ${!state.sidebarCollapsed ? `
+                    <div class="mt-8 flex-1 overflow-y-auto px-4 custom-scrollbar">
+                        <h3 class="px-3 text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">Recent Sessions</h3>
+                        <div class="space-y-1">
+                            ${state.sessions.map(session => {
+                                const date = new Date(session.last_updated);
+                                const dateStr = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                                return `
+                                <div class="group relative flex items-center">
+                                    <button onclick="handleSessionClick('${session.id}')" class="flex-1 rounded-xl px-4 py-3 ${state.activeSessionId === session.id ? 'bg-slate-50 text-slate-800 font-medium' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'} transition-all text-left w-full overflow-hidden">
+                                        <div class="flex items-center gap-3">
+                                            <div class="min-w-[6px] h-6 rounded-full ${state.activeSessionId === session.id ? 'bg-brand-400' : 'bg-transparent'}"></div>
+                                            <span class="text-sm truncate">${session.title}</span>
+                                        </div>
+                                        <div class="ml-5 mt-1 text-[10px] text-slate-400 font-mono pl-1">${dateStr}</div>
+                                    </button>
+                                    <button onclick="handleDeleteChat('${session.id}')" class="absolute right-2 p-2 text-slate-400 hover:text-rose-500 rounded-lg hover:bg-rose-50 transition-colors opacity-0 group-hover:opacity-100">
+                                        ${Icon({ name: 'trash', size: 14 })}
+                                    </button>
+                                </div>
+                            `}).join('')}
+                            ${state.sessions.length === 0 ? '<div class="px-4 py-6 border border-dashed border-slate-200 rounded-xl text-center"><p class="text-xs text-slate-400">No active sessions</p></div>' : ''}
+                        </div>
+                    </div>
+                ` : ''}
+                
+                <div class="mt-auto border-t border-slate-100 pt-6 space-y-2 px-4">
+                    <button onclick="handleHumanHelp()" class="w-full py-3.5 rounded-xl flex items-center px-4 text-slate-500 hover:bg-orange-50 hover:text-orange-600 transition-colors group">
+                        ${Icon({ name: 'heartHandshake', size: 20, className: 'group-hover:scale-110 transition-transform' })}
+                        ${!state.sidebarCollapsed ? '<span class="ml-4 text-sm font-semibold tracking-wide">Human Help</span>' : ''}
+                    </button>
+                    <button onclick="handleLogout()" class="w-full py-3.5 rounded-xl flex items-center px-4 text-slate-500 hover:bg-slate-50 hover:text-slate-800 transition-colors group">
+                        ${Icon({ name: 'logOut', size: 20, className: 'group-hover:scale-110 transition-transform' })}
+                        ${!state.sidebarCollapsed ? '<span class="ml-4 text-sm font-semibold tracking-wide">Logout</span>' : ''}
+                    </button>
+                </div>
+            </aside>
+            <main class="flex-1 overflow-y-auto relative">
+                <div class="relative z-10 p-10 min-h-full">
+                    ${mainContent}
+                </div>
+            </main>
+        </div>
+
+        ${state.newChatModalOpen ? `
+            <div class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center z-[100] animate-fade-in p-4">
+                <div class="wellness-card p-8 w-full max-w-md relative">
+                    <button onclick="closeNewChatModal()" class="absolute top-6 right-6 text-slate-400 hover:text-slate-600 transition-colors">
+                        ${Icon({ name: 'x', size: 24 })}
+                    </button>
+                    
+                    <div class="mb-8">
+                        <div class="w-14 h-14 bg-brand-50 rounded-2xl flex items-center justify-center mb-4 text-brand-600">
+                             ${Icon({ name: 'messageSquare', size: 28 })}
+                        </div>
+                        <h2 class="text-2xl font-heading font-bold text-slate-800">Start New Session</h2>
+                        <p class="text-slate-500 text-sm mt-1">Choose your preferred AI companion mode.</p>
+                    </div>
+                    <form onsubmit="handleCreateNewChat(event)" class="space-y-6">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Session Name</label>
+                            <input type="text" id="new-chat-title" required class="wellness-input w-full px-5 py-4 rounded-xl placeholder-slate-400" placeholder="e.g., Weekly Check-in..." />
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Select Mode</label>
+                            <div class="grid grid-cols-2 gap-3">
+                                <label class="cursor-pointer">
+                                    <input type="radio" name="chat-mode" value="therapy" class="peer hidden" checked onchange="document.getElementById('new-chat-mode').value = this.value">
+                                    <div class="p-4 rounded-xl border border-slate-200 bg-slate-50 peer-checked:bg-brand-600 peer-checked:border-brand-500 peer-checked:text-white text-slate-500 transition-all text-center h-full">
+                                        <div class="font-bold text-sm mb-1">Therapy AI</div>
+                                        <div class="text-[10px] opacity-80">Clinical Approach</div>
+                                    </div>
+                                </label>
+                                <label class="cursor-pointer">
+                                    <input type="radio" name="chat-mode" value="counsellor" class="peer hidden" onchange="document.getElementById('new-chat-mode').value = this.value">
+                                    <div class="p-4 rounded-xl border border-slate-200 bg-slate-50 peer-checked:bg-indigo-600 peer-checked:border-indigo-500 peer-checked:text-white text-slate-500 transition-all text-center h-full">
+                                        <div class="font-bold text-sm mb-1">Counsellor AI</div>
+                                        <div class="text-[10px] opacity-80">Guidance & Support</div>
+                                    </div>
+                                </label>
+                            </div>
+                            <select id="new-chat-mode" class="hidden">
+                                <option value="therapy">Therapy AI</option>
+                                <option value="counsellor">Counsellor AI</option>
+                            </select>
+                        </div>
+                        <div class="flex gap-3 pt-2">
+                            <button type="button" onclick="closeNewChatModal()" class="flex-1 py-4 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 transition-colors font-semibold">Cancel</button>
+                            <button type="submit" class="btn-premium flex-1 py-4 rounded-xl font-bold">Start Chat</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        ` : ''}
+    `;
+
+    // Initialize Chart.js safely if we are on the Psycho Report view
+    if (state.currentView === 'psychoReport') {
+        setTimeout(initPsychoCharts, 50);
+    }
+}
+
+window.addEventListener('DOMContentLoaded', async () => {
+    console.log('🌐 DOM Content Loaded');
+    if (localStorage.getItem('access_token')) {
+        state.isAuthenticated = true;
+        try {
+            const needsConsent = await api.checkServerConsent();
+            if (needsConsent) {
+                state.showConsent = true;
+                render();
+            } else {
+                await initializeApp();
+            }
+        } catch (e) {
+            handleLogout();
+        }
+    } else {
+        render();
+    }
+});
+    </script>
+</body>
+</html>
