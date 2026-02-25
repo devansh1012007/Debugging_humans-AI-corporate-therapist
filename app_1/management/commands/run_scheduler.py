@@ -6,9 +6,9 @@ from apscheduler.triggers.cron import CronTrigger
 from django_apscheduler.jobstores import DjangoJobStore
 from django_apscheduler.models import DjangoJobExecution
 from django_apscheduler import util
-
+from apscheduler.triggers.interval import IntervalTrigger
 # Import the function you want to run
-from app_1.tasks import my_daily_function 
+from app_1.tasks import my_daily_function,get_report
 
 logger = logging.getLogger(__name__)
 
@@ -28,6 +28,31 @@ class Command(BaseCommand):
             replace_existing=True,
         )
         logger.info("Added daily job: my_daily_task.")
+
+        try:
+            logger.info("Starting scheduler...")
+            scheduler.start()
+        except KeyboardInterrupt:
+            logger.info("Stopping scheduler...")
+            scheduler.shutdown()
+            logger.info("Scheduler shut down successfully!")
+
+class Command(BaseCommand):
+    help = "Runs APScheduler."
+
+    def handle(self, *args, **options):
+        scheduler = BlockingScheduler(timezone=settings.TIME_ZONE)
+        scheduler.add_jobstore(DjangoJobStore(), "default")
+
+        # Schedule the function to run every 15 days
+        scheduler.add_job(
+            get_report,
+            trigger=IntervalTrigger(days=15),  
+            id="my_15_day_task",               
+            max_instances=1,
+            replace_existing=True,
+        )
+        logger.info("Added 15-day interval job: my_15_day_task.")
 
         try:
             logger.info("Starting scheduler...")
