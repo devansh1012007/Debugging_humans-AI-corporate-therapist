@@ -43,6 +43,11 @@ def generate_drill_down_lists(target):
     
     return new_drill_down
 
+def my_daily_function():
+    #mid_night() # this will be uncomented in future
+    #get_report()
+    process_midnight_snapshots()
+
 
 def get_direct_reports_ids(root_id, include_self=True):
     children_ids = list(OrgNode.objects.filter(parent_id=root_id).values_list('id', flat=True))
