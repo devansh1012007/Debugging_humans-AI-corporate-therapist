@@ -4,7 +4,7 @@ from rest_framework.routers import DefaultRouter
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from .views import (
     OldChatsViewSet, ChatViewSet, OrgNodeViewSet, TherapistNeededView, UserDashboardViewSet, 
-    UserFeedbackViewSet,  
+    UserFeedbackViewSet,  UserPsycoProcessedDataViewSet,UserPsycoProcessedDataHistoryViewSet,
     UserConsentViewSet, UserDrillDownViewSet, RegisterView
 )
 
@@ -18,6 +18,8 @@ router.register(r'UserConsent', UserConsentViewSet, basename='UserConsent')
 router.register(r'UserDrillDown', UserDrillDownViewSet, basename='UserDrillDown')
 router.register(r'UserDashboard', UserDashboardViewSet, basename='UserDashboard')
 router.register(r'TherapistNeeded', TherapistNeededView, basename='TherapistNeeded')
+router.register(r'UserPsycoProcessedData', UserPsycoProcessedDataViewSet, basename='UserPsycoProcessedData')
+router.register(r'UserPsycoProcessedDataHistory', UserPsycoProcessedDataHistoryViewSet, basename='UserPsycoProcessedDataHistory')
 #router.register(r'Download', Download, basename='TherapistNeeded')
 urlpatterns = [
     path('', include(router.urls)),

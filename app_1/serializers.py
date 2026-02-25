@@ -5,7 +5,7 @@ from rest_framework.validators import UniqueValidator
 from rest_framework.fields import CurrentUserDefault
 from .models import (
     Tharipistneeded, UserDrillDown, UserFeedback, UserHomepageDB, UserChatDB, UserPersonalityData, 
-    TeamData, UserPsycoData, 
+    TeamData, UserPsycoData, UserPsycoProcessedData, UserPsycoProcessedDataHistory,
     Company, UserDashboard, UserDashboardHistory, TeamDataHistory, 
     UserChatSummary, StructureLevel, OrgNode,UserConsent,UserPsycoDataHistory
 )
@@ -33,6 +33,18 @@ class UserPsycoDataSerializer(serializers.ModelSerializer):
     owner = serializers.HiddenField(default=serializers.CurrentUserDefault())
     class Meta:
         model = UserPsycoData
+        fields = ['content', 'owner']
+
+class UserPsycoProcessedDataSerializer(serializers.ModelSerializer):
+    owner = serializers.HiddenField(default=serializers.CurrentUserDefault())
+    class Meta:
+        model = UserPsycoProcessedData
+        fields = ['content', 'owner']
+
+class UserPsycoProcessedDataHistorySerializer(serializers.ModelSerializer):
+    owner = serializers.HiddenField(default=serializers.CurrentUserDefault())
+    class Meta:
+        model = UserPsycoProcessedDataHistory
         fields = ['content', 'owner']
 
 class UserPsycoDataHistorySerializer(serializers.ModelSerializer):
