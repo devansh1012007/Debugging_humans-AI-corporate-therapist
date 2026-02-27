@@ -1,16 +1,22 @@
-# Use official Python runtime as a parent image
-FROM python:3.12-slim
+FROM python:3.11-slim
 
-# Set environment variables
-ENV PYTHONDONTWRITEBYTECODE=1
-ENV PYTHONUNBUFFERED=1
+# Install system dependencies
+# ffmpeg: for HLS streaming
+# libpq-dev: for PostgreSQL connection
+RUN apt-get update && apt-get install -y \
+    ffmpeg \
+    libpq-dev \
+    gcc \
+    && rm -rf /var/lib/apt/lists/*
 
-# Set work directory
-WORKDIR /code
+WORKDIR /app
 
-# Install dependencies
-COPY requirements.txt /code/
+# Install Python requirements
+COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy project
-COPY . /code/
+# Copy the rest of the code
+COPY . .
+
+# Expose port 8000 for Django
+EXPOSE 8000

@@ -163,7 +163,7 @@ class UserFeedbackViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         serializer.save(owner=self.request.user)
 
-class UserConsentViewSet(viewsets.ModelViewSet):
+class UserConsentViewSet(viewsets.ModelViewSet):#### THIS NEEDS CHANGES
     queryset = UserConsent.objects.all()
     serializer_class = UserConsentSerializer
     permission_classes = [AllowAny] # Unauthenticated users must also be able to consent
