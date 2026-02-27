@@ -33,11 +33,12 @@ class IsHierarchicalSuperior(permissions.BasePermission):
         if request.user.org_node.id == obj.id:
             return True
         def is_descendant(parent, target):
-            current = target.parent
-            while current is not None:
-                if current == parent:
-                    return True
-                current = current.parent
+            children_ids = list(OrgNode.objects.filter(parent_id=parent).values_list('id', flat=True))
+            if children_ids is not None:
+                for child in children_ids:
+                    if child == target.id:
+                        return True
+                #current = current.parent
             return False
     
         return is_descendant(requester, obj)

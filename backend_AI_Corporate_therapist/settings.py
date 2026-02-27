@@ -9,7 +9,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY')
 
-#DEBUG = True
+DEBUG = True
 CORS_ALLOW_CREDENTIALS = True
 CSRF_TRUSTED_ORIGINS = [
     'https://*.trycloudflare.com',
@@ -90,7 +90,7 @@ DATABASES = {
         'NAME': os.environ.get('DB_NAME', 'postgres'),
         'USER': os.environ.get('DB_USER', 'postgres'),
         'PASSWORD': os.environ.get('DB_PASSWORD', 'mysecreatpassword'),
-        'HOST': os.environ.get('DB_HOST', 'db'),  # Matches the service name in docker-compose
+        'HOST': os.environ.get('DB_HOST', 'db'),  
         'PORT': os.environ.get('DB_PORT', '5432'),
     }
 }
