@@ -58,7 +58,7 @@ def consiler_ai_responce(user_prompt, messages_list, user_name):
         endpoint = "chat/stream"
         AI_SERVER_URL = os.getenv('AI_CHAT_ENDPOINT_2')
         full_url = str(urljoin(AI_SERVER_URL, endpoint))
-        full_url = "http://172.25.176.221:8001/chat/stream"
+        full_url = "http://172.25.251.52:8001/chat/stream"#172.25.251.52
         r = requests.post(full_url,#"http://172.25.180.142:8001/chat/stream"
             json=payload,
             stream=True
@@ -76,10 +76,10 @@ def summarize_chat_history(conversations):
     payload = {
     "conversation": conversations
     }
-    endpoint = "summarizer"
+    endpoint = "/summarizer"
     AI_SERVER_URL = os.getenv('AI_CHAT_ENDPOINT_3')
     full_url = str(urljoin(AI_SERVER_URL, endpoint))
-        
+    full_url = "http://172.25.180.142:8001/summarizer"    
     response = requests.post(
         full_url,
         json=payload
@@ -95,7 +95,7 @@ def personality_extractor(conversations,existing_personality_profile):
     endpoint = "personality_extractor"
     AI_SERVER_URL = os.getenv('AI_CHAT_ENDPOINT_4')
     full_url = str(urljoin(AI_SERVER_URL, endpoint))
-    
+    full_url = "http://172.25.180.142:8001/personality_extractor"
     response = requests.post(
         full_url,
         json = payload
