@@ -15,7 +15,7 @@ def therpy_ai_response(user_prompt, messages_list, user_name):
         "message": user_prompt,
         "conversation": messages_list,
         "user_profile": user_name,
-        "workspace_context": "the company is in Tamil Nadu, respect it's believes",
+        "workspace_context": "the company is in Tamil Nadu, respect it's empoyees believes",
         "model_override": "therapy-ai",
     }
     r = requests.post(
@@ -52,7 +52,7 @@ def consiler_ai_responce(user_prompt, messages_list, user_name):
         "message": user_prompt,
         "conversation": messages_list, # Creates a shallow copy
         "user_profile": user_name,
-        "workspace_context": "the company is in Tamil Nadu, respect it's believes",
+        "workspace_context": "the company is in Tamil Nadu, respect it's empoyees believes",
         "model_override": "problem-solver",
     }
         endpoint = "chat/stream"

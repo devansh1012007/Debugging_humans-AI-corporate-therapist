@@ -1,2 +1,6 @@
 /HiddenFolder
 /.env
+/postgres_data
+/.venv
+/.vscode
+/extrastuff
