@@ -1,0 +1,1978 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MindSpace AI - Mental Health Platform</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,0,0" />
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap');
+
+        /* ========== GLOBAL RESET ========== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --text-color: #edf3ff;
+            --subheading-color: #97a7ca;
+            --placeholder-color: #c3cdde;
+            --primary-color: #101623;
+            --secondary-color: #283045;
+            --secondary-hover-color: #333e58;
+            --scrollbar-color: #626a7f;
+        }
+
+        body {
+            font-family: 'Poppins', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: var(--text-color);
+            background-color: var(--primary-color);
+            min-height: 100vh;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        /* ========== LOGIN PAGE STYLES ========== */
+        .login-container {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            width: 100%;
+        }
+
+        .login-form-container {
+            width: 100%;
+            max-width: 450px;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+            position: relative;
+        }
+
+        .form-box {
+            padding: 50px 40px;
+            display: none;
+            animation: fadeIn 0.5s ease-in-out;
+        }
+
+        .form-box.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .login-welcome-back {
+            color: #333;
+            font-size: 32px;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+
+        .login-subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+
+        .login-input-group {
+            margin-bottom: 20px;
+        }
+
+        .login-input-group label {
+            display: block;
+            color: #333;
+            font-size: 14px;
+            font-weight: 500;
+            margin-bottom: 8px;
+        }
+
+        .login-input-group input {
+            width: 100%;
+            padding: 14px 16px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 14px;
+            transition: all 0.3s ease;
+            outline: none;
+        }
+
+        .login-input-group input:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .login-options {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            font-size: 14px;
+        }
+
+        .remember {
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            color: #666;
+        }
+
+        .remember input {
+            margin-right: 8px;
+            cursor: pointer;
+        }
+
+        .forgot-password {
+            color: #667eea;
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.3s ease;
+        }
+
+        .forgot-password:hover {
+            color: #764ba2;
+        }
+
+        .login-btn {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            margin-bottom: 20px;
+        }
+
+        .login-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .login-btn:active {
+            transform: translateY(0);
+        }
+
+        /* ========== CHATBOT WRAPPER ========== */
+        .chatbot-wrapper {
+            display: flex;
+            overflow-x: hidden;
+        }
+
+        /* ========== SIDEBAR STYLES ========== */
+        .sidebar {
+            width: 260px;
+            height: 100vh;
+            background: #0a0e1a;
+            border-right: 1px solid #1a1f2e;
+            display: flex;
+            flex-direction: column;
+            position: fixed;
+            left: 0;
+            top: 0;
+            transition: 0.3s ease;
+            z-index: 1000;
+        }
+
+        .sidebar.collapsed {
+            left: -260px;
+        }
+
+        .sidebar-brand {
+            padding: 25px 20px;
+            border-bottom: 1px solid #1a1f2e;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .sidebar-brand h2 {
+            font-size: 1.4rem;
+            color: var(--text-color);
+            font-weight: 600;
+            text-align: center;
+        }
+
+        .sidebar-section {
+            padding: 20px 0;
+            border-bottom: none;
+        }
+
+        .section-title {
+            padding: 0 20px;
+            font-size: 0.7rem;
+            color: #4a5568;
+            text-transform: uppercase;
+            letter-spacing: 1.8px;
+            margin-bottom: 15px;
+            font-weight: 600;
+        }
+
+        .sidebar-menu {
+            list-style: none;
+            padding: 0 15px;
+        }
+
+        .menu-item,
+        .menu-item-unselected {
+            padding: 14px 15px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            color: #8892a6;
+            font-size: 0.95rem;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            border-radius: 12px;
+            font-weight: 500;
+        }
+
+        .menu-item {
+            background: #1e2a3a;
+            color: var(--text-color);
+        }
+
+        .menu-item-unselected:hover {
+            background: #151b26;
+            color: var(--text-color);
+        }
+
+        .menu-item .material-symbols-rounded,
+        .menu-item-unselected .material-symbols-rounded {
+            font-size: 1.4rem;
+        }
+
+        .history-section {
+            flex: 1;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            padding-top: 10px;
+        }
+
+        .history-section::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .history-section::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .history-section::-webkit-scrollbar-thumb {
+            background: #2a3544;
+            border-radius: 10px;
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 20px;
+            margin-bottom: 15px;
+        }
+
+        .new-chat-btn {
+            background: none;
+            border: none;
+            color: #4a90e2;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            transition: 0.2s ease;
+            padding: 4px 8px;
+            border-radius: 6px;
+        }
+
+        .new-chat-btn:hover {
+            background: #151b26;
+        }
+
+        .new-chat-btn .material-symbols-rounded {
+            font-size: 1.1rem;
+        }
+
+        .recent-chats {
+            list-style: none;
+            padding: 0 15px;
+        }
+
+        .recent-chat-item {
+            padding: 12px 15px;
+            margin-bottom: 6px;
+            cursor: pointer;
+            transition: 0.2s ease;
+            color: #8892a6;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            border-radius: 10px;
+            line-height: 1.4;
+        }
+
+        .recent-chat-item:hover {
+            background: #151b26;
+            color: var(--text-color);
+        }
+
+        .recent-chat-item.active {
+            background: #151b26;
+            color: var(--text-color);
+        }
+
+        .recent-chat-item .chat-icon {
+            font-size: 1.1rem;
+            margin-top: 2px;
+        }
+
+        .recent-chat-item span:last-child {
+            flex: 1;
+            word-break: break-word;
+        }
+
+        .sidebar-footer {
+            padding: 15px;
+            border-top: 1px solid #1a1f2e;
+            margin-top: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .therapist-btn,
+        .logout-btn {
+            width: 100%;
+            padding: 12px 15px;
+            background: transparent;
+            border-radius: 10px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        .therapist-btn {
+            color: var(--text-color);
+            border: 1px solid #2a3544;
+        }
+
+        .therapist-btn:hover {
+            background: #151b26;
+            border-color: #3a4554;
+        }
+
+        .therapist-btn .material-symbols-rounded {
+            font-size: 1.3rem;
+            color: #c94b6e;
+        }
+
+        .logout-btn {
+            color: #e85d75;
+            border: 1px solid #3d2535;
+        }
+
+        .logout-btn:hover {
+            background: rgba(232, 93, 117, 0.1);
+            border-color: #4d3040;
+        }
+
+        .logout-btn .material-symbols-rounded {
+            font-size: 1.3rem;
+            color: #e85d75;
+        }
+
+        .sidebar-toggle {
+            position: fixed;
+            left: 10px;
+            top: 20px;
+            width: 45px;
+            height: 45px;
+            background: var(--secondary-color);
+            border: 1px solid var(--secondary-hover-color);
+            border-radius: 50%;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: 0.3s ease;
+            z-index: 999;
+            color: var(--text-color);
+            display: none;
+        }
+
+        .sidebar.collapsed ~ .sidebar-toggle {
+            display: flex;
+        }
+
+        .sidebar-toggle:hover {
+            background: var(--secondary-hover-color);
+        }
+
+        /* ========== CONTAINER STYLES ========== */
+        .container {
+            padding: 32px 0 120px;
+            margin-left: 280px;
+            width: calc(100% - 280px);
+            transition: 0.3s ease;
+        }
+
+        .sidebar.collapsed ~ .container {
+            margin-left: 0;
+            width: 100%;
+        }
+
+        .container :where(.app-header, .suggestions, .message, .prompt-wrapper, .disclaimer-text){
+            margin: 0 auto;
+            width: 100%;
+            padding: 0 20px;
+            max-width: 980px;
+        }
+
+        .container .app-header {
+            margin-top: 4vh;
+        }
+
+        .app-header .heading{
+            font-size: 3rem;
+            width: fit-content;
+            background: linear-gradient(to right, #1d7efd, #8f6fff);
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .app-header .sub-heading{
+            font-size: 2.6rem;
+            margin-top: -5px;
+            color: var(--subheading-color);
+        }
+
+        .container .suggestions {
+            display: flex;
+            gap: 15px;
+            margin-top: 9.5vh;
+            list-style: none;
+            overflow-x: auto;
+            scrollbar-width: none;
+        }
+
+        .container.is-hidden :is(.app-header, .suggestions){
+            display: none;
+        }
+
+        .suggestions .suggestions-item {
+            width: 228px;
+            padding: 18px;
+            flex-shrink: 0;
+            display: flex;
+            cursor: pointer;
+            flex-direction: column;
+            align-items: flex-end;
+            justify-content: space-between;
+            border-radius: 12px;
+            background: var(--secondary-color);
+            transition: 0.3s ease;
+        }
+
+        .suggestions .suggestions-item:hover {
+            background: var(--secondary-hover-color);
+        }
+
+        .suggestions .suggestions-item .text {
+            font-size: 1.1rem;
+        }
+
+        .suggestions .suggestions-item span {
+            height: 45px;
+            width: 45px;
+            margin-top: 35px;
+            display: flex;
+            align-self: flex-end;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            color: #1d7efd;
+            background: var(--primary-color);
+        }
+
+        .suggestions .suggestions-item:nth-child(2) span {
+            color: #28a745;
+        }
+
+        .suggestions .suggestions-item:nth-child(3) span {
+            color: #ffc107;
+        }
+
+        .suggestions .suggestions-item:nth-child(4) span {
+            color: #6f42c1;
+        }
+
+        .container .chats-container {
+            display: flex;
+            gap: 20px;
+            flex-direction: column;
+        }
+
+        .chats-container .message {
+            display: flex;
+            gap: 11px;
+            align-items: center;
+        }
+
+        .chats-container .bot-message .avatar {
+            height: 43px;
+            width: 43px;
+            flex-shrink: 0;
+            padding: 6px;
+            align-self: flex-start;
+            margin-right: -7px;
+            border-radius: 50%;
+            background: var(--secondary-color);
+            border: 1px solid var(--secondary-hover-color);
+        }
+
+        .chats-container .message .message-text{
+            padding: 3px 16px;
+            word-wrap: break-word;
+            white-space: pre-line;
+        }
+
+        .chats-container .bot-message {
+            margin: 9px auto;
+        }
+
+        .chats-container .user-message {
+            flex-direction: column;
+            align-items: flex-end;
+        }
+
+        .chats-container .user-message .message-text {
+            padding: 12px 16px;
+            max-width: 75%;
+            border-radius: 13px 13px 3px 13px;
+            background: var(--secondary-color);
+        }
+
+        .prompt-container {
+            position: fixed;
+            bottom: 0;
+            left: 280px;
+            width: calc(100% - 280px);
+            padding: 16px 0;
+            background: var(--primary-color);
+            transition: 0.3s ease;
+        }
+
+        .sidebar.collapsed ~ .container .prompt-container {
+            left: 0;
+            width: 100%;
+        }
+
+        .prompt-container :where(.prompt-wrapper, .prompt-form, .prompt-actions){
+            display: flex;
+            gap: 12px;
+            height: 56px;
+            align-items: center;
+        }
+
+        .prompt-wrapper .prompt-form {
+            width: 100%;
+            height: 100%;
+            border-radius: 130px;
+            background: var(--secondary-color);
+        }
+
+        .prompt-form .prompt-input {
+            height: 100%;
+            width: 100%;
+            background: none;
+            outline: none;
+            border: none;
+            font-size: 1rem;
+            padding-left: 24px;
+            color: var(--text-color);
+        }
+
+        .prompt-form .prompt-input::placeholder {
+            color: var(--placeholder-color);
+        }
+
+        .prompt-wrapper button {
+            width: 56px;
+            height: 100%;
+            border: none;
+            cursor: pointer;
+            border-radius: 50%;
+            font-size: 1.4rem;
+            flex-shrink: 0;
+            color: var(--text-color);
+            background: var(--secondary-color);
+            transition: 0.3s ease;
+        }
+
+        .prompt-wrapper button:hover {
+            background: var(--secondary-hover-color);
+        }
+
+        .prompt-form .prompt-actions button {
+            gap: 6px;
+            margin-right: 7px;
+            height: 45px;
+            width: 45px;
+        }
+
+        .prompt-form #send-prompt-btn {
+            color: #fff;
+            display: none;
+            background: #1d7efd;
+        }
+
+        .prompt-form .prompt-input:valid ~ .prompt-actions #send-prompt-btn{
+            display: block;
+        }
+
+        .prompt-form #send-prompt-btn:hover {
+            background: #0264e3;
+        }
+
+        .prompt-container .disclaimer-text {
+            text-align: center;
+            font-size: 0.9rem;
+            padding: 16px 20px 0;
+            color: var(--placeholder-color);
+        }
+
+        /* ========== USER DASHBOARD STYLES ========== */
+        .user-dashboard {
+            padding: 40px;
+            margin-left: 280px;
+            width: calc(100% - 280px);
+            transition: 0.3s ease;
+        }
+
+        .sidebar.collapsed ~ .user-dashboard {
+            margin-left: 0;
+            width: 100%;
+        }
+
+        .dashboard-banner {
+            background: linear-gradient(to right, #3f31d1, #8f6fff);
+            padding: 40px;
+            border-radius: 20px;
+            margin-bottom: 40px;
+        }
+
+        .dashboard-banner h2 {
+            font-size: 2rem;
+            margin-bottom: 10px;
+            color: var(--text-color);
+        }
+
+        .dashboard-banner p {
+            color: var(--placeholder-color);
+            font-size: 1rem;
+        }
+
+        .dashboard-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 25px;
+        }
+
+        .dash-card {
+            background: var(--secondary-color);
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .dash-card h3 {
+            color: var(--text-color);
+            font-size: 1.4rem;
+        }
+
+        .dash-card p {
+            color: var(--subheading-color);
+            font-size: 0.95rem;
+            line-height: 1.5;
+        }
+
+        .icon-box {
+            width: 50px;
+            height: 50px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .icon-box span { font-size: 1.8rem; }
+
+        .chat-icon-bg { background: var(--primary-color); color: #3f31d1; }
+        .team-icon-bg { background: var(--primary-color); color: #28a745; }
+        .info-icon-bg { background: var(--primary-color); color: #f39c12; }
+
+        .card-link {
+            text-decoration: none;
+            font-weight: 600;
+            margin-top: 10px;
+            font-size: 0.9rem;
+            cursor: pointer;
+        }
+
+        .card-link:hover {
+            text-decoration: underline;
+        }
+
+        .chat-link { color: #1d7efd; }
+        .team-link { color: #28a745; }
+        .info-link { color: #f39c12; }
+
+        /* ========== MODALS ========== */
+        .modal-overlay1 {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(5px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+        }
+
+        .modal-overlay1.active {
+            display: flex;
+        }
+
+        .modal-box1 {
+            background: var(--secondary-color);
+            width: 90%;
+            max-width: 450px;
+            padding: 40px;
+            border-radius: 20px;
+            position: relative;
+            border: 1px solid var(--secondary-hover-color);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            animation: modalSlide 0.3s ease-out;
+        }
+
+        @keyframes modalSlide {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .modal-close1 {
+            position: absolute;
+            top: -15px;
+            right: -15px;
+            width: 40px;
+            height: 40px;
+            background: #ff4b91; 
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 4px 10px rgba(255, 75, 145, 0.3);
+            transition: 0.3s;
+        }
+
+        .modal-close1:hover {
+            transform: scale(1.1);
+            background: #e03a7a;
+        }
+
+        .modal-title1 {
+            font-size: 1.8rem;
+            color: var(--text-color);
+            margin-bottom: 20px;
+        }
+
+        .instruction-text {
+            line-height: 1.8;
+            color: var(--subheading-color);
+            margin-bottom: 25px;
+        }
+
+        .benefit-section1 {
+            background: var(--primary-color);
+            padding: 15px;
+            border-radius: 12px;
+            border-left: 4px solid #8f6fff;
+        }
+
+        .benefit-label {
+            font-weight: 600;
+            color: #8f6fff;
+            font-size: 0.9rem;
+            margin-bottom: 5px;
+        }
+
+        .benefit-text {
+            color: var(--text-color);
+        }
+
+        /* Session Modal */
+        .modal-overlay-session {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(8px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 3000;
+        }
+
+        .modal-overlay-session.active {
+            display: flex;
+        }
+
+        .modal-box-session {
+            background: #1a2332;
+            width: 90%;
+            max-width: 550px;
+            padding: 45px;
+            border-radius: 25px;
+            border: 1px solid #2a3544;
+            box-shadow: 0 30px 60px rgba(0, 0, 0, 0.6);
+            animation: modalSlideIn 0.4s ease-out;
+        }
+
+        @keyframes modalSlideIn {
+            from { 
+                opacity: 0; 
+                transform: translateY(-30px) scale(0.95);
+            }
+            to { 
+                opacity: 1; 
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        .session-modal-title {
+            font-size: 2rem;
+            color: var(--text-color);
+            text-align: center;
+            margin-bottom: 12px;
+            font-weight: 600;
+        }
+
+        .session-modal-subtitle {
+            font-size: 1rem;
+            color: #8892a6;
+            text-align: center;
+            margin-bottom: 35px;
+        }
+
+        .session-form {
+            display: flex;
+            flex-direction: column;
+            gap: 25px;
+        }
+
+        .session-input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .session-label {
+            font-size: 0.75rem;
+            color: #6b7a99;
+            font-weight: 600;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+        }
+
+        .session-input {
+            width: 100%;
+            padding: 16px 20px;
+            background: #0f1621;
+            border: 2px solid #5865f2;
+            border-radius: 12px;
+            font-size: 1rem;
+            color: var(--text-color);
+            outline: none;
+            transition: all 0.3s ease;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        .session-input::placeholder {
+            color: #5a6379;
+        }
+
+        .session-input:focus {
+            border-color: #7380ff;
+            box-shadow: 0 0 0 4px rgba(88, 101, 242, 0.15);
+        }
+
+        .session-mode-group {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .mode-options {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+        }
+
+        .mode-card {
+            background: #0f1621;
+            border: 2px solid #2a3544;
+            border-radius: 15px;
+            padding: 25px 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .mode-card:hover {
+            border-color: #3a4554;
+            transform: translateY(-3px);
+        }
+
+        .mode-card.active {
+            border-color: #5865f2;
+            background: rgba(88, 101, 242, 0.08);
+        }
+
+        .mode-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+
+        .therapy-icon {
+            background: #5865f2;
+        }
+
+        .counsellor-icon {
+            background: #4a5568;
+        }
+
+        .mode-card.active .counsellor-icon {
+            background: #5865f2;
+        }
+
+        .mode-icon .material-symbols-rounded {
+            font-size: 1.8rem;
+            color: white;
+        }
+
+        .mode-name {
+            font-size: 1rem;
+            color: var(--text-color);
+            font-weight: 500;
+        }
+
+        .mode-card:not(.active) .mode-name {
+            color: #8892a6;
+        }
+
+        .session-actions {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-top: 10px;
+        }
+
+        .session-cancel-btn,
+        .session-start-btn {
+            padding: 15px 25px;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-family: 'Poppins', sans-serif;
+            border: none;
+        }
+
+        .session-cancel-btn {
+            background: transparent;
+            color: #8892a6;
+            border: 2px solid #2a3544;
+        }
+
+        .session-cancel-btn:hover {
+            background: #151b26;
+            border-color: #3a4554;
+            color: var(--text-color);
+        }
+
+        .session-start-btn {
+            background: #5865f2;
+            color: white;
+            box-shadow: 0 4px 15px rgba(88, 101, 242, 0.3);
+        }
+
+        .session-start-btn:hover {
+            background: #4752c4;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(88, 101, 242, 0.4);
+        }
+
+        /* Psychological Summary */
+        .psychological-summary {
+            margin-top: 40px;
+            background: linear-gradient(135deg, #1a2332 0%, #22304a 100%);
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--secondary-hover-color);
+        }
+
+        .summary-title {
+            font-size: 2rem;
+            color: var(--text-color);
+            margin-bottom: 30px;
+            font-weight: 600;
+        }
+
+        .summary-content {
+            display: flex;
+            gap: 30px;
+            align-items: center;
+        }
+
+        .profile-section {
+            flex-shrink: 0;
+        }
+
+        .profile-image {
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            overflow: hidden;
+            border: 4px solid #3f31d1;
+            box-shadow: 0 8px 25px rgba(63, 49, 209, 0.4);
+        }
+
+        .profile-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .summary-text-section {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 25px;
+        }
+
+        .summary-quote {
+            font-size: 1.15rem;
+            line-height: 1.8;
+            color: #b8c5e0;
+            font-style: italic;
+            position: relative;
+            padding-left: 20px;
+            border-left: 3px solid #8f6fff;
+        }
+
+        .summary-badges {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .badge {
+            padding: 10px 20px;
+            border-radius: 50px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            border: 2px solid;
+            transition: all 0.3s ease;
+            cursor: default;
+        }
+
+        .badge-regulated {
+            color: #4a90e2;
+            border-color: #4a90e2;
+            background: rgba(74, 144, 226, 0.1);
+        }
+
+        .badge-regulated:hover {
+            background: rgba(74, 144, 226, 0.2);
+            box-shadow: 0 4px 15px rgba(74, 144, 226, 0.3);
+        }
+
+        .badge-resilient {
+            color: #50c878;
+            border-color: #50c878;
+            background: rgba(80, 200, 120, 0.1);
+        }
+
+        .badge-resilient:hover {
+            background: rgba(80, 200, 120, 0.2);
+            box-shadow: 0 4px 15px rgba(80, 200, 120, 0.3);
+        }
+
+        .badge-functioning {
+            color: #9b59b6;
+            border-color: #9b59b6;
+            background: rgba(155, 89, 182, 0.1);
+        }
+
+        .badge-functioning:hover {
+            background: rgba(155, 89, 182, 0.2);
+            box-shadow: 0 4px 15px rgba(155, 89, 182, 0.3);
+        }
+
+        /* Psychological Insights */
+        .psychological-insights {
+            margin-top: 40px;
+            padding: 35px;
+            background: #0d1420;
+            border-radius: 20px;
+            border: 1px solid #1a2332;
+        }
+
+        .insights-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+
+        .insights-title-section {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .insights-indicator {
+            width: 12px;
+            height: 12px;
+            background: #4a90e2;
+            border-radius: 50%;
+            box-shadow: 0 0 12px rgba(74, 144, 226, 0.6);
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+            50% {
+                opacity: 0.7;
+                transform: scale(1.1);
+            }
+        }
+
+        .insights-title {
+            font-size: 0.85rem;
+            color: #6b7a99;
+            font-weight: 600;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+
+        .daily-analysis-btn {
+            padding: 10px 20px;
+            background: transparent;
+            color: #4a90e2;
+            border: 1px solid #2a3d5a;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        .daily-analysis-btn:hover {
+            background: rgba(74, 144, 226, 0.1);
+            border-color: #4a90e2;
+        }
+
+        .insights-cards {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .insight-card {
+            background: linear-gradient(135deg, #141d2e 0%, #1a2536 100%);
+            padding: 25px;
+            border-radius: 15px;
+            border: 1px solid #1f2d42;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .insight-card:hover {
+            transform: translateX(5px);
+            border-color: #2a4060;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .insight-heading {
+            font-size: 1.2rem;
+            color: var(--text-color);
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+
+        .insight-description {
+            font-size: 0.95rem;
+            color: #7a8aa8;
+            line-height: 1.6;
+        }
+
+        /* ========== RESPONSIVE DESIGN ========== */
+        @media (max-width: 768px) {
+            .form-box {
+                padding: 40px 30px;
+            }
+            
+            .login-welcome-back {
+                font-size: 26px;
+            }
+            
+            .sidebar-toggle {
+                display: flex !important;
+            }
+            
+            .sidebar {
+                left: -280px;
+            }
+            
+            .sidebar:not(.collapsed) {
+                left: 0;
+            }
+            
+            .container, .user-dashboard {
+                margin-left: 0;
+                width: 100%;
+                padding: 20px;
+            }
+            
+            .prompt-container {
+                left: 0;
+                width: 100%;
+            }
+
+            .psychological-summary {
+                padding: 25px;
+            }
+            
+            .summary-title {
+                font-size: 1.5rem;
+                margin-bottom: 20px;
+            }
+            
+            .summary-content {
+                flex-direction: column;
+                text-align: center;
+            }
+            
+            .profile-image {
+                width: 120px;
+                height: 120px;
+            }
+            
+            .summary-quote {
+                padding-left: 0;
+                border-left: none;
+                border-top: 3px solid #8f6fff;
+                padding-top: 15px;
+                font-size: 1rem;
+            }
+            
+            .summary-badges {
+                justify-content: center;
+            }
+            
+            .badge {
+                font-size: 0.75rem;
+                padding: 8px 16px;
+            }
+
+            .psychological-insights {
+                padding: 25px;
+                margin-top: 30px;
+            }
+            
+            .insights-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 15px;
+            }
+            
+            .insights-title {
+                font-size: 0.75rem;
+            }
+            
+            .daily-analysis-btn {
+                width: 100%;
+                text-align: center;
+            }
+            
+            .insight-card {
+                padding: 20px;
+            }
+            
+            .insight-heading {
+                font-size: 1.1rem;
+            }
+            
+            .insight-description {
+                font-size: 0.9rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Login Page -->
+    <div class="login-container hidden" id="loginPage">
+        <div class="login-form-container">
+            <div class="form-box login-form active">
+                <h2 class="login-welcome-back">Welcome Back</h2>
+                <p class="login-subtitle">Login to your account</p>
+                
+                <form id="loginForm">
+                    <div class="login-input-group">
+                        <label for="loginUsername">Username</label>
+                        <input type="text" id="loginUsername" placeholder="Enter your username" required>
+                    </div>
+                    
+                    <div class="login-input-group">
+                        <label for="loginPassword">Password</label>
+                        <input type="password" id="loginPassword" placeholder="Enter your password" required>
+                    </div>
+                    
+                    <div class="login-options">
+                        <label class="remember">
+                            <input type="checkbox" id="rememberMe">
+                            <span>Remember me</span>
+                        </label>
+                        <a href="#" class="forgot-password">Forgot password?</a>
+                    </div>
+                    
+                    <button type="submit" class="login-btn">Login</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- User Interface -->
+    <div class="chatbot-wrapper" id="chatbotPage">
+        <aside class="sidebar">
+            <div class="sidebar-brand">
+                <h2>MindSpace AI</h2>
+            </div>
+            
+            <div class="sidebar-section">
+                <h3 class="section-title">MENU</h3>
+                <ul class="sidebar-menu">
+                    <li onclick="switchTab('dashboard')" class="menu-item" id="menu-dashboard">
+                        <span class="material-symbols-rounded">trending_up</span>
+                        <span>User Dashboard</span>
+                    </li>
+                    <li class="menu-item-unselected" id="menu-chat">
+                        <span class="material-symbols-rounded">chat</span>
+                        <span>Therapy Chat</span>
+                    </li>
+                </ul>
+            </div>
+            
+            <div class="sidebar-section history-section">
+                <div class="section-header">
+                    <h3 class="section-title">HISTORY</h3>
+                    <button class="new-chat-btn" id="new-chat-btn">
+                        <span class="material-symbols-rounded">add</span>
+                        <span>New</span>
+                    </button>
+                </div>
+                <ul class="recent-chats"></ul>
+            </div>
+            
+            <div class="sidebar-footer">
+                <button class="therapist-btn">
+                    <span class="material-symbols-rounded">person</span>
+                    <span>Talk to Human Therapist</span>
+                </button>
+                <button class="logout-btn" id="logout-btn">
+                    <span class="material-symbols-rounded">logout</span>
+                    <span>Logout</span>
+                </button>
+            </div>
+        </aside>
+
+        <button class="sidebar-toggle">
+            <span class="material-symbols-rounded">menu</span>
+        </button>
+
+        <div class="container hidden" id="tab-chat">
+            <header class="app-header">
+                <h1 class="heading">Hello, there</h1>
+                <h2 class="sub-heading">How can I help you today?</h2>
+            </header>
+
+            <ul class="suggestions">
+                <li class="suggestions-item">
+                    <p class="text">Does this application respect individual's privacy</p>
+                    <span class="material-symbols-rounded">draw</span>
+                </li>
+                <li class="suggestions-item">
+                    <p class="text">How can I level up my office work expertise in 2026</p>
+                    <span class="material-symbols-rounded">lightbulb</span>
+                </li>
+                <li class="suggestions-item">
+                    <p class="text">Suggest some useful tools for debugging Python code</p>
+                    <span class="material-symbols-rounded">explore</span>
+                </li>
+                <li class="suggestions-item">
+                    <p class="text">Create a simple schedule for work-life balance</p>
+                    <span class="material-symbols-rounded">code_blocks</span>
+                </li>
+            </ul>
+
+            <div class="chats-container"></div>
+
+            <div class="prompt-container">
+                <div class="prompt-wrapper">
+                    <form action="#" class="prompt-form">
+                        <input type="text" placeholder="Ask AI" class="prompt-input" required>
+                        <div class="prompt-actions">
+                            <button id="send-prompt-btn" class="material-symbols-rounded">send</button>
+                        </div>
+                    </form>
+                    <button id="toggle-btn" class="material-symbols-rounded">light_mode</button>
+                    <button id="delete-chats-btn" class="material-symbols-rounded">delete</button>
+                </div>
+                <p class="disclaimer-text">AI can make mistakes, so double check it</p>
+            </div>
+        </div>
+
+        <div class="user-dashboard" id="tab-dashboard">
+            <div class="dashboard-banner">
+                <h2>Welcome to Your Dashboard</h2>
+                <p>Track your mental health journey, manage teams, and chat with AI assistants.</p>
+            </div>
+
+            <div class="dashboard-cards">
+                <div class="dash-card">
+                    <div class="icon-box chat-icon-bg">
+                        <span class="material-symbols-rounded">chat_bubble</span>
+                    </div>
+                    <h3>Digital Boundaries</h3>
+                    <p>Set intentional tech habits to protect your focus and energy.</p>
+                    <a href="#" class="card-link chat-link">View Details &rsaquo;</a>
+                </div>
+
+                <div class="dash-card">
+                    <div class="icon-box team-icon-bg">
+                        <span class="material-symbols-rounded">groups</span>
+                    </div>
+                    <h3>Box Breathing</h3>
+                    <p>A simple rhythmic technique to calm your nervous system.</p>
+                    <a href="#" class="card-link team-link">View Details &rsaquo;</a>
+                </div>
+
+                <div class="dash-card">
+                    <div class="icon-box info-icon-bg">
+                        <span class="material-symbols-rounded">priority_high</span>
+                    </div>
+                    <h3>Gratitude Loop</h3>
+                    <p>Record one professional win to build your confidence.</p>
+                    <a href="#" class="card-link info-link">View Details &rsaquo;</a>
+                </div>
+            </div>
+            
+            <div class="psychological-summary">
+                <h2 class="summary-title">Psychological Summary</h2>
+                <div class="summary-content">
+                    <div class="profile-section">
+                        <div class="profile-image">
+                            <img src="https://via.placeholder.com/150" alt="Profile Picture">
+                        </div>
+                    </div>
+                    
+                    <div class="summary-text-section">
+                        <p class="summary-quote">
+                            "Your recent interactions demonstrate an emerging pattern of high self-regulation. Cognitive flexibility is currently high, suggesting an optimal window for complex problem-solving."
+                        </p>
+                        
+                        <div class="summary-badges">
+                            <span class="badge badge-regulated">REGULATED</span>
+                            <span class="badge badge-resilient">RESILIENT</span>
+                            <span class="badge badge-functioning">HIGH-FUNCTIONING</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="psychological-insights">
+                <div class="insights-header">
+                    <div class="insights-title-section">
+                        <span class="insights-indicator"></span>
+                        <h2 class="insights-title">PSYCHOLOGICAL INSIGHTS</h2>
+                    </div>
+                    <button class="daily-analysis-btn">Daily Analysis</button>
+                </div>
+
+                <div class="insights-cards">
+                    <div class="insight-card">
+                        <h3 class="insight-heading">Focus State</h3>
+                        <p class="insight-description">Cognitive tunnel vision detected; prompt for a perspective shift.</p>
+                    </div>
+
+                    <div class="insight-card">
+                        <h3 class="insight-heading">Social Connectivity</h3>
+                        <p class="insight-description">Engagement with collaborative nodes is peaking positively.</p>
+                    </div>
+
+                    <div class="insight-card">
+                        <h3 class="insight-heading">Emotional Balance</h3>
+                        <p class="insight-description">Stress-to-recovery ratio indicates a need for a scheduled break.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modals -->
+    <div class="modal-overlay1" id="digitalboundaries">
+        <div class="modal-box1">
+            <div class="modal-close1" id="closeDigitalModal">
+                <span class="material-symbols-rounded">close</span>
+            </div>
+            
+            <div class="modal-content1">
+                <h2 class="modal-title1">Digital Boundaries</h2>
+                <div class="modal-body1">
+                    <p class="instruction-text">
+                        1. Schedule focus blocks.<br>
+                        2. One-tab only browsing sessions.<br>
+                        3. Physical distance from mobile devices.<br>
+                        4. Defined work-end rituals.
+                    </p>
+                    <div class="benefit-section1">
+                        <p class="benefit-label">Benefit:</p>
+                        <p class="benefit-text">Lowers baseline cortisol levels.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay1" id="breathingModal">
+        <div class="modal-box1">
+            <div class="modal-close1" id="closeBreathingModal">
+                <span class="material-symbols-rounded">close</span>
+            </div>
+            
+            <div class="modal-content1">
+                <h2 class="modal-title1">Box Breathing</h2>
+                <div class="modal-body1">
+                    <p class="instruction-text">
+                        1. Inhale slowly for 4 seconds.<br>
+                        2. Hold your breath for 4 seconds.<br>
+                        3. Exhale completely for 4 seconds.<br>
+                        4. Wait for 4 seconds before next cycle.
+                    </p>
+                    <div class="benefit-section1">
+                        <p class="benefit-label">Benefit:</p>
+                        <p class="benefit-text">Stimulates the Parasympathetic Nervous System.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay1" id="gratitudeLoop">
+        <div class="modal-box1">
+            <div class="modal-close1" id="closeGratitudeLoop">
+                <span class="material-symbols-rounded">close</span>
+            </div>
+            
+            <div class="modal-content1">
+                <h2 class="modal-title1">Gratitude Loop</h2>
+                <div class="modal-body1">
+                    <p class="instruction-text">
+                        1. Record one professional win.<br>
+                        2. Acknowledge one mentor or peer.<br>
+                        3. Find one lesson in a recent setback.<br>
+                        4. Commit to a morning focus thought.
+                    </p>
+                    <div class="benefit-section1">
+                        <p class="benefit-label">Benefit:</p>
+                        <p class="benefit-text">Strengthens neuroplasticity for resilience.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay-session" id="newSessionModal">
+        <div class="modal-box-session">
+            <h2 class="session-modal-title">Start New Session</h2>
+            <p class="session-modal-subtitle">Choose your AI companion and set a topic</p>
+            
+            <div class="session-form">
+                <div class="session-input-group">
+                    <label class="session-label">SESSION NAME</label>
+                    <input type="text" class="session-input" placeholder="e.g. Anxiety check-in, Career advice...">
+                </div>
+
+                <div class="session-mode-group">
+                    <label class="session-label">SELECT MODE</label>
+                    <div class="mode-options">
+                        <div class="mode-card active" data-mode="therapy">
+                            <div class="mode-icon therapy-icon">
+                                <span class="material-symbols-rounded">psychology</span>
+                            </div>
+                            <p class="mode-name">Therapy AI</p>
+                        </div>
+                        
+                        <div class="mode-card" data-mode="counsellor">
+                            <div class="mode-icon counsellor-icon">
+                                <span class="material-symbols-rounded">favorite</span>
+                            </div>
+                            <p class="mode-name">Counsellor AI</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="session-actions">
+                    <button class="session-cancel-btn" id="cancelSessionBtn">Cancel</button>
+                    <button class="session-start-btn" id="startSessionBtn">Start Chat</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'https://order-reporter-virtue-experiences.trycloudflare.com/';
+        const container = document.querySelector('.container');
+        const loginPage = document.getElementById('loginPage');
+        const chatbotPage = document.getElementById('chatbotPage');
+        const loginForm = document.getElementById('loginForm');
+
+        // Show chatbot by default (for development)
+        document.addEventListener('DOMContentLoaded', () => {
+            loginPage.classList.add('hidden');
+            chatbotPage.classList.remove('hidden');
+        });
+
+        // Logout
+        document.getElementById('logout-btn').addEventListener('click', logout);
+
+        function logout() {
+            localStorage.clear();
+            showLogin();
+        }
+
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const username = document.getElementById('loginUsername').value;
+            const password = document.getElementById('loginPassword').value;
+            
+            if (!username || !password) {
+                alert('Please fill in all fields');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_BASE}login/`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+
+                if (!response.ok) throw new Error('Invalid credentials');
+
+                const data = await response.json();
+                localStorage.setItem('access_token', data.access);
+                localStorage.setItem('refresh_token', data.refresh);
+                localStorage.setItem('username', username);
+                    
+                showApp();
+            } catch (err) {
+                alert(err.message);
+            }
+            
+            loginForm.reset();
+        });
+
+        function showLogin() {
+            loginPage.classList.remove('hidden');
+            chatbotPage.classList.add('hidden');
+        }
+
+        function showApp() {
+            loginPage.classList.add('hidden');
+            chatbotPage.classList.remove('hidden');
+        }
+
+        function switchTab(tabName) {
+            document.getElementById('menu-chat').className = "menu-item-unselected";
+            document.getElementById('menu-dashboard').className = "menu-item-unselected";
+            document.getElementById('tab-chat').classList.add('hidden');
+            document.getElementById('tab-dashboard').classList.add('hidden');
+            document.getElementById(`tab-${tabName}`).classList.remove('hidden');
+
+            if (tabName === 'chat') {
+                document.getElementById('menu-chat').className = "menu-item";
+            } else {
+                document.getElementById('menu-dashboard').className = "menu-item";
+            }
+        }
+
+        // Chatbot functionality
+        const chatsContainer = document.querySelector(".chats-container");
+        const promptForm = document.querySelector(".prompt-form");
+        const promptInput = promptForm.querySelector(".prompt-input");
+        const sidebar = document.querySelector(".sidebar");
+        const sidebarToggle = document.querySelector(".sidebar-toggle");
+
+        let userMessage = "";
+
+        document.getElementById("send-prompt-btn").addEventListener('click', function(e) {
+            container.classList.toggle('is-hidden');
+        });
+
+        const createMsgElement = (content, ...classes) => {
+            const div = document.createElement("div");
+            div.classList.add("message", ...classes);
+            div.innerHTML = content;
+            return div;
+        };
+
+        const handleFormSubmit = (e) => {
+            e.preventDefault();
+            const userMessage = promptInput.value.trim();
+            if(!userMessage) return;
+
+            promptInput.value = "";
+            const userMsgHTML = `<p class="message-text"></p>`;
+            const userMsgDiv = createMsgElement(userMsgHTML, "user-message");
+            userMsgDiv.querySelector(".message-text").textContent = userMessage;
+            chatsContainer.appendChild(userMsgDiv);
+
+            setTimeout(() => {
+                const botMsgHTML = `<img src="https://via.placeholder.com/43" class="avatar"><p class="message-text">Just a sec..</p>`;
+                const botMsgDiv = createMsgElement(botMsgHTML, "bot-message", "loading");
+                chatsContainer.appendChild(botMsgDiv);
+            }, 600);
+        };
+
+        const toggleSidebar = () => {
+            sidebar.classList.toggle("collapsed");
+        };
+
+        const initializeSidebar = () => {
+            if (window.innerWidth <= 768) {
+                sidebar.classList.add("collapsed");
+            } else {
+                sidebar.classList.remove("collapsed");
+            }
+        };
+
+        promptForm.addEventListener("submit", handleFormSubmit);
+        if (sidebarToggle) {
+            sidebarToggle.addEventListener("click", toggleSidebar);
+        }
+
+        window.addEventListener('load', initializeSidebar);
+        window.addEventListener("resize", initializeSidebar);
+
+        // Modal functionality
+        const digitalBoundariesLink = document.querySelector('.chat-link');
+        const digitalBoundariesModal = document.getElementById('digitalboundaries');
+        const closeDigitalModal = document.getElementById('closeDigitalModal');
+
+        const teamManagementLink = document.querySelector('.team-link');
+        const breathingModal = document.getElementById('breathingModal');
+        const closeBreathingModal = document.getElementById('closeBreathingModal');
+
+        const gratitudeLoopLink = document.querySelector('.info-link');
+        const gratitudeLoopModal = document.getElementById('gratitudeLoop');
+        const closeGratitudeModal = document.getElementById('closeGratitudeLoop');
+
+        if (digitalBoundariesLink) {
+            digitalBoundariesLink.addEventListener('click', function(e) {
+                e.preventDefault();
+                digitalBoundariesModal.classList.add('active');
+            });
+        }
+
+        if (teamManagementLink) {
+            teamManagementLink.addEventListener('click', (e) => {
+                e.preventDefault();
+                breathingModal.classList.add('active');
+            });
+        }
+
+        if (gratitudeLoopLink) {
+            gratitudeLoopLink.addEventListener('click', (e) => {
+                e.preventDefault();
+                gratitudeLoopModal.classList.add('active');
+            });
+        }
+
+        if (closeDigitalModal) {
+            closeDigitalModal.addEventListener('click', () => {
+                digitalBoundariesModal.classList.remove('active');
+            });
+        }
+
+        if (closeBreathingModal) {
+            closeBreathingModal.addEventListener('click', () => {
+                breathingModal.classList.remove('active');
+            });
+        }
+
+        if (closeGratitudeModal) {
+            closeGratitudeModal.addEventListener('click', () => {
+                gratitudeLoopModal.classList.remove('active');
+            });
+        }
+
+        window.addEventListener('click', (e) => {
+            if (e.target === breathingModal) {
+                breathingModal.classList.remove('active');
+            }
+            if (e.target === digitalBoundariesModal) {
+                digitalBoundariesModal.classList.remove('active');
+            }
+            if (e.target === gratitudeLoopModal) {
+                gratitudeLoopModal.classList.remove('active');
+            }
+        });
+
+        // New Chat Modal
+        const newChatModalBtn = document.getElementById('new-chat-btn');
+        const newChatModal = document.getElementById('newSessionModal');
+        const closeNewChatModal = document.getElementById('cancelSessionBtn');
+        const startNewChatBtn = document.getElementById('startSessionBtn');
+        const modeCards = document.querySelectorAll('.mode-card');
+        const sessionInput = document.querySelector('.session-input');
+
+        if(newChatModalBtn) {
+            newChatModalBtn.addEventListener('click', function(e){
+                e.preventDefault();
+                newChatModal.classList.add('active');
+            });
+        }
+
+        if(closeNewChatModal) {
+            closeNewChatModal.addEventListener('click', function(e){
+                newChatModal.classList.remove('active');
+            });
+        }
+
+        window.addEventListener('click', (e) => {
+            if (e.target === newChatModal) {
+                newChatModal.classList.remove('active');
+            }
+        });
+
+        let selectedMode = 'therapy';
+
+        modeCards.forEach(card => {
+            card.addEventListener('click', function() {
+                modeCards.forEach(c => {c.classList.remove('active')});
+                card.classList.add('active');
+                selectedMode = card.getAttribute('data-mode');
+            });
+        });
+
+        if(startNewChatBtn) {
+            startNewChatBtn.addEventListener('click', function(e){
+                const sessionName = sessionInput.value.trim();
+
+                if (!sessionName) {
+                    alert('Please enter a session name');
+                    return;
+                }
+
+                switchTab('chat');
+                chatsContainer.innerHTML = '';
+                container.classList.remove('is-hidden');
+                addChatToHistory(sessionName);
+                newChatModal.classList.remove('active');
+                sessionInput.value = '';
+            });
+        }
+
+        function addChatToHistory(chatName) {
+            const recentChats = document.querySelector('.recent-chats');
+            const allChats = document.querySelectorAll('.recent-chat-item');
+            allChats.forEach(chat => chat.classList.remove('active'));
+            
+            const newChatItem = document.createElement('li');
+            newChatItem.className = 'recent-chat-item active';
+            newChatItem.innerHTML = `
+                <span class="material-symbols-rounded chat-icon">chat_bubble</span>
+                <span>${chatName}</span>
+            `;
+            newChatItem.addEventListener('click', () => {
+                allChats.forEach(chat => chat.classList.remove('active'));
+                newChatItem.classList.add('active');
+            });
+            
+            recentChats.insertBefore(newChatItem, recentChats.firstChild);
+        }
+
+        document.getElementById('menu-chat').addEventListener('click', function(e){
+            e.preventDefault();
+            newChatModal.classList.add('active');
+        });
+    </script>
+</body>
+</html>

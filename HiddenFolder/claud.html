@@ -1,0 +1,477 @@
+# views.py
+from django.utils import timezone
+import json
+import math
+import os
+from rest_framework import viewsets, permissions, generics, status
+from rest_framework.decorators import action
+from rest_framework.response import Response
+from rest_framework.permissions import AllowAny, IsAuthenticated, IsAdminUser
+from rest_framework.views import APIView
+from django.shortcuts import get_object_or_404
+from django.db import transaction
+from django.http import StreamingHttpResponse, HttpResponse
+from django.contrib.auth.models import User
+from rest_framework.decorators import authentication_classes
+
+# Social Auth
+from allauth.socialaccount.providers.google.views import GoogleOAuth2Adapter
+from allauth.socialaccount.providers.oauth2.client import OAuth2Client
+from dj_rest_auth.registration.views import SocialLoginView
+from rest_framework_simplejwt.tokens import RefreshToken
+
+# Local Imports
+from .models import (
+    OrgNode, Tharipistneeded, UserHomepageDB, 
+    UserChatDB, TeamData, UserConsent, UserDrillDown, UserDashboard, 
+    UserChatSummary
+)
+
+from .serializers import (
+    RegisterSerializer, TherapistNeededSerializer, UserConsentSerializer, HomePageSerializer, ChatSerializer, 
+    OrgNodeSerializer, UserFeedbackSerializer, 
+    TeamDataSerializer, UserDrillDownSerializer, UserDashboardSerializer
+)
+from .Ai import therpy_ai_response, consiler_ai_responce, summarize_chat_history
+from .permissions import IsHierarchicalSuperior
+from .tasks import generate_drill_down_lists
+from .elevenlabs_service import ElevenLabsService, VoiceIDs, ModelIDs
+
+
+class ChatViewSet(viewsets.ModelViewSet):
+    serializer_class = ChatSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        chat_id = self.request.query_params.get('chat_id')
+        if chat_id is None:
+             return UserChatDB.objects.none()
+        
+        # Security: Ensure user owns the chat
+        chat_session = get_object_or_404(UserHomepageDB, id=chat_id, owner=self.request.user)
+        return UserChatDB.objects.filter(chat=chat_session, owner=self.request.user)
+
+    @action(detail=False, methods=['post'])
+    def continue_chat(self, request):
+        user_prompt = request.data.get('prompt')
+        ai_mode = request.data.get('mode')
+        chat_id = request.data.get('ChatID')
+    
+        if not user_prompt or not chat_id:
+            return Response({'error': 'Prompt and ChatID are required'}, status=400)
+    
+        chat_session = get_object_or_404(UserHomepageDB, id=chat_id, owner=request.user)
+        history_obj = get_object_or_404(UserChatDB, chat=chat_session, owner=request.user)
+        current_history = history_obj.content if isinstance(history_obj.content, list) else []
+        
+        # Context Window Logic
+        a = []
+        context_window = []
+        total_words = 0
+        for chat in current_history[::-1]:
+            words = chat["content"].split()
+            total_words += len(words)
+            estimated_tokens = math.ceil(total_words * 1.5)
+            a.append(chat)
+            if estimated_tokens > 8000:
+                get_chat_summary = summarize_chat_history(current_history[:-len(a)])
+                context_window.append(get_chat_summary)
+                break
+
+        context_window.append(a)
+
+        # Generator wrapper
+        def stream_wrapper():
+            full_reply = ""
+            try:    
+                if ai_mode == "specialist":
+                    gen = therpy_ai_response(user_prompt, context_window, request.user.username)
+                else:
+                    gen = consiler_ai_responce(user_prompt, context_window, request.user.username)
+
+                for token in gen:
+                    full_reply += token
+                    yield token
+                
+                # Database update
+                current_history.append({"role": "user", "message": user_prompt})
+                current_history.append({"role": "assistant", "message": full_reply})
+                history_obj.content = current_history
+                history_obj.to_be_summarized = True
+                history_obj.save()
+
+            except Exception as e:
+                yield f"\n[Error: {str(e)}]"
+
+        return StreamingHttpResponse(stream_wrapper(), headers={'Content-Type': 'text/plain'})
+
+    @action(detail=False, methods=['post'])
+    def continue_chat_with_voice(self, request):
+        """
+        Continue chat and return AI response as audio stream
+        """
+        try:
+            user_prompt = request.data.get('prompt')
+            ai_mode = request.data.get('mode')
+            chat_id = request.data.get('ChatID')
+            voice_id = request.data.get('voice_id', VoiceIDs.RACHEL)
+            
+            print(f"🎤 Voice request received: mode={ai_mode}, chat_id={chat_id}, voice_id={voice_id}")
+            
+            if not user_prompt or not chat_id:
+                return Response({'error': 'Prompt and ChatID are required'}, status=400)
+        
+            chat_session = get_object_or_404(UserHomepageDB, id=chat_id, owner=request.user)
+            history_obj = get_object_or_404(UserChatDB, chat=chat_session, owner=request.user)
+            current_history = history_obj.content if isinstance(history_obj.content, list) else []
+            
+            # Context Window Logic
+            a = []
+            context_window = []
+            total_words = 0
+            for chat in current_history[::-1]:
+                words = chat.get("content", "").split() if isinstance(chat, dict) else []
+                total_words += len(words)
+                estimated_tokens = math.ceil(total_words * 1.5)
+                a.append(chat)
+                if estimated_tokens > 8000:
+                    get_chat_summary = summarize_chat_history(current_history[:-len(a)])
+                    context_window.append(get_chat_summary)
+                    break
+
+            context_window.append(a)
+
+            # Get AI response
+            print("🤖 Generating AI response...")
+            full_reply = ""
+            
+            if ai_mode == "specialist":
+                gen = therpy_ai_response(user_prompt, context_window, request.user.username)
+            else:
+                gen = consiler_ai_responce(user_prompt, context_window, request.user.username)
+
+            for token in gen:
+                full_reply += token
+            
+            print(f"✅ AI response generated: {len(full_reply)} characters")
+            
+            # Save to database
+            current_history.append({"role": "user", "content": user_prompt})
+            current_history.append({"role": "assistant", "content": full_reply})
+            history_obj.content = current_history
+            history_obj.to_be_summarized = True
+            history_obj.save()
+            
+            print("💾 Chat history saved")
+
+            # Convert to speech using ElevenLabs
+            print(f"🎵 Converting to speech with voice {voice_id}...")
+            elevenlabs = ElevenLabsService()
+            
+            audio_data = elevenlabs.text_to_speech(
+                text=full_reply,
+                voice_id=voice_id,
+                model_id=ModelIDs.TURBO_V2,
+                stream=False
+            )
+            
+            print(f"✅ Audio generated: {len(audio_data)} bytes")
+            
+            # Create response with audio
+            response = HttpResponse(audio_data, content_type='audio/mpeg')
+            
+            # Store text in base64 encoding
+            import base64
+            encoded_text = base64.b64encode(full_reply.encode('utf-8')).decode('ascii')
+            response['X-Response-Text'] = encoded_text
+            
+            print("✅ Voice response sent successfully")
+            return response
+
+        except Exception as e:
+            import traceback
+            error_detail = traceback.format_exc()
+            print(f"❌ Voice error: {error_detail}")
+            return Response({
+                'error': f'Voice generation error: {str(e)}',
+                'detail': error_detail if os.getenv('DEBUG') else None
+            }, status=500)
+
+    @action(detail=False, methods=['delete'])
+    def delete_chat(self, request):
+        chat_id = request.data.get('ChatID')
+        chat_session = get_object_or_404(UserHomepageDB, id=chat_id, owner=request.user)
+        history_obj = get_object_or_404(UserChatDB, chat=chat_session, owner=request.user)
+        
+        history_obj.content = []
+        history_obj.save()
+        return Response({'status': 'Chat history cleared'})
+
+
+class VoiceViewSet(viewsets.ViewSet):
+    """
+    ViewSet for ElevenLabs voice-related operations
+    """
+    permission_classes = [permissions.IsAuthenticated]
+    
+    @action(detail=False, methods=['post'])
+    def text_to_speech(self, request):
+        """
+        Convert text to speech
+        
+        Expected payload:
+        {
+            "text": "Text to convert",
+            "voice_id": "optional_voice_id",
+            "stream": true/false
+        }
+        """
+        text = request.data.get('text')
+        voice_id = request.data.get('voice_id', VoiceIDs.RACHEL)
+        stream = request.data.get('stream', False)
+        
+        if not text:
+            return Response({'error': 'Text is required'}, status=400)
+        
+        try:
+            elevenlabs = ElevenLabsService()
+            
+            if stream:
+                audio_stream = elevenlabs.text_to_speech(
+                    text=text,
+                    voice_id=voice_id,
+                    model_id=ModelIDs.TURBO_V2,
+                    stream=True
+                )
+                return StreamingHttpResponse(
+                    audio_stream, 
+                    content_type='audio/mpeg'
+                )
+            else:
+                audio_data = elevenlabs.text_to_speech(
+                    text=text,
+                    voice_id=voice_id,
+                    model_id=ModelIDs.TURBO_V2,
+                    stream=False
+                )
+                return HttpResponse(
+                    audio_data,
+                    content_type='audio/mpeg'
+                )
+                
+        except Exception as e:
+            return Response({'error': str(e)}, status=500)
+    
+    @action(detail=False, methods=['get'])
+    def list_voices(self, request):
+        """
+        Get list of available ElevenLabs voices
+        """
+        try:
+            elevenlabs = ElevenLabsService()
+            voices = elevenlabs.get_voices()
+            return Response(voices)
+        except Exception as e:
+            return Response({'error': str(e)}, status=500)
+    
+    @action(detail=False, methods=['get'])
+    def voice_settings(self, request):
+        """
+        Get settings for a specific voice
+        
+        Query params: voice_id
+        """
+        voice_id = request.query_params.get('voice_id', VoiceIDs.RACHEL)
+        
+        try:
+            elevenlabs = ElevenLabsService()
+            settings = elevenlabs.get_voice_settings(voice_id)
+            return Response(settings)
+        except Exception as e:
+            return Response({'error': str(e)}, status=500)
+    
+    @action(detail=False, methods=['get'])
+    def user_info(self, request):
+        """
+        Get ElevenLabs user subscription info
+        """
+        try:
+            elevenlabs = ElevenLabsService()
+            user_info = elevenlabs.get_user_info()
+            return Response(user_info)
+        except Exception as e:
+            return Response({'error': str(e)}, status=500)
+
+
+class OldChatsViewSet(viewsets.ModelViewSet):
+    serializer_class = HomePageSerializer 
+    permission_classes = [permissions.IsAuthenticated] 
+
+    def get_queryset(self):
+        return UserHomepageDB.objects.filter(owner=self.request.user)
+
+    def perform_create(self, serializer):
+        session = serializer.save(owner=self.request.user)
+        UserChatDB.objects.create(
+            owner=self.request.user, 
+            chat=session, 
+            content=[],
+            to_be_summarized=False,
+        )
+
+
+class UserDrillDownViewSet(viewsets.ModelViewSet):
+    serializer_class = UserDrillDownSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    def get_queryset(self):
+        return UserDrillDown.objects.filter(owner=self.request.user)
+
+
+class UserDashboardViewSet(viewsets.ModelViewSet):
+    serializer_class = UserDashboardSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    def get_queryset(self):
+        return UserDashboard.objects.filter(owner=self.request.user)
+
+
+class UserFeedbackViewSet(viewsets.ModelViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = UserFeedbackSerializer
+    def perform_create(self, serializer):
+        serializer.save(owner=self.request.user)
+
+
+class UserConsentViewSet(viewsets.ModelViewSet):
+    queryset = UserConsent.objects.all()
+    serializer_class = UserConsentSerializer
+    permission_classes = [AllowAny]
+
+    def get_client_ip(self, request):
+        x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+        if x_forwarded_for:
+            return x_forwarded_for.split(',')[0]
+        return request.META.get('REMOTE_ADDR')
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+        headers = self.get_success_headers(serializer.data)
+        response = Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+        response.set_cookie(
+            key='consent_version_held',
+            value=serializer.data['consent_version'],
+            max_age=31536000,
+            httponly=False,
+            samesite='Lax'
+        )
+        return response
+
+    def perform_create(self, serializer):
+        serializer.save(
+            ip_address=self.get_client_ip(self.request),
+            user_agent=self.request.META.get('HTTP_USER_AGENT', ''),
+            user=self.request.user if self.request.user.is_authenticated else None
+        )
+        
+    @action(detail=False, methods=['post'])
+    @authentication_classes([])
+    def needs_new_consent(self, request):
+        CURRENT_VERSION = "v1.0-2026" 
+        user_held_version = request.COOKIES.get('consent_version_held')
+        needs_consent = False
+        if not user_held_version or user_held_version != CURRENT_VERSION:
+            needs_consent = True
+        return Response({'needs_consent': needs_consent})
+
+
+class OrgNodeViewSet(viewsets.ModelViewSet):
+    queryset = OrgNode.objects.all()
+    serializer_class = OrgNodeSerializer
+    permission_classes = [IsAuthenticated, IsHierarchicalSuperior]
+
+    @action(detail=True, methods=['get'])
+    def health_dashboard(self, request, pk=None):
+        target_node = self.get_object() 
+        try:
+            dashboard = TeamData.objects.get(node=target_node)
+            serializer = TeamDataSerializer(dashboard)
+            return Response(serializer.data)
+        except TeamData.DoesNotExist:
+            return Response({"data": ["error", "No dashboard data available yet. Wait for midnight processing."]}, status=404)
+       
+    @action(detail=True, methods=['post'], permission_classes=[IsAdminUser])
+    def replace_employee(self, request, pk=None):
+        old_node_id = pk
+        new_node_id = request.data.get('replacement')
+
+        if not new_node_id:
+            return Response({"error": "replacement ID is required"}, status=400)
+
+        try:
+            with transaction.atomic():
+                old_node = OrgNode.objects.get(pk=old_node_id)
+                new_node = OrgNode.objects.get(pk=new_node_id)
+
+                if old_node.company != new_node.company:
+                    return Response({"error": "Cannot cross-promote between companies"}, status=400)
+
+                new_node.structure_level = old_node.structure_level
+                new_node.parent = old_node.parent 
+                new_node.save()
+
+                old_node.children.exclude(id=new_node.id).update(parent=new_node)
+                old_node.delete()
+                generate_drill_down_lists(new_node.OrgNode)
+                
+                return Response({
+                    "message": f"Success. {new_node.user.username} has replaced {old_node.user.username}."
+                })
+
+        except OrgNode.DoesNotExist:
+            return Response({"error": "Node not found"}, status=404)
+        except Exception as e:
+            return Response({"error": str(e)}, status=500)
+
+
+class RegisterView(generics.CreateAPIView):
+    queryset = User.objects.all()
+    permission_classes = (AllowAny,)
+    serializer_class = RegisterSerializer
+
+
+class GoogleLogin(SocialLoginView):
+    adapter_class = GoogleOAuth2Adapter
+    client_class = OAuth2Client
+
+    def post(self, request, *args, **kwargs):
+        if request.data.get('access_token') and not request.data.get('id_token'):
+            if isinstance(request.data, dict):
+                request.data['id_token'] = request.data['access_token']
+            else:
+                data = request.data.copy()
+                data['id_token'] = data['access_token']
+                request._full_data = data
+                
+        response = super().post(request, *args, **kwargs)
+
+        if response.status_code == 200 and 'key' in response.data:
+            user = self.user 
+            refresh = RefreshToken.for_user(user)
+            response.data['access'] = str(refresh.access_token)
+            response.data['refresh'] = str(refresh)
+
+        return response
+    
+
+class TherapistNeededView(viewsets.ModelViewSet):
+    queryset = Tharipistneeded.objects.all()
+    serializer_class = TherapistNeededSerializer
+    permission_classes = [IsAuthenticated]
+    
+    def perform_create(self, serializer):
+        serializer.save(
+            owner=self.request.user, 
+            submitted_at=timezone.now(), 
+            in_need=True
+        )

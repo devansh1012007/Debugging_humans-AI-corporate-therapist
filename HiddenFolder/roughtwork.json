@@ -1,0 +1,155 @@
+[
+    {
+        "content": {
+                "positives": [
+                    {
+                        "positive": "Demonstrates exceptional strategic vision and has successfully steered company through market volatility"
+                    },
+                    {
+                        "positive": "Maintains excellent work-life boundaries despite demanding role, setting good example for organization"
+                    },
+                    {
+                        "positive": "Shows genuine empathy in leadership interactions and actively listens to employee concerns"
+                    },
+                    {
+                        "positive": "Effectively manages stress through regular meditation and exercise routines"
+                    }
+                ],
+                "recommendations": [
+                    {
+                        "recommendation": "Implement a structured decision-making framework to reduce cognitive load and delegate routine decisions"
+                    },
+                    {
+                        "recommendation": "Join CEO peer group or executive coaching program for emotional support and perspective"
+                    },
+                    {
+                        "recommendation": "Establish strict 11 PM digital cutoff and morning exercise routine to improve sleep quality"
+                    },
+                    {
+                        "recommendation": "Schedule quarterly leadership retreats to reconnect with personal values and long-term vision"
+                    },
+                    {
+                        "recommendation": "Delegate more operational oversight to VPs and focus on strategic initiatives only"
+                    },
+                    {
+                        "recommendation": "Block out dedicated family time in calendar as non-negotiable appointments"
+                    },
+                    {
+                        "recommendation": "Practice mindfulness exercises during transitions between meetings to reset mental state"
+                    },
+                    {
+                        "recommendation": "Consider executive assistant to filter and prioritize communications more effectively"
+                    }
+                ],
+                "common_problems": [
+                    {
+                        "problem": "Decision Fatigue",
+                        "description": "Making 40-50 critical decisions daily is leading to mental exhaustion by end of week, affecting weekend recovery"
+                    },
+                    {
+                        "problem": "Isolation at the Top",
+                        "description": "Limited peer support network within organization leading to feelings of loneliness in decision-making"
+                    },
+                    {
+                        "problem": "Sleep Disruption",
+                        "description": "Averaging 5.5 hours sleep due to late-night international calls and early morning reviews"
+                    },
+                    {
+                        "problem": "Impostor Syndrome",
+                        "description": "Despite success, occasionally experiences self-doubt about capabilities during challenging board meetings"
+                    },
+                    {
+                        "problem": "Work-Life Guilt",
+                        "description": "Feeling torn between family commitments and organizational responsibilities, especially during crisis periods"
+                    }
+                ]
+            }
+        }
+]
+
+
+[
+    {
+    
+        "content": {
+    
+            "policy_changes": [
+    
+                {
+                "title": "Mental Health Days Policy",
+                "description": "Provide 4 dedicated mental health days per year separate from PTO, no questions asked, to normalize mental health care"
+            },
+            {
+                "title": "Flexible Working Hours",
+                "description": "Allow employees to choose core hours between 10 AM - 4 PM with flexibility on remaining hours to accommodate personal needs"
+            },
+            {
+                "title": "Therapy Coverage Enhancement",
+                "description": "Increase EAP sessions from 6 to 12 per year and add specialized therapy coverage for burnout and workplace stress"
+            },
+            {
+                "title": "Meeting-Free Fridays",
+                "description": "Designate Fridays as focus days with no internal meetings scheduled to enable deep work and weekly recovery"
+            },
+            {
+                "title": "Sabbatical Program",
+                "description": "Offer 4-week paid sabbatical after 5 years of service for long-term employee renewal and retention"
+            },
+            {
+                "title": "Manager Support Ratio",
+                "description": "Limit manager to direct report ratio to maximum 8:1 to ensure adequate time for people management and support"
+            }
+                    ],
+    
+            "common_problems": [
+                {
+                "problem": "Cross-Department Silos",
+                "description": "Engineering, Sales, and HR operating independently leading to misalignment on priorities and duplicated efforts"
+            },
+            {
+                "problem": "Burnout Epidemic",
+                "description": "60% of employees showing signs of emotional exhaustion with increasing sick leave and turnover intentions"
+            },
+            {
+                "problem": "Innovation Stagnation",
+                "description": "Team members too overwhelmed with operational work to explore creative solutions or process improvements"
+            },
+            {
+                "problem": "Communication Breakdown",
+                "description": "Important information not flowing effectively between levels causing confusion and rework"
+            },
+            {
+                "problem": "Mental Health Stigma",
+                "description": "Employees hesitant to utilize EAP services due to fear of career impact and lack of psychological safety"
+            },
+            {
+                "problem": "Work-Life Balance Crisis",
+                "description": "Always-on culture with expectation of 24/7 availability eroding personal boundaries across organization"
+            }
+                ],
+           "recommendations": [
+            {
+                "recommendation": "Establish quarterly cross-functional town halls to improve transparency and alignment on company direction"
+            },
+            {
+                "recommendation": "Implement mandatory no-meeting days company-wide to provide recovery time and focus periods"
+            },
+            {
+                "recommendation": "Launch comprehensive mental health awareness campaign with leadership participation to reduce stigma"
+            },
+            {
+                "recommendation": "Institute 4-day work week pilot program in one department to evaluate productivity and wellbeing impact"
+            },
+            {
+                "recommendation": "Create innovation time policy allowing 10% of work hours for exploratory projects"
+            },
+            {
+                "recommendation": "Implement manager mental health training to identify and support struggling team members"
+            },
+            {
+                "recommendation": "Establish clear right-to-disconnect policy with no expectation of after-hours responses"
+            }
+                    ]
+            }
+        }
+]
