@@ -324,17 +324,23 @@ class ApiClient {
         try {
             const response = await this.request('/UserConsent/needs_new_consent/', {
                 method: 'GET',
-                body: JSON.stringify({})
+                // 1. REMOVED the 'body' property here
+            
+                // 2. ADDED credentials so the browser actually sends the cookie to Django
+                credentials: 'include' 
             });
+
             if (response && typeof response.needs_consent !== 'undefined') {
                 return response.needs_consent;
             }
             return true;
         } catch (error) {
+            // Adding a quick log here is helpful for debugging why it might be failing
+            console.error("Failed to check server consent:", error);
             return true;
         }
     }
-}
+
 
 const api = new ApiClient();
 
