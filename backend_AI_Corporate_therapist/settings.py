@@ -13,7 +13,7 @@ DEBUG = True
 CORS_ALLOW_CREDENTIALS = True
 CSRF_TRUSTED_ORIGINS = [
     'https://*.trycloudflare.com',
-    'https://ai-corporate-therapist.onrender.com/',
+    'https://ai-corporate-therapist.onrender.com',
 ]
 
 ALLOWED_HOSTS = [ # '*' for doker deployment
@@ -21,7 +21,7 @@ ALLOWED_HOSTS = [ # '*' for doker deployment
     '127.0.0.1',
     'host.docker.internal',
     '.trycloudflare.com',
-    'https://ai-corporate-therapist.onrender.com/',
+    'https://ai-corporate-therapist.onrender.com',
 ]# very important for docker deployment and for server access
 
 INSTALLED_APPS = [
