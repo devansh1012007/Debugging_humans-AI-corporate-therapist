@@ -1,0 +1,46 @@
+
+from rest_framework import permissions
+from django.db import connection
+from .models import OrgNode
+class IsHierarchicalSuperior(permissions.BasePermission):
+    '''def has_object_permission(self, request, view, obj):
+        # Allow Self
+        if request.user.org_node.id == obj.id:
+            return True
+
+        # need to chage it to orm
+        requester_id = request.user.org_node.id
+        query = """
+            WITH RECURSIVE subordinates AS (
+                SELECT id FROM app_1_orgnode WHERE parent_id = %s
+                UNION ALL
+                SELECT child.id FROM app_1_orgnode child
+                JOIN subordinates parent ON child.parent_id = parent.id
+            )
+            SELECT 1 FROM subordinates WHERE id = %s LIMIT 1;
+        """
+        with connection.cursor() as cursor:
+            cursor.execute(query, [requester_id, obj.id])
+            return bool(cursor.fetchone())'''
+        
+    
+ 
+
+    def has_object_permission(self, request, view, obj):
+        requester = request.user.org_node.id 
+        if not requester:# basic check if user has an id or not 
+            return False
+        if request.user.org_node.id == obj.id:
+            return True
+        def is_descendant(parent, target):
+            children_ids = list(OrgNode.objects.filter(parent_id=parent).values_list('id', flat=True))
+            if children_ids is not None:
+                for child in children_ids:
+                    if child == target.id:
+                        return True
+                #current = current.parent
+            return False
+    
+        return is_descendant(requester, obj)
+    
+    

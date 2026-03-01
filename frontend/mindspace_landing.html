@@ -1,0 +1,853 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MindSpace AI | Corporate Mental Wellness</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        body { 
+            font-family: 'Plus Jakarta Sans', sans-serif; 
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+        
+        body.light-mode {
+            background-color: #FDFCFB;
+            color: #1F2937;
+        }
+        
+        body.dark-mode {
+            background-color: #030712;
+            color: #F9FAFB;
+        }
+        
+        /* Modern Gradient Text */
+        .text-gradient {
+            background: linear-gradient(to right, #fff, #a78bfa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        body.light-mode .text-gradient {
+            background: linear-gradient(to right, #6344E7, #a78bfa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        /* Subtle Glow Effects */
+        .glow-blob {
+            position: absolute;
+            filter: blur(90px);
+            z-index: 0;
+            opacity: 0.15;
+        }
+        
+        /* Glassmorphism Card Style */
+        .glass-card {
+            background: rgba(17, 24, 39, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            transition: all 0.3s ease;
+        }
+        
+        body.light-mode .glass-card {
+            background: rgba(255, 255, 255, 0.7);
+            border: 1px solid rgba(0, 0, 0, 0.08);
+        }
+        
+        .glass-card:hover {
+            border-color: rgba(139, 92, 246, 0.5);
+            transform: translateY(-5px);
+            box-shadow: 0 10px 40px -10px rgba(124, 58, 237, 0.2);
+        }
+
+        /* Toggle Switch */
+        .toggle-switch {
+            width: 60px;
+            height: 30px;
+            background: #4B5563;
+            border-radius: 30px;
+            position: relative;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        
+        .toggle-switch.active {
+            background: #8B5CF6;
+        }
+        
+        .toggle-slider {
+            width: 24px;
+            height: 24px;
+            background: white;
+            border-radius: 50%;
+            position: absolute;
+            top: 3px;
+            left: 3px;
+            transition: transform 0.3s;
+        }
+        
+        .toggle-switch.active .toggle-slider {
+            transform: translateX(30px);
+        }
+
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(8px);
+            z-index: 9999;
+            justify-content: center;
+            align-items: center;
+            padding: 1rem;
+        }
+        
+        .modal.active {
+            display: flex;
+        }
+        
+        .modal-content {
+            background: #111827;
+            border-radius: 24px;
+            padding: 2rem;
+            max-width: 600px;
+            width: 100%;
+            max-height: 80vh;
+            overflow-y: auto;
+            animation: slideUp 0.3s ease;
+        }
+        
+        body.light-mode .modal-content {
+            background: white;
+            color: #1F2937;
+        }
+        
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Light mode specific styles */
+        body.light-mode nav {
+            background: rgba(255, 255, 255, 0.8);
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+        }
+        
+        body.light-mode .text-gray-400 {
+            color: #6B7280;
+        }
+        
+        body.light-mode .text-gray-600 {
+            color: #4B5563;
+        }
+        
+        body.light-mode .bg-gray-950 {
+            background-color: #F9FAFB;
+        }
+        
+        body.light-mode .bg-gray-900\/50 {
+            background-color: #F3F4F6;
+        }
+        
+        body.light-mode .border-white\/5 {
+            border-color: rgba(0, 0, 0, 0.05);
+        }
+        
+        body.light-mode .border-white\/10 {
+            border-color: rgba(0, 0, 0, 0.1);
+        }
+
+        /* HERO SECTION WITH BLENDED IMAGE */
+        .hero-wrapper {
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero-image-container {
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 55%;
+            height: 100%;
+            z-index: 0;
+        }
+
+        .hero-image-container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(to right, 
+                rgba(3, 7, 18, 1) 0%,
+                rgba(3, 7, 18, 0.95) 10%,
+                rgba(3, 7, 18, 0.7) 30%,
+                rgba(3, 7, 18, 0.3) 60%,
+                transparent 100%
+            );
+            z-index: 2;
+        }
+
+        body.light-mode .hero-image-container::before {
+            background: linear-gradient(to right, 
+                rgba(253, 252, 251, 1) 0%,
+                rgba(253, 252, 251, 0.98) 10%,
+                rgba(253, 252, 251, 0.85) 30%,
+                rgba(253, 252, 251, 0.5) 60%,
+                rgba(253, 252, 251, 0.2) 100%
+            );
+        }
+
+        .hero-background-img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            object-position: center;
+            z-index: 1;
+        }
+
+        /* Mobile: Full background with overlay */
+        @media (max-width: 1024px) {
+            .hero-image-container {
+                width: 100%;
+            }
+            
+            .hero-image-container::before {
+                background: linear-gradient(to bottom,
+                    rgba(3, 7, 18, 0.92) 0%,
+                    rgba(3, 7, 18, 0.85) 50%,
+                    rgba(3, 7, 18, 0.75) 100%
+                );
+            }
+            
+            body.light-mode .hero-image-container::before {
+                background: linear-gradient(to bottom,
+                    rgba(253, 252, 251, 0.95) 0%,
+                    rgba(253, 252, 251, 0.88) 50%,
+                    rgba(253, 252, 251, 0.8) 100%
+                );
+            }
+        }
+
+        /* Mobile Menu Toggle */
+        .mobile-menu {
+            display: none;
+        }
+        
+        .mobile-menu.active {
+            display: flex;
+        }
+    </style>
+</head>
+<body class="dark-mode antialiased overflow-x-hidden">
+
+    <nav class="fixed w-full z-50 top-0 bg-gray-950/80 backdrop-blur-md border-b border-white/5 transition-all duration-300">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 h-16 sm:h-20 flex justify-between items-center">
+            <div class="flex items-center gap-2 sm:gap-3">
+                <div class="bg-violet-600 p-1.5 sm:p-2 rounded-lg text-white shadow-lg shadow-violet-600/20">
+                    <i class="ph ph-brain text-lg sm:text-xl"></i>
+                </div>
+                <span class="font-bold text-lg sm:text-xl tracking-tight">MindSpace AI</span>
+            </div>
+
+            <!-- Mobile Menu Button -->
+            <button class="md:hidden text-white" id="mobileMenuBtn">
+                <i class="ph ph-list text-2xl"></i>
+            </button>
+
+            <!-- Desktop Menu -->
+            <div class="hidden md:flex gap-6 lg:gap-8 text-sm text-gray-400 font-medium items-center">
+                <a href="#impact" class="hover:text-violet-400 transition-colors">Why MindSpace</a>
+                <a href="#process" class="hover:text-violet-400 transition-colors">The Journey</a>
+                <a href="#toolkit" class="hover:text-violet-400 transition-colors">Toolkit</a>
+                
+                <!-- Theme Toggle -->
+                <div class="flex items-center gap-2">
+                    <i class="ph ph-sun text-lg"></i>
+                    <div class="toggle-switch" id="themeToggle">
+                        <div class="toggle-slider"></div>
+                    </div>
+                    <i class="ph ph-moon text-lg"></i>
+                </div>
+            </div>
+
+            <a href="index.html" class="hidden md:inline-flex bg-white text-gray-950 hover:bg-gray-200 px-4 lg:px-5 py-2 sm:py-2.5 rounded-full font-bold text-sm transition-colors">
+                Login
+            </a>
+        </div>
+
+        <!-- Mobile Menu -->
+        <div class="mobile-menu md:hidden flex-col gap-4 p-4 bg-gray-900/95 backdrop-blur-md border-t border-white/5">
+            <a href="#impact" class="text-gray-400 hover:text-violet-400 transition-colors py-2">Why MindSpace</a>
+            <a href="#process" class="text-gray-400 hover:text-violet-400 transition-colors py-2">The Journey</a>
+            <a href="#toolkit" class="text-gray-400 hover:text-violet-400 transition-colors py-2">Toolkit</a>
+            <div class="flex items-center gap-2 py-2">
+                <i class="ph ph-sun text-lg text-gray-400"></i>
+                <div class="toggle-switch" id="themeToggleMobile">
+                    <div class="toggle-slider"></div>
+                </div>
+                <i class="ph ph-moon text-lg text-gray-400"></i>
+            </div>
+            <a href="index.html" class="bg-white text-gray-950 hover:bg-gray-200 px-5 py-2.5 rounded-full font-bold text-sm transition-colors text-center">
+                Login
+            </a>
+        </div>
+    </nav>
+
+    <header class="hero-wrapper relative pt-32 sm:pt-40 pb-16 sm:pb-20 lg:pt-52 lg:pb-32 px-4 sm:px-6 border-b border-white/5 min-h-[600px] lg:min-h-[700px]">
+        <!-- Blended Background Image on Right -->
+        <div class="hero-image-container">
+            <img 
+                src="Mental_Health_Coach.jpeg" 
+                alt="Professional counseling therapy session" 
+                class="hero-background-img"
+            >
+        </div>
+        
+        <!-- Subtle Glow Blob -->
+        <div class="glow-blob bg-violet-600 w-[300px] sm:w-[500px] h-[300px] sm:h-[500px] rounded-full top-0 left-1/4 -translate-x-1/2 -translate-y-1/2"></div>
+
+        <div class="max-w-7xl mx-auto relative z-10">
+            <div class="max-w-full lg:max-w-2xl">
+                <div class="inline-flex items-center gap-2 px-3 sm:px-4 py-1.5 rounded-full bg-violet-950/40 border border-violet-500/30 text-violet-300 text-xs font-bold uppercase tracking-widest mb-6 sm:mb-8 backdrop-blur-sm">
+                    <span class="relative flex h-2 w-2">
+                      <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-violet-400 opacity-75"></span>
+                      <span class="relative inline-flex rounded-full h-2 w-2 bg-violet-500"></span>
+                    </span>
+                    AI-Driven Mental Resilience
+                </div>
+                
+                <h1 class="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight mb-6 sm:mb-8 leading-[1.1]">
+                    Performance without <br>
+                    <span class="text-gradient">the Burnout.</span>
+                </h1>
+                
+                <p class="text-base sm:text-lg md:text-xl text-gray-300 mb-8 sm:mb-12 leading-relaxed max-w-xl">
+                    An AI platform built to bridge the gap between peak productivity and deep recovery. 
+                    <span class="text-white font-semibold">We debug humans, so you can keep building.</span>
+                </p>
+
+                <div class="flex">
+                    <a href="index.html" class="inline-flex items-center justify-center gap-2 bg-violet-600 hover:bg-violet-500 text-white px-6 sm:px-8 py-3 sm:py-4 rounded-full font-semibold text-base sm:text-lg transition-all shadow-lg shadow-violet-600/30 hover:scale-105 group">
+                        Get Started
+                        <i class="ph ph-arrow-right group-hover:translate-x-1 transition-transform"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <div class="border-b border-white/5 bg-gray-900/30 py-6 sm:py-8 overflow-hidden">
+        <p class="text-center text-gray-600 text-xs font-bold uppercase tracking-widest mb-4 sm:mb-6 px-4">Trusted by innovative teams at</p>
+        <div class="relative w-full max-w-5xl mx-auto overflow-hidden px-4 sm:px-6">
+            <div class="flex justify-between items-center gap-4 sm:gap-8 text-gray-600 font-bold text-sm sm:text-xl opacity-60 grayscale hover:grayscale-0 transition-all duration-500 flex-wrap sm:flex-nowrap justify-center">
+                <span>ACME CORP</span>
+                <span>TECHFLOW</span>
+                <span>NEBULA.IO</span>
+                <span class="hidden sm:inline">GLOBALDATA</span>
+                <span class="hidden sm:inline">STARLIGHT</span>
+            </div>
+        </div>
+    </div>
+
+    <section id="impact" class="py-16 sm:py-24 bg-gray-950 relative">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6">
+             <div class="text-center mb-12 sm:mb-16">
+                <h2 class="text-2xl sm:text-3xl md:text-4xl font-bold mb-4">Better outcomes for your people</h2>
+                <p class="text-gray-400 text-sm sm:text-base">Real results driven by data and empathy.</p>
+            </div>
+
+            <div class="grid sm:grid-cols-2 md:grid-cols-3 gap-6 sm:gap-8">
+                <div class="glass-card p-8 sm:p-10 rounded-3xl text-center">
+                    <div class="w-12 h-12 sm:w-16 sm:h-16 mx-auto bg-violet-500/10 rounded-2xl flex items-center justify-center text-violet-400 mb-4 sm:mb-6">
+                        <i class="ph ph-chart-bar text-2xl sm:text-3xl"></i>
+                    </div>
+                    <p class="text-4xl sm:text-6xl font-bold text-white mb-2">10x</p>
+                    <p class="text-gray-400 font-medium text-sm sm:text-base">Utilization over traditional EAPs</p>
+                </div>
+                <div class="glass-card p-8 sm:p-10 rounded-3xl text-center">
+                    <div class="w-12 h-12 sm:w-16 sm:h-16 mx-auto bg-violet-500/10 rounded-2xl flex items-center justify-center text-violet-400 mb-4 sm:mb-6">
+                        <i class="ph ph-heart text-2xl sm:text-3xl"></i>
+                    </div>
+                    <p class="text-4xl sm:text-6xl font-bold text-white mb-2">9 in 10</p>
+                    <p class="text-gray-400 font-medium text-sm sm:text-base">Members improve with care</p>
+                </div>
+                <div class="glass-card p-8 sm:p-10 rounded-3xl text-center sm:col-span-2 md:col-span-1">
+                    <div class="w-12 h-12 sm:w-16 sm:h-16 mx-auto bg-violet-500/10 rounded-2xl flex items-center justify-center text-violet-400 mb-4 sm:mb-6">
+                        <i class="ph ph-currency-dollar text-2xl sm:text-3xl"></i>
+                    </div>
+                    <p class="text-4xl sm:text-6xl font-bold text-white mb-2">26%</p>
+                    <p class="text-gray-400 font-medium text-sm sm:text-base">Reduction in turnover costs</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- WHO Statistics Section -->
+    <section class="py-16 sm:py-24 bg-gray-900/50 border-y border-white/5">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6">
+            <div class="text-center mb-12 sm:mb-16">
+                <h2 class="text-2xl sm:text-3xl md:text-4xl font-bold mb-4">The Corporate Mental Health Crisis</h2>
+                <p class="text-gray-400 text-sm sm:text-base">Evidence-based data from WHO & leading health organizations</p>
+            </div>
+
+            <div class="grid md:grid-cols-2 gap-6 sm:gap-8 max-w-5xl mx-auto">
+                <!-- 12 Billion Working Days Lost -->
+                <div class="glass-card p-6 sm:p-8 rounded-3xl">
+                    <div class="flex items-start gap-3 sm:gap-4 mb-4">
+                        <div class="w-10 h-10 sm:w-12 sm:h-12 bg-red-500/10 rounded-xl flex items-center justify-center text-red-400 flex-shrink-0">
+                            <i class="ph ph-warning text-xl sm:text-2xl"></i>
+                        </div>
+                        <div>
+                            <p class="text-3xl sm:text-4xl font-bold text-white mb-2">12 Billion</p>
+                            <p class="text-gray-400 font-medium mb-3 sm:mb-4 text-sm sm:text-base">Working days lost annually due to depression and anxiety</p>
+                            <a href="https://www.who.int/news-room/fact-sheets/detail/mental-health-at-work" target="_blank" rel="noopener" class="text-violet-400 text-xs sm:text-sm hover:text-violet-300 flex items-center gap-1">
+                                WHO Mental Health at Work <i class="ph ph-arrow-square-out"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- $1 Trillion Economic Cost -->
+                <div class="glass-card p-6 sm:p-8 rounded-3xl">
+                    <div class="flex items-start gap-3 sm:gap-4 mb-4">
+                        <div class="w-10 h-10 sm:w-12 sm:h-12 bg-amber-500/10 rounded-xl flex items-center justify-center text-amber-400 flex-shrink-0">
+                            <i class="ph ph-currency-circle-dollar text-xl sm:text-2xl"></i>
+                        </div>
+                        <div>
+                            <p class="text-3xl sm:text-4xl font-bold text-white mb-2">$1 Trillion</p>
+                            <p class="text-gray-400 font-medium mb-3 sm:mb-4 text-sm sm:text-base">Annual cost to global economy from depression and anxiety</p>
+                            <a href="https://www.who.int/news/item/28-09-2022-who-highlights-urgent-need-to-transform-mental-health-and-mental-health-care" target="_blank" rel="noopener" class="text-violet-400 text-xs sm:text-sm hover:text-violet-300 flex items-center gap-1">
+                                WHO World Mental Health Report <i class="ph ph-arrow-square-out"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 15% of Working Adults -->
+                <div class="glass-card p-6 sm:p-8 rounded-3xl">
+                    <div class="flex items-start gap-3 sm:gap-4 mb-4">
+                        <div class="w-10 h-10 sm:w-12 sm:h-12 bg-blue-500/10 rounded-xl flex items-center justify-center text-blue-400 flex-shrink-0">
+                            <i class="ph ph-users-three text-xl sm:text-2xl"></i>
+                        </div>
+                        <div>
+                            <p class="text-3xl sm:text-4xl font-bold text-white mb-2">15% of Adults</p>
+                            <p class="text-gray-400 font-medium mb-3 sm:mb-4 text-sm sm:text-base">Of working-age experience a mental disorder at any point in time</p>
+                            <a href="https://www.who.int/publications/i/item/9789240053052" target="_blank" rel="noopener" class="text-violet-400 text-xs sm:text-sm hover:text-violet-300 flex items-center gap-1">
+                                WHO Guidelines on Mental Health <i class="ph ph-arrow-square-out"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 81% Report Workplace Stress -->
+                <div class="glass-card p-6 sm:p-8 rounded-3xl">
+                    <div class="flex items-start gap-3 sm:gap-4 mb-4">
+                        <div class="w-10 h-10 sm:w-12 sm:h-12 bg-purple-500/10 rounded-xl flex items-center justify-center text-purple-400 flex-shrink-0">
+                            <i class="ph ph-trend-up text-xl sm:text-2xl"></i>
+                        </div>
+                        <div>
+                            <p class="text-3xl sm:text-4xl font-bold text-white mb-2">81%</p>
+                            <p class="text-gray-400 font-medium mb-3 sm:mb-4 text-sm sm:text-base">Of workers report workplace stress negatively impacts mental health (2024)</p>
+                            <a href="https://www.apa.org/news/press/releases/stress/2023/collective-trauma-recovery" target="_blank" rel="noopener" class="text-violet-400 text-xs sm:text-sm hover:text-violet-300 flex items-center gap-1">
+                                American Psychological Association <i class="ph ph-arrow-square-out"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quote Section -->
+                <div class="glass-card p-6 sm:p-8 rounded-3xl md:col-span-2">
+                    <div class="flex items-start gap-3 sm:gap-4 mb-4">
+                        <div class="w-10 h-10 sm:w-12 sm:h-12 bg-violet-500/10 rounded-xl flex items-center justify-center text-violet-400 flex-shrink-0">
+                            <i class="ph ph-quotes text-xl sm:text-2xl"></i>
+                        </div>
+                        <div class="flex-1">
+                            <p class="text-base sm:text-lg text-gray-300 italic mb-4">
+                                "Work can be protective for mental health, but it can also be a setting that amplifies wider issues that negatively affect mental health, including discrimination and inequality."
+                            </p>
+                            <p class="text-sm text-violet-400 font-semibold">
+                                - WHO Director-General Dr Tedros Adhanom Ghebreyesus
+                            </p>
+                        </div>
+                    </div>
+                    <div class="mt-4 sm:mt-6 p-3 sm:p-4 bg-violet-500/10 rounded-xl border border-violet-500/20">
+                        <p class="text-xs sm:text-sm text-gray-400">
+                            <strong class="text-white">Recent Update (2024):</strong> The Surgeon General's Advisory on Workplace Mental Health emphasizes that addressing mental health in the workplace is a national priority, with 76% of US workers reporting at least one mental health symptom in the past year.
+                        </p>
+                        <a href="https://www.hhs.gov/surgeongeneral/priorities/workplace-well-being/index.html" target="_blank" rel="noopener" class="text-violet-400 text-xs hover:text-violet-300 flex items-center gap-1 mt-2">
+                            US Surgeon General's Advisory <i class="ph ph-arrow-square-out"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="process" class="py-16 sm:py-24 bg-gray-900/50 border-y border-white/5 relative overflow-hidden">
+        <div class="glow-blob bg-blue-600 w-64 sm:w-96 h-64 sm:h-96 rounded-full top-1/2 right-0 opacity-20 translate-x-1/2"></div>
+        
+        <div class="max-w-5xl mx-auto px-4 sm:px-6">
+            <div class="text-center mb-12 sm:mb-16">
+                <p class="text-violet-400 font-bold uppercase text-xs tracking-widest mb-3">The Process</p>
+                <h2 class="text-2xl sm:text-3xl md:text-5xl font-bold mb-4">From Stress to Synergy</h2>
+                <p class="text-gray-400 text-sm sm:text-base">A four-step system that transforms workplace mental wellness.</p>
+            </div>
+
+            <div class="space-y-4 sm:space-y-6">
+                <div class="glass-card p-6 sm:p-8 md:p-10 rounded-3xl flex flex-col sm:flex-row gap-4 sm:gap-6 items-start">
+                    <div class="flex-shrink-0 w-10 h-10 sm:w-12 sm:h-12 bg-violet-600 rounded-xl flex items-center justify-center text-white font-bold text-lg sm:text-xl shadow-lg shadow-violet-600/20">1</div>
+                    <div>
+                        <h3 class="text-xl sm:text-2xl font-bold text-white mb-2 sm:mb-3">Seamless Synchronization</h3>
+                        <p class="text-gray-400 leading-relaxed text-sm sm:text-base">Connect your workspace tools. MindSpace quietly observes digital patterns—like "always-on" tendencies—to build a personalized baseline of your cognitive well-being.</p>
+                    </div>
+                </div>
+
+                <div class="glass-card p-6 sm:p-8 md:p-10 rounded-3xl flex flex-col sm:flex-row gap-4 sm:gap-6 items-start">
+                    <div class="flex-shrink-0 w-10 h-10 sm:w-12 sm:h-12 bg-violet-600 rounded-xl flex items-center justify-center text-white font-bold text-lg sm:text-xl shadow-lg shadow-violet-600/20">2</div>
+                    <div>
+                        <h3 class="text-xl sm:text-2xl font-bold text-white mb-2 sm:mb-3">Real-Time Cognitive Analysis</h3>
+                        <p class="text-gray-400 leading-relaxed text-sm sm:text-base">Understand instantly if you are in a Regulated, Resilient, or High-Functioning state. Align your hardest tasks with your peak mental windows.</p>
+                    </div>
+                </div>
+
+                <div class="glass-card p-6 sm:p-8 md:p-10 rounded-3xl flex flex-col sm:flex-row gap-4 sm:gap-6 items-start">
+                    <div class="flex-shrink-0 w-10 h-10 sm:w-12 sm:h-12 bg-violet-600 rounded-xl flex items-center justify-center text-white font-bold text-lg sm:text-xl shadow-lg shadow-violet-600/20">3</div>
+                    <div>
+                        <h3 class="text-xl sm:text-2xl font-bold text-white mb-2 sm:mb-3">Guided Resilience Intervention</h3>
+                        <p class="text-gray-400 leading-relaxed text-sm sm:text-base">When "Cognitive Tunnel Vision" is detected, get the right hack at the exact moment—whether it's Box Breathing or a boundary prompt.</p>
+                    </div>
+                </div>
+                
+                 <div class="glass-card p-6 sm:p-8 md:p-10 rounded-3xl flex flex-col sm:flex-row gap-4 sm:gap-6 items-start">
+                    <div class="flex-shrink-0 w-10 h-10 sm:w-12 sm:h-12 bg-violet-600 rounded-xl flex items-center justify-center text-white font-bold text-lg sm:text-xl shadow-lg shadow-violet-600/20">4</div>
+                    <div>
+                        <h3 class="text-xl sm:text-2xl font-bold text-white mb-2 sm:mb-3">Organizational Harmony</h3>
+                        <p class="text-gray-400 leading-relaxed text-sm sm:text-base">Leadership receives anonymized, high-level cultural insights to prevent burnout at scale. You get a private sanctuary; the company gets sustainability.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="toolkit" class="py-16 sm:py-24 relative overflow-hidden">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6">
+            <div class="text-center mb-12 sm:mb-16">
+                <p class="text-violet-400 font-bold uppercase text-xs tracking-widest mb-2">The Toolkit</p>
+                <h2 class="text-2xl sm:text-3xl md:text-4xl font-bold">Mental Resilience tools</h2>
+            </div>
+
+            <div class="grid sm:grid-cols-2 md:grid-cols-3 gap-6 sm:gap-8">
+                <div class="glass-card p-6 sm:p-8 rounded-3xl group cursor-pointer" onclick="openModal('digital')">
+                    <div class="w-12 h-12 sm:w-14 sm:h-14 bg-emerald-900/30 text-emerald-400 rounded-2xl flex items-center justify-center text-xl sm:text-2xl mb-4 sm:mb-6 border border-emerald-500/20">
+                        <i class="ph ph-device-mobile-slash"></i>
+                    </div>
+                    <h3 class="text-lg sm:text-xl font-bold mb-2 sm:mb-3">Digital Boundaries</h3>
+                    <p class="text-gray-400 text-xs sm:text-sm mb-4 sm:mb-6">Protect your deep-work hours from constant digital interruptions and cognitive drain.</p>
+                    <a class="text-emerald-400 text-xs sm:text-sm font-bold flex items-center gap-1 group-hover:gap-2 transition-all">Learn More <i class="ph ph-caret-right"></i></a>
+                </div>
+
+                <div class="glass-card p-6 sm:p-8 rounded-3xl group cursor-pointer" onclick="openModal('breathing')">
+                    <div class="w-12 h-12 sm:w-14 sm:h-14 bg-violet-900/30 text-violet-400 rounded-2xl flex items-center justify-center text-xl sm:text-2xl mb-4 sm:mb-6 border border-violet-500/20">
+                        <i class="ph ph-wind"></i>
+                    </div>
+                    <h3 class="text-lg sm:text-xl font-bold mb-2 sm:mb-3">Box Breathing</h3>
+                    <p class="text-gray-400 text-xs sm:text-sm mb-4 sm:mb-6">Reset your nervous system in 60 seconds with this Navy SEAL-approved technique.</p>
+                    <a class="text-violet-400 text-xs sm:text-sm font-bold flex items-center gap-1 group-hover:gap-2 transition-all">Learn More <i class="ph ph-caret-right"></i></a>
+                </div>
+
+                <div class="glass-card p-6 sm:p-8 rounded-3xl group cursor-pointer sm:col-span-2 md:col-span-1" onclick="openModal('gratitude')">
+                    <div class="w-12 h-12 sm:w-14 sm:h-14 bg-amber-900/30 text-amber-400 rounded-2xl flex items-center justify-center text-xl sm:text-2xl mb-4 sm:mb-6 border border-amber-500/20">
+                        <i class="ph ph-star"></i>
+                    </div>
+                    <h3 class="text-lg sm:text-xl font-bold mb-2 sm:mb-3">Gratitude Loop</h3>
+                    <p class="text-gray-400 text-xs sm:text-sm mb-4 sm:mb-6">Reinforce professional growth by documenting wins and building lasting confidence.</p>
+                    <a class="text-amber-400 text-xs sm:text-sm font-bold flex items-center gap-1 group-hover:gap-2 transition-all">Learn More <i class="ph ph-caret-right"></i></a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="team" class="py-16 sm:py-24 bg-gray-950 border-t border-white/5">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6">
+            <div class="text-center mb-12 sm:mb-16">
+                <h2 class="text-2xl sm:text-3xl md:text-4xl font-bold mb-3">The Architects of MindSpace</h2>
+                <p class="text-violet-400 font-medium">"Debugging Humans"</p>
+            </div>
+
+            <div class="grid grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6">
+                <div class="glass-card p-4 sm:p-6 rounded-2xl text-center group">
+                    <div class="w-20 h-20 sm:w-24 sm:h-24 mx-auto bg-gray-800 rounded-2xl mb-4 sm:mb-5 overflow-hidden relative shadow-lg shadow-violet-500/10">
+                         <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=300&h=300" alt="Team" class="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-500">
+                    </div>
+                    <h4 class="font-bold text-white text-base sm:text-lg">Devansh Gaur</h4>
+                    <p class="text-xs text-violet-400 uppercase tracking-wider mt-1 sm:mt-2 font-bold">Backend Lead</p>
+                </div>
+                <div class="glass-card p-4 sm:p-6 rounded-2xl text-center group">
+                     <div class="w-20 h-20 sm:w-24 sm:h-24 mx-auto bg-gray-800 rounded-2xl mb-4 sm:mb-5 overflow-hidden relative shadow-lg shadow-violet-500/10">
+                         <img src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=300&h=300" alt="Team" class="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-500">
+                    </div>
+                    <h4 class="font-bold text-white text-base sm:text-lg">Archit Gore</h4>
+                    <p class="text-xs text-violet-400 uppercase tracking-wider mt-1 sm:mt-2 font-bold">AI Ethics</p>
+                </div>
+                <div class="glass-card p-4 sm:p-6 rounded-2xl text-center group">
+                     <div class="w-20 h-20 sm:w-24 sm:h-24 mx-auto bg-gray-800 rounded-2xl mb-4 sm:mb-5 overflow-hidden relative shadow-lg shadow-violet-500/10">
+                         <img src="https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&q=80&w=300&h=300" alt="Team" class="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-500">
+                    </div>
+                    <h4 class="font-bold text-white text-base sm:text-lg">Joydeep Samanta</h4>
+                    <p class="text-xs text-violet-400 uppercase tracking-wider mt-1 sm:mt-2 font-bold">Frontend Lead</p>
+                </div>
+                <div class="glass-card p-4 sm:p-6 rounded-2xl text-center group">
+                     <div class="w-20 h-20 sm:w-24 sm:h-24 mx-auto bg-gray-800 rounded-2xl mb-4 sm:mb-5 overflow-hidden relative shadow-lg shadow-violet-500/10">
+                         <img src="https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&q=80&w=300&h=300" alt="Team" class="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-500">
+                    </div>
+                    <h4 class="font-bold text-white text-base sm:text-lg">Sakshi Bhosale</h4>
+                    <p class="text-xs text-violet-400 uppercase tracking-wider mt-1 sm:mt-2 font-bold">Product Design</p>
+                </div>
+                <div class="glass-card p-4 sm:p-6 rounded-2xl text-center group">
+                     <div class="w-20 h-20 sm:w-24 sm:h-24 mx-auto bg-gray-800 rounded-2xl mb-4 sm:mb-5 overflow-hidden relative shadow-lg shadow-violet-500/10">
+                         <img src="https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?auto=format&fit=crop&q=80&w=300&h=300" alt="Team" class="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-500">
+                    </div>
+                    <h4 class="font-bold text-white text-base sm:text-lg">Abhijeet Kumar</h4>
+                    <p class="text-xs text-violet-400 uppercase tracking-wider mt-1 sm:mt-2 font-bold">ML Engineer</p>
+                </div>
+                <div class="glass-card p-4 sm:p-6 rounded-2xl text-center group">
+                     <div class="w-20 h-20 sm:w-24 sm:h-24 mx-auto bg-gray-800 rounded-2xl mb-4 sm:mb-5 overflow-hidden relative shadow-lg shadow-violet-500/10">
+                         <img src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&q=80&w=300&h=300" alt="Team" class="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-500">
+                    </div>
+                    <h4 class="font-bold text-white text-base sm:text-lg">Zaid</h4>
+                    <p class="text-xs text-violet-400 uppercase tracking-wider mt-1 sm:mt-2 font-bold">Growth & Community</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="py-16 sm:py-20 bg-gray-950 border-t border-white/5">
+        <div class="max-w-4xl mx-auto px-4 sm:px-6 text-center">
+             <h2 class="text-2xl sm:text-3xl font-bold mb-4 sm:mb-6">Ready to debug your mind?</h2>
+             <a href="index.html" class="inline-flex items-center justify-center gap-2 bg-white text-gray-950 px-6 sm:px-8 py-3 sm:py-4 rounded-full font-bold text-base sm:text-lg transition-all hover:bg-gray-200">
+                Get Started Now
+            </a>
+        </div>
+    </section>
+
+    <footer class="py-6 sm:py-8 bg-black border-t border-white/10 text-center text-gray-600 text-xs sm:text-sm px-4">
+        <p>&copy; 2026 MindSpace AI. Built for the "Debugging Humans" Hackathon.</p>
+    </footer>
+
+    <!-- Modals (continues...)-->
+    <div id="modal-digital" class="modal">
+        <div class="modal-content">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-xl sm:text-2xl font-bold">Digital Boundaries</h3>
+                <button onclick="closeModal('digital')" class="text-gray-400 hover:text-white">
+                    <i class="ph ph-x text-2xl"></i>
+                </button>
+            </div>
+            <div class="space-y-4">
+                <div>
+                    <h4 class="text-base sm:text-lg font-bold text-violet-400 mb-3">The Practice:</h4>
+                    <ul class="space-y-2 text-gray-400 text-sm sm:text-base">
+                        <li class="flex items-start gap-2">
+                            <i class="ph ph-check-circle text-emerald-400 mt-1 flex-shrink-0"></i>
+                            <span>Set specific "no phone" hours (e.g., 8-9 PM family time)</span>
+                        </li>
+                        <li class="flex items-start gap-2">
+                            <i class="ph ph-check-circle text-emerald-400 mt-1 flex-shrink-0"></i>
+                            <span>Turn off non-essential notifications during deep work blocks</span>
+                        </li>
+                        <li class="flex items-start gap-2">
+                            <i class="ph ph-check-circle text-emerald-400 mt-1 flex-shrink-0"></i>
+                            <span>Create tech-free zones (bedroom, dining table)</span>
+                        </li>
+                        <li class="flex items-start gap-2">
+                            <i class="ph ph-check-circle text-emerald-400 mt-1 flex-shrink-0"></i>
+                            <span>Schedule dedicated "deep work" blocks (90-120 min) without digital interruptions</span>
+                        </li>
+                    </ul>
+                </div>
+                <div class="bg-violet-500/10 p-4 rounded-xl border border-violet-500/20">
+                    <h4 class="text-base sm:text-lg font-bold mb-2">The Science:</h4>
+                    <p class="text-xs sm:text-sm text-gray-400">
+                        Research from UC Irvine shows that constant connectivity depletes mental energy by up to 40%. Gloria Mark's studies reveal it takes an average of 23 minutes to refocus after an interruption.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-breathing" class="modal">
+        <div class="modal-content">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-xl sm:text-2xl font-bold">Box Breathing</h3>
+                <button onclick="closeModal('breathing')" class="text-gray-400 hover:text-white">
+                    <i class="ph ph-x text-2xl"></i>
+                </button>
+            </div>
+            <div class="space-y-4">
+                <div>
+                    <h4 class="text-base sm:text-lg font-bold text-violet-400 mb-3">The 4-4-4-4 Method:</h4>
+                    <div class="grid grid-cols-2 gap-3 sm:gap-4">
+                        <div class="bg-blue-500/10 p-3 sm:p-4 rounded-xl border border-blue-500/20 text-center">
+                            <p class="text-2xl sm:text-3xl font-bold text-blue-400 mb-1 sm:mb-2">1</p>
+                            <p class="text-xs sm:text-sm font-bold">Inhale</p>
+                            <p class="text-xl sm:text-2xl font-bold mt-1">4s</p>
+                        </div>
+                        <div class="bg-green-500/10 p-3 sm:p-4 rounded-xl border border-green-500/20 text-center">
+                            <p class="text-2xl sm:text-3xl font-bold text-green-400 mb-1 sm:mb-2">2</p>
+                            <p class="text-xs sm:text-sm font-bold">Hold</p>
+                            <p class="text-xl sm:text-2xl font-bold mt-1">4s</p>
+                        </div>
+                        <div class="bg-purple-500/10 p-3 sm:p-4 rounded-xl border border-purple-500/20 text-center">
+                            <p class="text-2xl sm:text-3xl font-bold text-purple-400 mb-1 sm:mb-2">3</p>
+                            <p class="text-xs sm:text-sm font-bold">Exhale</p>
+                            <p class="text-xl sm:text-2xl font-bold mt-1">4s</p>
+                        </div>
+                        <div class="bg-amber-500/10 p-3 sm:p-4 rounded-xl border border-amber-500/20 text-center">
+                            <p class="text-2xl sm:text-3xl font-bold text-amber-400 mb-1 sm:mb-2">4</p>
+                            <p class="text-xs sm:text-sm font-bold">Wait</p>
+                            <p class="text-xl sm:text-2xl font-bold mt-1">4s</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-violet-500/10 p-4 rounded-xl border border-violet-500/20">
+                    <h4 class="text-base sm:text-lg font-bold mb-2">The Science:</h4>
+                    <p class="text-xs sm:text-sm text-gray-400">
+                        Box breathing stimulates the Parasympathetic Nervous System, triggering your body's natural relaxation response. Used by Navy SEALs and elite athletes.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-gratitude" class="modal">
+        <div class="modal-content">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-xl sm:text-2xl font-bold">Gratitude Loop</h3>
+                <button onclick="closeModal('gratitude')" class="text-gray-400 hover:text-white">
+                    <i class="ph ph-x text-2xl"></i>
+                </button>
+            </div>
+            <div class="space-y-4">
+                <div>
+                    <h4 class="text-base sm:text-lg font-bold text-violet-400 mb-3">The Practice:</h4>
+                    <ul class="space-y-2 text-gray-400 text-sm sm:text-base">
+                        <li class="flex items-start gap-2">
+                            <i class="ph ph-check-circle text-amber-400 mt-1 flex-shrink-0"></i>
+                            <span>Document one professional win each day</span>
+                        </li>
+                        <li class="flex items-start gap-2">
+                            <i class="ph ph-check-circle text-amber-400 mt-1 flex-shrink-0"></i>
+                            <span>Write down what you learned from challenges</span>
+                        </li>
+                        <li class="flex items-start gap-2">
+                            <i class="ph ph-check-circle text-amber-400 mt-1 flex-shrink-0"></i>
+                            <span>Acknowledge colleagues who helped you succeed</span>
+                        </li>
+                        <li class="flex items-start gap-2">
+                            <i class="ph ph-check-circle text-amber-400 mt-1 flex-shrink-0"></i>
+                            <span>Review your wins weekly to track growth</span>
+                        </li>
+                    </ul>
+                </div>
+                <div class="bg-violet-500/10 p-4 rounded-xl border border-violet-500/20">
+                    <h4 class="text-base sm:text-lg font-bold mb-2">The Science:</h4>
+                    <p class="text-xs sm:text-sm text-gray-400">
+                        Research shows daily gratitude practice increases resilience by 23% and reduces imposter syndrome by creating a positive feedback loop.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Mobile Menu Toggle
+        const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+        const mobileMenu = document.querySelector('.mobile-menu');
+        
+        mobileMenuBtn.addEventListener('click', function() {
+            mobileMenu.classList.toggle('active');
+            const icon = this.querySelector('i');
+            icon.classList.toggle('ph-list');
+            icon.classList.toggle('ph-x');
+        });
+
+        // Theme Toggle - Desktop
+        const themeToggle = document.getElementById('themeToggle');
+        const body = document.body;
+        
+        themeToggle.addEventListener('click', function() {
+            this.classList.toggle('active');
+            if (body.classList.contains('dark-mode')) {
+                body.classList.remove('dark-mode');
+                body.classList.add('light-mode');
+                document.getElementById('themeToggleMobile').classList.add('active');
+            } else {
+                body.classList.remove('light-mode');
+                body.classList.add('dark-mode');
+                document.getElementById('themeToggleMobile').classList.remove('active');
+            }
+        });
+
+        // Theme Toggle - Mobile
+        const themeToggleMobile = document.getElementById('themeToggleMobile');
+        themeToggleMobile.addEventListener('click', function() {
+            this.classList.toggle('active');
+            if (body.classList.contains('dark-mode')) {
+                body.classList.remove('dark-mode');
+                body.classList.add('light-mode');
+                document.getElementById('themeToggle').classList.add('active');
+            } else {
+                body.classList.remove('light-mode');
+                body.classList.add('dark-mode');
+                document.getElementById('themeToggle').classList.remove('active');
+            }
+        });
+
+        // Modal Functions
+        function openModal(type) {
+            document.getElementById('modal-' + type).classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeModal(type) {
+            document.getElementById('modal-' + type).classList.remove('active');
+            document.body.style.overflow = 'auto';
+        }
+
+        // Close modal when clicking outside
+        document.querySelectorAll('.modal').forEach(modal => {
+            modal.addEventListener('click', function(e) {
+                if (e.target === this) {
+                    closeModal(this.id.replace('modal-', ''));
+                }
+            });
+        });
+
+        // Close modal on ESC key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                document.querySelectorAll('.modal.active').forEach(modal => {
+                    closeModal(modal.id.replace('modal-', ''));
+                });
+            }
+        });
+    </script>
+
+</body>
+</html>
