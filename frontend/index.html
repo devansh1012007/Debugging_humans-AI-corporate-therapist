@@ -418,6 +418,31 @@ function handleGoogleSignIn() {
     else { alert('Google Sign-In is not loaded. Please refresh the page.'); }
 }
 
+// ─── Markdown Formatter ──────────────────────────────────────────────────
+function formatAIResponse(text) {
+    if (!text) return '';
+
+    // 1. Escape HTML to prevent XSS issues
+    let html = text.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+    // 2. Code blocks: ```code```
+    html = html.replace(/```([\s\S]*?)```/g, '<pre class="bg-slate-900/80 p-3 rounded-lg overflow-x-auto my-3 border border-slate-700 font-mono text-sm text-slate-300"><code>$1</code></pre>');
+
+    // 3. Inline code: `code`
+    html = html.replace(/`([^`]+)`/g, '<code class="bg-slate-800 text-indigo-300 px-1.5 py-0.5 rounded-md font-mono text-sm">$1</code>');
+
+    // 4. Bold: **text**
+    html = html.replace(/\*\*(.*?)\*\*/g, '<strong class="font-bold text-white">$1</strong>');
+
+    // 5. Italic: *text*
+    html = html.replace(/\*(.*?)\*/g, '<em class="italic text-slate-300">$1</em>');
+
+    // 6. Lists: bullet points starting with * or -
+    html = html.replace(/^(?:\*|\-)\s+(.*)$/gm, '<li class="ml-4 list-disc marker:text-indigo-500">$1</li>');
+
+    return html;
+}
+
 // ─── UI Components ────────────────────────────────────────────────────────
 function ConsentModal({ onConsent }) {
     return `
@@ -1590,7 +1615,10 @@ function ChatInterface({ messages, activeSessionId }) {
             ` : messages.map(msg => `
                 <div class="flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}">
                     <div class="${msg.role === 'user' ? 'bg-indigo-600 text-white rounded-2xl rounded-br-none' : 'bg-[#1e293b] text-slate-200 rounded-2xl rounded-bl-none'} px-5 py-3 max-w-[85%] text-[15px] shadow-sm">
-                        <p class="whitespace-pre-wrap leading-relaxed">${msg.content}</p>
+                        ${msg.role === 'user' 
+                            ? `<p class="whitespace-pre-wrap leading-relaxed">${msg.content}</p>`
+                            : `<div class="whitespace-pre-wrap leading-relaxed space-y-1">${formatAIResponse(msg.content)}</div>`
+                        }
                     </div>
                 </div>
             `).join('')}
@@ -1873,10 +1901,11 @@ async function handleSendMessage(event) {
         const decoder = new TextDecoder();
         let aiResponse = '';
         const streamingDiv = document.getElementById('streaming-message');
+        
         streamingDiv.innerHTML = `
             <div class="flex justify-start animate-fade-in">
                 <div class="bg-[#1e293b] text-slate-200 rounded-2xl rounded-bl-none px-5 py-3 max-w-[85%] text-[15px] shadow-sm">
-                    <p class="whitespace-pre-wrap leading-relaxed inline" id="ai-response"></p>
+                    <div class="whitespace-pre-wrap leading-relaxed inline-block" id="ai-response"></div>
                     <span class="inline-block w-1.5 h-4 ml-1 align-middle bg-indigo-500 animate-pulse rounded-sm"></span>
                 </div>
             </div>
@@ -1887,7 +1916,7 @@ async function handleSendMessage(event) {
             if (done) break;
             const chunk = decoder.decode(value);
             aiResponse += chunk;
-            document.getElementById('ai-response').textContent = aiResponse;
+            document.getElementById('ai-response').innerHTML = formatAIResponse(aiResponse);
             const chatMessages = document.getElementById('chat-messages');
             if (chatMessages) chatMessages.scrollTop = chatMessages.scrollHeight;
         }
