@@ -323,7 +323,7 @@ class ApiClient {
     async checkServerConsent() {
         try {
             const response = await this.request('/UserConsent/needs_new_consent/', {
-                method: 'POST',
+                method: 'GET',
                 body: JSON.stringify({})
             });
             if (response && typeof response.needs_consent !== 'undefined') {
