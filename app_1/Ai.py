@@ -58,7 +58,7 @@ def consiler_ai_responce(user_prompt, messages_list, user_name):
         endpoint = "chat/stream"
         AI_SERVER_URL = os.getenv('AI_CHAT_ENDPOINT_2')
         full_url = str(urljoin(AI_SERVER_URL, endpoint))
-        full_url = "http://172.25.251.52:8001/chat/stream"#172.25.251.52
+        full_url = "http://172.25.180.142:8001/chat/stream"#172.25.251.52
         r = requests.post(full_url,#"http://172.25.180.142:8001/chat/stream"
             json=payload,
             stream=True
