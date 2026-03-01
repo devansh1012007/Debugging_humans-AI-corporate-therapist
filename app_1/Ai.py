@@ -10,7 +10,7 @@ def therpy_ai_response(user_prompt, messages_list, user_name):
     AI_SERVER_URL = os.getenv('AI_CHAT_ENDPOINT')
     endpoint = "chat/stream"
     full_url = str(urljoin(AI_SERVER_URL, endpoint))
-    full_url = "http://172.25.176.221:8001/chat/stream"
+    full_url = "http://172.25.180.142:8001/chat/stream"
     payload = {
         "message": user_prompt,
         "conversation": messages_list,
