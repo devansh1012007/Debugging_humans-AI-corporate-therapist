@@ -1873,6 +1873,7 @@ async function handleSendMessage(event) {
         try {
             const newSession = await api.request('/Chats/', {
                 method: 'POST',
+                // Defaults to 'therapy' only if a user types without opening the New Chat modal
                 body: JSON.stringify({ title: message.substring(0, 30) + '...', AiMode: 'therapy' })
             });
             state.activeSessionId = newSession.id;
@@ -1880,6 +1881,10 @@ async function handleSendMessage(event) {
             state.sessions = sessions.sort((a, b) => new Date(b.last_updated) - new Date(a.last_updated));
         } catch (error) { return; }
     }
+
+    // Identify the active session and extract its specific AiMode
+    const activeSession = state.sessions.find(s => s.id === state.activeSessionId);
+    const currentMode = activeSession?.AiMode || 'therapy';
 
     state.messages.push({ role: 'user', content: message });
     input.value = '';
@@ -1889,7 +1894,8 @@ async function handleSendMessage(event) {
         const response = await fetch(`${API_BASE}/ChatData/continue_chat/`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${api.accessToken}` },
-            body: JSON.stringify({ prompt: message, mode: 'therapy', ChatID: state.activeSessionId })
+            // Use the dynamically retrieved currentMode instead of a stagnant string
+            body: JSON.stringify({ prompt: message, mode: currentMode, ChatID: state.activeSessionId })
         });
 
         if (!response.ok) throw new Error(`Server Error: ${response.statusText}`);
@@ -1922,7 +1928,7 @@ async function handleSendMessage(event) {
         render();
     } catch (error) { console.error('Error sending message:', error); }
 }
-
+        
 async function handleFeedbackSubmit(event) {
     event.preventDefault();
     const feedback = document.getElementById('feedback-text').value;
