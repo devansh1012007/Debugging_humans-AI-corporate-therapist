@@ -1,6 +1,6 @@
-HiddenFolder/
+/HiddenFolder/
 /.env
-postgres_data/
+/postgres_data/
 /.venv
 /.vscode
-extrastuff/
+/extrastuff/
