@@ -17,6 +17,7 @@ starlette
 SpeechRecognition
 gtts
 pydub
+gunicorn
 
 pytest==7.4.3
 pytest-django==4.7.0
