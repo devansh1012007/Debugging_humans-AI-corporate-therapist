@@ -169,8 +169,6 @@ class UserConsentViewSet(viewsets.ModelViewSet):
     serializer_class = UserConsentSerializer
     permission_classes = [AllowAny]
 
-    # Removed get_client_ip entirely to make it independent of IP address
-
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -180,38 +178,31 @@ class UserConsentViewSet(viewsets.ModelViewSet):
         headers = self.get_success_headers(serializer.data)
         response = Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
 
-        # CRITICAL FIX: Updated cookie settings for API environments
         response.set_cookie(
             key='consent_version_held',
             value=serializer.data.get('consent_version', 'v1.0-2026'),
             max_age=31536000, 
             httponly=False,   
-            samesite='None',  # 'None' allows the cookie to be sent cross-origin (e.g., port 3000 -> 8000)
-            secure=True       # 'secure' MUST be True if samesite='None' (requires HTTPS or localhost)
+            samesite='None',  
+            secure=True       
         )
 
         return response
 
     def perform_create(self, serializer):
-        # Removed the IP address assignment
         serializer.save(
             user_agent=self.request.META.get('HTTP_USER_AGENT', ''),
             user=self.request.user if self.request.user.is_authenticated else None
         )
 
-    # Changed method to 'GET'. Checking a status should be a GET request.
-    # Browsers often aggressively block cookies on cross-origin POST requests.
     @action(detail=False, methods=['get']) 
     @authentication_classes([]) 
     def needs_new_consent(self, request):
         CURRENT_VERSION = "v1.0-2026" 
 
-        # Now crosschecking exclusively from the user's cookies
         user_held_version = request.COOKIES.get('consent_version_held')
 
-        print(f"DEBUG: Cookie received from frontend: {user_held_version}")
-        
-        # Simplify the logic
+        #print(f"DEBUG: Cookie received from frontend: {user_held_version}")
         needs_consent = user_held_version != CURRENT_VERSION
 
         return Response({'needs_consent': needs_consent})
