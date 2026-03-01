@@ -898,7 +898,6 @@ function renderCurrentDataSection(data) {
 
     return `
         <div class="space-y-6 animate-fade-in">
-            <!-- Clinical Summary banner -->
             <div class="relative overflow-hidden rounded-3xl p-8 bg-gradient-to-r from-slate-900 to-slate-800 border border-slate-700/50">
                 <div class="absolute inset-0 bg-gradient-to-r from-indigo-900/20 to-purple-900/20 pointer-events-none"></div>
                 <div class="relative z-10">
@@ -920,7 +919,6 @@ function renderCurrentDataSection(data) {
                 </div>
             </div>
 
-            <!-- Top row: Clinical Summary + Big Five -->
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div class="glass-card rounded-3xl p-6">
                     <div class="flex items-center gap-3 mb-5 pb-4 border-b border-slate-700/40">
@@ -938,7 +936,6 @@ function renderCurrentDataSection(data) {
                 </div>
             </div>
 
-            <!-- Row: Burnout, Depression, Anxiety -->
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <div class="glass-card rounded-3xl p-6">
                     <div class="flex items-center gap-3 mb-5 pb-4 border-b border-slate-700/40">
@@ -963,7 +960,6 @@ function renderCurrentDataSection(data) {
                 </div>
             </div>
 
-            <!-- Row: Stress + Resilience (shown only when data exists) -->
             ${(content.stress || content.resilience) ? `
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 ${content.stress ? `
@@ -1247,7 +1243,6 @@ function renderHistorySection(historyData) {
                 <p class="text-slate-400 text-sm ml-9">${entries.length} assessment session${entries.length !== 1 ? 's' : ''} recorded${entries.length > 1 && entries[0].date ? ` &nbsp;·&nbsp; ${entries[0].date} → ${entries[entries.length-1].date}` : ''}</p>
             </div>
 
-            <!-- Depression & Anxiety Trend -->
             <div class="glass-card rounded-3xl p-6">
                 <h3 class="text-base font-bold text-white mb-4">Depression & Anxiety Scores Over Time</h3>
                 <div class="chart-wrapper">
@@ -1255,7 +1250,6 @@ function renderHistorySection(historyData) {
                 </div>
             </div>
 
-            <!-- Burnout Trend -->
             <div class="glass-card rounded-3xl p-6">
                 <h3 class="text-base font-bold text-white mb-4">Burnout Subscales Over Time</h3>
                 <div class="chart-wrapper">
@@ -1263,7 +1257,6 @@ function renderHistorySection(historyData) {
                 </div>
             </div>
 
-            <!-- Big Five: Radar + Trend side by side -->
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div class="glass-card rounded-3xl p-6">
                     <h3 class="text-base font-bold text-white mb-4">Big Five Profile (Latest)</h3>
@@ -1279,7 +1272,6 @@ function renderHistorySection(historyData) {
                 </div>
             </div>
 
-            <!-- Anxiety subscales + Depression donut -->
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div class="glass-card rounded-3xl p-6">
                     <h3 class="text-base font-bold text-white mb-4">Anxiety: Psychic vs. Somatic</h3>
@@ -1305,7 +1297,6 @@ function renderHistorySection(historyData) {
                 </div>
             </div>
 
-            <!-- Stress & Resilience trend (only if data exists) -->
             ${hasStressData || hasResilienceData ? `
             <div class="glass-card rounded-3xl p-6">
                 <h3 class="text-base font-bold text-white mb-4">Stress & Resilience Over Time</h3>
@@ -1321,7 +1312,6 @@ function renderHistorySection(historyData) {
 function PsychoReport({ psychoData, historyData, activeTab }) {
     return `
         <div class="max-w-7xl mx-auto animate-fade-in">
-            <!-- Header -->
             <div class="relative overflow-hidden rounded-3xl p-8 mb-6 bg-gradient-to-r from-violet-900/60 to-indigo-900/60 border border-violet-500/20 shadow-2xl">
                 <div class="absolute top-0 right-0 p-8 opacity-10">
                     ${Icon({ name: 'brain', size: 120, className: 'text-white' })}
@@ -1332,7 +1322,6 @@ function PsychoReport({ psychoData, historyData, activeTab }) {
                 </div>
             </div>
 
-            <!-- Tabs -->
             <div class="flex gap-2 mb-6 p-1.5 bg-slate-900/60 rounded-2xl border border-slate-700/40 w-fit">
                 <button class="psych-tab-btn ${activeTab === 'current' ? 'active' : ''}" onclick="setPsychoTab('current')">
                     ${Icon({ name: 'clipboardList', size: 14, className: 'inline mr-1.5' })}
@@ -1344,7 +1333,6 @@ function PsychoReport({ psychoData, historyData, activeTab }) {
                 </button>
             </div>
 
-            <!-- Tab content -->
             <div id="psych-tab-content">
                 ${activeTab === 'current' ? renderCurrentDataSection(psychoData) : renderHistorySection(historyData)}
             </div>
@@ -1873,7 +1861,6 @@ async function handleSendMessage(event) {
         try {
             const newSession = await api.request('/Chats/', {
                 method: 'POST',
-                // Defaults to 'therapy' only if a user types without opening the New Chat modal
                 body: JSON.stringify({ title: message.substring(0, 30) + '...', AiMode: 'therapy' })
             });
             state.activeSessionId = newSession.id;
@@ -1894,7 +1881,6 @@ async function handleSendMessage(event) {
         const response = await fetch(`${API_BASE}/ChatData/continue_chat/`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${api.accessToken}` },
-            // Use the dynamically retrieved currentMode instead of a stagnant string
             body: JSON.stringify({ prompt: message, mode: currentMode, ChatID: state.activeSessionId })
         });
 
@@ -1928,7 +1914,7 @@ async function handleSendMessage(event) {
         render();
     } catch (error) { console.error('Error sending message:', error); }
 }
-        
+
 async function handleFeedbackSubmit(event) {
     event.preventDefault();
     const feedback = document.getElementById('feedback-text').value;
@@ -2105,7 +2091,6 @@ function render() {
                         </button>
                     ` : ''}
 
-                    <!-- NEW: Psycho Assessment Tab -->
                     <button onclick="navigateTo('psychoReport')" class="w-full py-3 rounded-xl flex items-center px-4 ${state.currentView === 'psychoReport' ? 'bg-violet-600 text-white shadow-lg shadow-violet-600/20' : 'text-slate-400 hover:bg-slate-800/60 hover:text-white'} transition-all group">
                         ${Icon({ name: 'clipboardList', size: 20, className: state.currentView === 'psychoReport' ? 'text-white' : 'group-hover:scale-110 transition-transform' })}
                         ${!state.sidebarCollapsed ? '<span class="ml-4 text-sm font-semibold tracking-wide">Assessment</span>' : ''}
