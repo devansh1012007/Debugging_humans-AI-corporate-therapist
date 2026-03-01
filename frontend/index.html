@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Psychologist | Professional Dashboard</title>
+    <title>Mind.exe | Professional Dashboard</title>
     
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <script src="https://cdn.tailwindcss.com"></script>
@@ -24,7 +24,7 @@
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.apis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     
     <style>
 :root {
@@ -228,9 +228,9 @@ input:focus, textarea:focus, select:focus { outline: none; }
     <div id="root"></div>
 
     <script>
-const API_BASE = 'http://localhost:8000/'; 
+const API_BASE = 'https://warranties-teach-pulled-podcasts.trycloudflare.com'; 
 const CURRENT_CONSENT_VERSION = 'v1.0-2026';
-const GOOGLE_CLIENT_ID = '420454232320-8mse8aona778k5jktdcs847c98bfsabu.apps.googleusercontent.com';
+const GOOGLE_CLIENT_ID = '931160189506-stge9jhbo1mcgofa2dia2l6o8kqg99ie.apps.googleusercontent.com';
 
 // ─── Chart registry to destroy before re-render ───────────────────────────
 const chartRegistry = {};
@@ -322,20 +322,25 @@ class ApiClient {
 
     async checkServerConsent() {
         try {
-            const response = await this.request('UserConsent/needs_new_consent/', {
-                method: 'POST',
-                body: JSON.stringify({})
+            const response = await this.request('/UserConsent/needs_new_consent/', {
+                method: 'GET',
+                // 1. REMOVED the 'body' property here
+            
+                // 2. ADDED credentials so the browser actually sends the cookie to Django
+                credentials: 'include' 
             });
+
             if (response && typeof response.needs_consent !== 'undefined') {
                 return response.needs_consent;
             }
             return true;
         } catch (error) {
+            // Adding a quick log here is helpful for debugging why it might be failing
+            console.error("Failed to check server consent:", error);
             return true;
         }
     }
 }
-
 const api = new ApiClient();
 
 // ─── Icons ───────────────────────────────────────────────────────────────
@@ -416,6 +421,31 @@ async function handleGoogleCallback(response) {
 function handleGoogleSignIn() {
     if (typeof google !== 'undefined' && google.accounts) { google.accounts.id.prompt(); }
     else { alert('Google Sign-In is not loaded. Please refresh the page.'); }
+}
+
+// ─── Markdown Formatter ──────────────────────────────────────────────────
+function formatAIResponse(text) {
+    if (!text) return '';
+
+    // 1. Escape HTML to prevent XSS issues
+    let html = text.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+    // 2. Code blocks: ```code```
+    html = html.replace(/```([\s\S]*?)```/g, '<pre class="bg-slate-900/80 p-3 rounded-lg overflow-x-auto my-3 border border-slate-700 font-mono text-sm text-slate-300"><code>$1</code></pre>');
+
+    // 3. Inline code: `code`
+    html = html.replace(/`([^`]+)`/g, '<code class="bg-slate-800 text-indigo-300 px-1.5 py-0.5 rounded-md font-mono text-sm">$1</code>');
+
+    // 4. Bold: **text**
+    html = html.replace(/\*\*(.*?)\*\*/g, '<strong class="font-bold text-white">$1</strong>');
+
+    // 5. Italic: *text*
+    html = html.replace(/\*(.*?)\*/g, '<em class="italic text-slate-300">$1</em>');
+
+    // 6. Lists: bullet points starting with * or -
+    html = html.replace(/^(?:\*|\-)\s+(.*)$/gm, '<li class="ml-4 list-disc marker:text-indigo-500">$1</li>');
+
+    return html;
 }
 
 // ─── UI Components ────────────────────────────────────────────────────────
@@ -861,21 +891,15 @@ function renderResilience(resilience) {
 
 function renderCurrentDataSection(data) {
     // ── Robust unwrapping ──────────────────────────────────────────────────
-    // Backend returns: [{content: {...}}]  (array with one object)
-    // fetchPsychoData stores raw[0] → {content: {...}}
-    // So data here is normally {content: {...}} but handle all shapes safely.
     let content = null;
     if (!data) {
         content = null;
     } else if (Array.isArray(data)) {
-        // Passed an array directly — take first element's content
         const first = data[0];
         content = (first && first.content) ? first.content : first;
     } else if (data.content && typeof data.content === 'object' && !Array.isArray(data.content)) {
-        // Normal shape after fetchPsychoData: {content: {...}}
         content = data.content;
     } else {
-        // data is already the raw content object
         content = data;
     }
 
@@ -898,7 +922,6 @@ function renderCurrentDataSection(data) {
 
     return `
         <div class="space-y-6 animate-fade-in">
-            <!-- Clinical Summary banner -->
             <div class="relative overflow-hidden rounded-3xl p-8 bg-gradient-to-r from-slate-900 to-slate-800 border border-slate-700/50">
                 <div class="absolute inset-0 bg-gradient-to-r from-indigo-900/20 to-purple-900/20 pointer-events-none"></div>
                 <div class="relative z-10">
@@ -920,7 +943,6 @@ function renderCurrentDataSection(data) {
                 </div>
             </div>
 
-            <!-- Top row: Clinical Summary + Big Five -->
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div class="glass-card rounded-3xl p-6">
                     <div class="flex items-center gap-3 mb-5 pb-4 border-b border-slate-700/40">
@@ -938,7 +960,6 @@ function renderCurrentDataSection(data) {
                 </div>
             </div>
 
-            <!-- Row: Burnout, Depression, Anxiety -->
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <div class="glass-card rounded-3xl p-6">
                     <div class="flex items-center gap-3 mb-5 pb-4 border-b border-slate-700/40">
@@ -963,7 +984,6 @@ function renderCurrentDataSection(data) {
                 </div>
             </div>
 
-            <!-- Row: Stress + Resilience (shown only when data exists) -->
             ${(content.stress || content.resilience) ? `
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 ${content.stress ? `
@@ -1003,13 +1023,11 @@ function renderHistorySection(historyData) {
         `;
     }
 
-    // Each history entry may be {content:{...}} or the raw data object directly
     function unwrapEntry(e) {
         if (e && e.content && typeof e.content === 'object' && !Array.isArray(e.content)) return e.content;
         return e;
     }
 
-    // Extract scores across history — use real dates when available
     const labels = entries.map((e, i) => e.date ? e.date : `Session ${i + 1}`);
 
     const depressionScores = entries.map(e => unwrapEntry(e).depression?.total_score ?? null);
@@ -1042,7 +1060,6 @@ function renderHistorySection(historyData) {
     const lastEntry = entries[entries.length - 1];
     const lastContent = unwrapEntry(lastEntry);
 
-    // We'll render chart canvases and draw them after DOM insertion
     setTimeout(() => {
         const chartDefaults = {
             responsive: true,
@@ -1079,7 +1096,6 @@ function renderHistorySection(historyData) {
             }
         };
 
-        // Depression + Anxiety combined
         const ctx1 = document.getElementById('chart-dep-anx');
         if (ctx1) {
             destroyChart('chart-dep-anx');
@@ -1096,7 +1112,6 @@ function renderHistorySection(historyData) {
             });
         }
 
-        // Burnout subscales
         const ctx2 = document.getElementById('chart-burnout');
         if (ctx2) {
             destroyChart('chart-burnout');
@@ -1114,7 +1129,6 @@ function renderHistorySection(historyData) {
             });
         }
 
-        // Big Five radar (last session)
         const lastBig5 = lastContent.big_five;
         const ctx3 = document.getElementById('chart-big5-radar');
         if (ctx3 && lastBig5) {
@@ -1151,7 +1165,6 @@ function renderHistorySection(historyData) {
             });
         }
 
-        // Big Five trend lines
         const ctx4 = document.getElementById('chart-big5-trend');
         if (ctx4) {
             destroyChart('chart-big5-trend');
@@ -1168,7 +1181,6 @@ function renderHistorySection(historyData) {
             });
         }
 
-        // Anxiety subscales
         const ctx5 = document.getElementById('chart-anx-sub');
         if (ctx5) {
             destroyChart('chart-anx-sub');
@@ -1188,7 +1200,6 @@ function renderHistorySection(historyData) {
             });
         }
 
-        // Depression severity donut (latest)
         const latestDep = lastContent.depression;
         const ctx6 = document.getElementById('chart-dep-donut');
         if (ctx6 && latestDep) {
@@ -1217,7 +1228,6 @@ function renderHistorySection(historyData) {
             });
         }
 
-        // Stress & Resilience trend
         const ctx7 = document.getElementById('chart-stress-resilience');
         if (ctx7 && (hasStressData || hasResilienceData)) {
             destroyChart('chart-stress-resilience');
@@ -1247,7 +1257,6 @@ function renderHistorySection(historyData) {
                 <p class="text-slate-400 text-sm ml-9">${entries.length} assessment session${entries.length !== 1 ? 's' : ''} recorded${entries.length > 1 && entries[0].date ? ` &nbsp;·&nbsp; ${entries[0].date} → ${entries[entries.length-1].date}` : ''}</p>
             </div>
 
-            <!-- Depression & Anxiety Trend -->
             <div class="glass-card rounded-3xl p-6">
                 <h3 class="text-base font-bold text-white mb-4">Depression & Anxiety Scores Over Time</h3>
                 <div class="chart-wrapper">
@@ -1255,7 +1264,6 @@ function renderHistorySection(historyData) {
                 </div>
             </div>
 
-            <!-- Burnout Trend -->
             <div class="glass-card rounded-3xl p-6">
                 <h3 class="text-base font-bold text-white mb-4">Burnout Subscales Over Time</h3>
                 <div class="chart-wrapper">
@@ -1263,7 +1271,6 @@ function renderHistorySection(historyData) {
                 </div>
             </div>
 
-            <!-- Big Five: Radar + Trend side by side -->
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div class="glass-card rounded-3xl p-6">
                     <h3 class="text-base font-bold text-white mb-4">Big Five Profile (Latest)</h3>
@@ -1279,7 +1286,6 @@ function renderHistorySection(historyData) {
                 </div>
             </div>
 
-            <!-- Anxiety subscales + Depression donut -->
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div class="glass-card rounded-3xl p-6">
                     <h3 class="text-base font-bold text-white mb-4">Anxiety: Psychic vs. Somatic</h3>
@@ -1305,7 +1311,6 @@ function renderHistorySection(historyData) {
                 </div>
             </div>
 
-            <!-- Stress & Resilience trend (only if data exists) -->
             ${hasStressData || hasResilienceData ? `
             <div class="glass-card rounded-3xl p-6">
                 <h3 class="text-base font-bold text-white mb-4">Stress & Resilience Over Time</h3>
@@ -1321,7 +1326,6 @@ function renderHistorySection(historyData) {
 function PsychoReport({ psychoData, historyData, activeTab }) {
     return `
         <div class="max-w-7xl mx-auto animate-fade-in">
-            <!-- Header -->
             <div class="relative overflow-hidden rounded-3xl p-8 mb-6 bg-gradient-to-r from-violet-900/60 to-indigo-900/60 border border-violet-500/20 shadow-2xl">
                 <div class="absolute top-0 right-0 p-8 opacity-10">
                     ${Icon({ name: 'brain', size: 120, className: 'text-white' })}
@@ -1332,7 +1336,6 @@ function PsychoReport({ psychoData, historyData, activeTab }) {
                 </div>
             </div>
 
-            <!-- Tabs -->
             <div class="flex gap-2 mb-6 p-1.5 bg-slate-900/60 rounded-2xl border border-slate-700/40 w-fit">
                 <button class="psych-tab-btn ${activeTab === 'current' ? 'active' : ''}" onclick="setPsychoTab('current')">
                     ${Icon({ name: 'clipboardList', size: 14, className: 'inline mr-1.5' })}
@@ -1344,7 +1347,6 @@ function PsychoReport({ psychoData, historyData, activeTab }) {
                 </button>
             </div>
 
-            <!-- Tab content -->
             <div id="psych-tab-content">
                 ${activeTab === 'current' ? renderCurrentDataSection(psychoData) : renderHistorySection(historyData)}
             </div>
@@ -1618,7 +1620,10 @@ function ChatInterface({ messages, activeSessionId }) {
             ` : messages.map(msg => `
                 <div class="flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}">
                     <div class="${msg.role === 'user' ? 'bg-indigo-600 text-white rounded-2xl rounded-br-none' : 'bg-[#1e293b] text-slate-200 rounded-2xl rounded-bl-none'} px-5 py-3 max-w-[85%] text-[15px] shadow-sm">
-                        <p class="whitespace-pre-wrap leading-relaxed">${msg.content}</p>
+                        ${msg.role === 'user' 
+                            ? `<p class="whitespace-pre-wrap leading-relaxed">${msg.content}</p>`
+                            : `<div class="whitespace-pre-wrap leading-relaxed space-y-1">${formatAIResponse(msg.content)}</div>`
+                        }
                     </div>
                 </div>
             `).join('')}
@@ -1771,6 +1776,15 @@ function switchToLogin() { state.currentView = 'login'; render(); }
 
 async function initializeApp() {
     try {
+        // 1. Check for server consent first
+        const needsConsent = await api.checkServerConsent();
+        if (needsConsent) {
+            state.showConsent = true;
+            render();
+            return; // Exit the function to wait for user consent
+        }
+
+        // 2. If consent is NOT needed (or already given), load the dashboard data
         const drillDownData = await api.request('/UserDrillDown/');
         if (drillDownData && drillDownData.length > 0) {
             state.drillDownList = drillDownData[0].content || [];
@@ -1881,6 +1895,10 @@ async function handleSendMessage(event) {
         } catch (error) { return; }
     }
 
+    // Identify the active session and extract its specific AiMode
+    const activeSession = state.sessions.find(s => s.id === state.activeSessionId);
+    const currentMode = activeSession?.AiMode || 'therapy';
+
     state.messages.push({ role: 'user', content: message });
     input.value = '';
     render();
@@ -1889,7 +1907,7 @@ async function handleSendMessage(event) {
         const response = await fetch(`${API_BASE}/ChatData/continue_chat/`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${api.accessToken}` },
-            body: JSON.stringify({ prompt: message, mode: 'therapy', ChatID: state.activeSessionId })
+            body: JSON.stringify({ prompt: message, mode: currentMode, ChatID: state.activeSessionId })
         });
 
         if (!response.ok) throw new Error(`Server Error: ${response.statusText}`);
@@ -1897,10 +1915,11 @@ async function handleSendMessage(event) {
         const decoder = new TextDecoder();
         let aiResponse = '';
         const streamingDiv = document.getElementById('streaming-message');
+        
         streamingDiv.innerHTML = `
             <div class="flex justify-start animate-fade-in">
                 <div class="bg-[#1e293b] text-slate-200 rounded-2xl rounded-bl-none px-5 py-3 max-w-[85%] text-[15px] shadow-sm">
-                    <p class="whitespace-pre-wrap leading-relaxed inline" id="ai-response"></p>
+                    <div class="whitespace-pre-wrap leading-relaxed inline-block" id="ai-response"></div>
                     <span class="inline-block w-1.5 h-4 ml-1 align-middle bg-indigo-500 animate-pulse rounded-sm"></span>
                 </div>
             </div>
@@ -1911,7 +1930,7 @@ async function handleSendMessage(event) {
             if (done) break;
             const chunk = decoder.decode(value);
             aiResponse += chunk;
-            document.getElementById('ai-response').textContent = aiResponse;
+            document.getElementById('ai-response').innerHTML = formatAIResponse(aiResponse);
             const chatMessages = document.getElementById('chat-messages');
             if (chatMessages) chatMessages.scrollTop = chatMessages.scrollHeight;
         }
@@ -2000,14 +2019,34 @@ function handleSessionClick(sessionId) {
 }
 
 async function handleDeleteChat(sessionId) {
-    if (!confirm('Delete this chat session?')) return;
-    try {
-        await api.request(`/Chats/${sessionId}/`, { method: 'DELETE' });
-        const sessions = await api.request('/Chats/');
-        state.sessions = sessions.sort((a, b) => new Date(b.last_updated) - new Date(a.last_updated));
-        if (state.activeSessionId === sessionId) { state.activeSessionId = null; state.messages = []; }
-        render();
-    } catch (error) { console.error('Delete error:', error); }
+    if (!confirm('Delete this chat session?')) return;
+    
+    // 1. Optimistic UI Update: Instantly remove the session from local state
+    state.sessions = state.sessions.filter(session => session.id !== sessionId);
+    
+    // 2. If the user is currently viewing the chat they just deleted, clear it out
+    if (state.activeSessionId === sessionId) { 
+        state.activeSessionId = null; 
+        state.messages = []; 
+        // Optional: Redirect them back to the dashboard so they aren't staring at an empty chat screen
+        state.currentView = 'dashboard'; 
+    }
+    
+    // 3. Re-render the UI immediately so the sidebar updates
+    render();
+
+    try {
+        // 4. Perform the actual API deletion in the background
+        await api.request(`/Chats/${sessionId}/`, { method: 'DELETE' });
+        
+        // 5. Sync with the server to ensure data consistency
+        const sessions = await api.request('/Chats/');
+        state.sessions = sessions.sort((a, b) => new Date(b.last_updated) - new Date(a.last_updated));
+        render();
+    } catch (error) { 
+        console.error('Delete error:', error); 
+        // If the deletion fails, you could optionally alert the user or refetch the list here
+    }
 }
 
 function toggleSidebar() { state.sidebarCollapsed = !state.sidebarCollapsed; render(); }
@@ -2078,7 +2117,7 @@ function render() {
                     ${!state.sidebarCollapsed ? `
                         <div class="flex items-center gap-3">
                             <div class="w-8 h-8 rounded-lg bg-indigo-500 flex items-center justify-center shadow-lg shadow-indigo-500/30">${Icon({ name: 'brain', size: 18, className: 'text-white' })}</div>
-                            <h1 class="text-lg font-bold text-white tracking-tight">AI Psychologist</h1>
+                            <h1 class="text-lg font-bold text-white tracking-tight">Mind.exe</h1>
                         </div>
                     ` : `<div class="w-10 h-10 rounded-xl bg-indigo-500 flex items-center justify-center shadow-lg mx-auto">${Icon({ name: 'brain', size: 20, className: 'text-white' })}</div>`}
                     ${!state.sidebarCollapsed ? `<button onclick="toggleSidebar()" class="p-2 hover:bg-slate-700/50 rounded-lg transition-colors text-slate-400 hover:text-white">${Icon({ name: 'menu', size: 20 })}</button>` : ''}
@@ -2099,7 +2138,6 @@ function render() {
                         </button>
                     ` : ''}
 
-                    <!-- NEW: Psycho Assessment Tab -->
                     <button onclick="navigateTo('psychoReport')" class="w-full py-3 rounded-xl flex items-center px-4 ${state.currentView === 'psychoReport' ? 'bg-violet-600 text-white shadow-lg shadow-violet-600/20' : 'text-slate-400 hover:bg-slate-800/60 hover:text-white'} transition-all group">
                         ${Icon({ name: 'clipboardList', size: 20, className: state.currentView === 'psychoReport' ? 'text-white' : 'group-hover:scale-110 transition-transform' })}
                         ${!state.sidebarCollapsed ? '<span class="ml-4 text-sm font-semibold tracking-wide">Assessment</span>' : ''}
