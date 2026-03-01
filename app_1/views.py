@@ -15,6 +15,7 @@ from django.http import StreamingHttpResponse
 from django.contrib.auth.models import User
 from rest_framework.decorators import authentication_classes
 
+from rest_framework_simplejwt.tokens import RefreshToken
 from allauth.socialaccount.providers.google.views import GoogleOAuth2Adapter
 from allauth.socialaccount.providers.oauth2.client import OAuth2Client
 from dj_rest_auth.registration.views import SocialLoginView
@@ -163,21 +164,14 @@ class UserFeedbackViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         serializer.save(owner=self.request.user)
 
-class UserConsentViewSet(viewsets.ModelViewSet):#### THIS NEEDS CHANGES
+class UserConsentViewSet(viewsets.ModelViewSet):
     queryset = UserConsent.objects.all()
     serializer_class = UserConsentSerializer
-    permission_classes = [AllowAny] # Unauthenticated users must also be able to consent
+    permission_classes = [AllowAny]
 
-    def get_client_ip(self, request):
-        x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
-        if x_forwarded_for:
-            return x_forwarded_for.split(',')[0]
-        return request.META.get('REMOTE_ADDR')
+    # Removed get_client_ip entirely to make it independent of IP address
 
     def create(self, request, *args, **kwargs):
-        """
-        Overriding create to handle IP capture and Cookie setting
-        """
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
@@ -186,35 +180,39 @@ class UserConsentViewSet(viewsets.ModelViewSet):#### THIS NEEDS CHANGES
         headers = self.get_success_headers(serializer.data)
         response = Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
 
+        # CRITICAL FIX: Updated cookie settings for API environments
         response.set_cookie(
             key='consent_version_held',
-            value=serializer.data['consent_version'],
-            max_age=31536000, # 1 Year
-            httponly=False,   # False so frontend JS can read it to hide the banner
-            samesite='Lax'
+            value=serializer.data.get('consent_version', 'v1.0-2026'),
+            max_age=31536000, 
+            httponly=False,   
+            samesite='None',  # 'None' allows the cookie to be sent cross-origin (e.g., port 3000 -> 8000)
+            secure=True       # 'secure' MUST be True if samesite='None' (requires HTTPS or localhost)
         )
 
         return response
 
     def perform_create(self, serializer):
+        # Removed the IP address assignment
         serializer.save(
-            ip_address=self.get_client_ip(self.request),
             user_agent=self.request.META.get('HTTP_USER_AGENT', ''),
             user=self.request.user if self.request.user.is_authenticated else None
         )
-    @action(detail=False, methods=['post'])
+
+    # Changed method to 'GET'. Checking a status should be a GET request.
+    # Browsers often aggressively block cookies on cross-origin POST requests.
+    @action(detail=False, methods=['get']) 
     @authentication_classes([]) 
     def needs_new_consent(self, request):
         CURRENT_VERSION = "v1.0-2026" 
 
+        # Now crosschecking exclusively from the user's cookies
         user_held_version = request.COOKIES.get('consent_version_held')
 
-        print(f"DEBUG: Cookie received: {user_held_version}")
-
+        print(f"DEBUG: Cookie received from frontend: {user_held_version}")
         
-        needs_consent = False
-        if not user_held_version or user_held_version != CURRENT_VERSION:
-            needs_consent = True
+        # Simplify the logic
+        needs_consent = user_held_version != CURRENT_VERSION
 
         return Response({'needs_consent': needs_consent})
 
@@ -292,24 +290,22 @@ class GoogleLogin(SocialLoginView):
     client_class = OAuth2Client
 
     def post(self, request, *args, **kwargs):
-        if request.data.get('access_token') and not request.data.get('id_token'):
+        if request.data.get('id_token') and not request.data.get('access_token'):
             if isinstance(request.data, dict):
-                request.data['id_token'] = request.data['access_token']
+                request.data['access_token'] = request.data['id_token']
             else:
                 data = request.data.copy()
-                data['id_token'] = data['access_token']
+                data['access_token'] = data['id_token']
                 request._full_data = data
                 
         response = super().post(request, *args, **kwargs)
 
-        if response.status_code == 200 and 'key' in response.data:
+        if response.status_code == 200:
             user = self.user 
             
             refresh = RefreshToken.for_user(user)
-            
             response.data['access'] = str(refresh.access_token)
             response.data['refresh'] = str(refresh)
-            
             
         return response
     
