@@ -1578,8 +1578,6 @@ function SubordinateDashboard({ subordinateData, memberInfo }) {
 }
 
 function ChatInterface({ messages, activeSessionId }) {
-    const isStreaming = state.isStreaming || false;
-
     return `
         <div id="chat-messages" class="flex-1 overflow-y-auto px-6 py-8 space-y-6 pb-40 max-w-4xl mx-auto w-full">
             ${messages.length === 0 ? `
@@ -1601,13 +1599,8 @@ function ChatInterface({ messages, activeSessionId }) {
         <div class="fixed bottom-0 left-0 right-0 bg-[#0f172a]/95 backdrop-blur-md border-t border-slate-800/50 px-6 py-6 z-40">
             <div class="chat-input-wrapper ${state.sidebarCollapsed ? 'sidebar-collapsed' : ''} transition-all duration-300">
                 <form onsubmit="handleSendMessage(event)" class="flex items-center gap-3 max-w-4xl mx-auto w-full">
-                    <input type="text" id="chat-input" 
-                        placeholder="${isStreaming ? 'AI is typing...' : 'Type your message...'}" 
-                        ${isStreaming ? 'disabled' : ''} 
-                        class="flex-1 px-6 py-4 bg-[#1e293b] border border-slate-700/50 rounded-full text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all text-[15px] ${isStreaming ? 'opacity-50 cursor-not-allowed' : ''}" />
-                    <button type="submit" 
-                        ${isStreaming ? 'disabled' : ''} 
-                        class="p-4 bg-indigo-600 rounded-full transition-all shadow-lg shadow-indigo-600/20 flex-shrink-0 ${isStreaming ? 'opacity-50 cursor-not-allowed' : 'hover:bg-indigo-500 hover:scale-105'}">
+                    <input type="text" id="chat-input" placeholder="Type your message..." class="flex-1 px-6 py-4 bg-[#1e293b] border border-slate-700/50 rounded-full text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all text-[15px]" />
+                    <button type="submit" class="p-4 bg-indigo-600 hover:bg-indigo-500 rounded-full transition-all hover:scale-105 shadow-lg shadow-indigo-600/20 flex-shrink-0">
                         ${Icon({ name: 'send', size: 20, className: 'text-white' })}
                     </button>
                 </form>
@@ -1670,7 +1663,6 @@ let state = {
     historyData: null,
     psychoTab: 'current',
     psychoLoading: false,
-    isStreaming: false, // Prevents request overlap and DOM crashes
 };
 
 // ─── Psycho tab action ─────────────────────────────────────────────────────
@@ -1873,11 +1865,9 @@ async function handleSendMessage(event) {
         const response = await fetch(`${API_BASE}/ChatData/continue_chat/`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${api.accessToken}` },
-            // Send the dynamic mode instead of hardcoded 'therapy'
             body: JSON.stringify({ prompt: message, mode: currentMode, ChatID: state.activeSessionId })
         });
 
-        // Exactly your working streaming logic:
         if (!response.ok) throw new Error(`Server Error: ${response.statusText}`);
         const reader = response.body.getReader();
         const decoder = new TextDecoder();
@@ -1908,7 +1898,7 @@ async function handleSendMessage(event) {
         render();
     } catch (error) { console.error('Error sending message:', error); }
 }
-        
+
 async function handleFeedbackSubmit(event) {
     event.preventDefault();
     const feedback = document.getElementById('feedback-text').value;
@@ -1942,7 +1932,6 @@ function handleLogout() {
         hasTeam: false, dashboardData: null, teamData: null, subordinateData: null,
         currentSubordinateInfo: null, sidebarCollapsed: true, newChatModalOpen: false,
         psychoData: null, historyData: null, psychoTab: 'current', psychoLoading: false,
-        isStreaming: false
     };
     render();
 }
