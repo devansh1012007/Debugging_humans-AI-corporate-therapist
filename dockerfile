@@ -15,4 +15,4 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . /code/
 
 
-CMD ["gunicorn", "backend_AI_Corporate_therapist.wsgi:application", "--bind", "0.0.0.0:8000"]
+#CMD ["gunicorn", "backend_AI_Corporate_therapist.wsgi:application", "--bind", "0.0.0.0:8000"]
