@@ -2,6 +2,7 @@
 from pathlib import Path
 import os
 from datetime import timedelta
+#import dj_database_url
 from dotenv import load_dotenv
 load_dotenv()
 
@@ -94,6 +95,14 @@ DATABASES = {
         'PORT': os.environ.get('DB_PORT', '5432'),
     }
 }
+'''
+DATABASES = {
+    'default': dj_database_url.config(
+        default=os.environ.get('DATABASE_URL'),
+        conn_max_age=600
+    )
+}
+'''
 
 AUTH_PASSWORD_VALIDATORS = [
     { 'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator', },
