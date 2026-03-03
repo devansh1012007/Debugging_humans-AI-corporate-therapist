@@ -40,7 +40,7 @@ INSTALLED_APPS = [
     'rest_framework.authtoken',
 #     'rest_framework_simplejwt', 
     'corsheaders',#for frontend
-    
+    'django_apscheduler', # for scheduled tasks
     # Local Apps
     'app_1',
 

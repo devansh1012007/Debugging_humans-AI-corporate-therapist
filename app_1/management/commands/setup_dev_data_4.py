@@ -307,7 +307,10 @@ class Command(BaseCommand):
 
     def create_user_and_node(self, username, name, company, structure_level, parent=None):
         """Helper to create user and node"""
-        u, _ = User.objects.get_or_create(username=username)
+        email_address = f"{username}@gmail.com"
+        u, _ = User.objects.get_or_create(username=username,defaults={'email': email_address})
+        if not _ and not u.email:
+            u.email = email_address
         u.set_password("password123")
         u.save()
         node = OrgNode.objects.create(
