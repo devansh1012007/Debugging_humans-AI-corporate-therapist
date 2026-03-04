@@ -2,6 +2,7 @@
 from pathlib import Path
 import os
 from datetime import timedelta
+#import dj_database_url
 from dotenv import load_dotenv
 load_dotenv()
 
@@ -13,6 +14,7 @@ DEBUG = True
 CORS_ALLOW_CREDENTIALS = True
 CSRF_TRUSTED_ORIGINS = [
     'https://*.trycloudflare.com',
+    'https://ai-corporate-therapist.onrender.com',
 ]
 
 ALLOWED_HOSTS = [ # '*' for doker deployment
@@ -20,7 +22,10 @@ ALLOWED_HOSTS = [ # '*' for doker deployment
     '127.0.0.1',
     'host.docker.internal',
     '.trycloudflare.com',
+    'ai-corporate-therapist.onrender.com',
+    '*',
 ]# very important for docker deployment and for server access
+
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -35,7 +40,7 @@ INSTALLED_APPS = [
     'rest_framework.authtoken',
 #     'rest_framework_simplejwt', 
     'corsheaders',#for frontend
-    
+    'django_apscheduler', # for scheduled tasks
     # Local Apps
     'app_1',
 
@@ -94,6 +99,14 @@ DATABASES = {
         'PORT': os.environ.get('DB_PORT', '5432'),
     }
 }
+'''
+DATABASES = {
+    'default': dj_database_url.config(
+        default=os.environ.get('DATABASE_URL'),
+        conn_max_age=600
+    )
+}
+'''
 
 AUTH_PASSWORD_VALIDATORS = [
     { 'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator', },

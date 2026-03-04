@@ -201,7 +201,7 @@ class UserConsentViewSet(viewsets.ModelViewSet):
         CURRENT_VERSION = "v1.0-2026" 
 
         user_held_version = request.COOKIES.get('consent_version_held')
-
+        # v need to make sure frontend saves cookie even after session or just bring this data to bd 
         #print(f"DEBUG: Cookie received from frontend: {user_held_version}")
         needs_consent = user_held_version != CURRENT_VERSION
 

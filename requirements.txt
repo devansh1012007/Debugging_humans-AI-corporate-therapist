@@ -17,6 +17,8 @@ starlette
 SpeechRecognition
 gtts
 pydub
+gunicorn
+dj_database_url
 
 pytest==7.4.3
 pytest-django==4.7.0
