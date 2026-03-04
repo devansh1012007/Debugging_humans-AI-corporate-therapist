@@ -242,7 +242,6 @@ function destroyChart(id) {
     }
 }
 
-// ─── API Client ───────────────────────────────────────────────────────────
 class ApiClient {
     constructor() {
         if (typeof window !== 'undefined') {
@@ -344,7 +343,6 @@ class ApiClient {
 }
 const api = new ApiClient();
 
-// ─── Icons ───────────────────────────────────────────────────────────────
 function Icon({ name, size = 20, className = "" }) {
     const icons = {
         messageSquare: '<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>',
@@ -376,7 +374,6 @@ function Icon({ name, size = 20, className = "" }) {
     return `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="${className}">${path}</svg>`;
 }
 
-// ─── Google Auth ──────────────────────────────────────────────────────────
 function initializeGoogleSignIn() {
     if (typeof google !== 'undefined' && google.accounts) {
         google.accounts.id.initialize({
@@ -424,32 +421,24 @@ function handleGoogleSignIn() {
     else { alert('Google Sign-In is not loaded. Please refresh the page.'); }
 }
 
-// ─── Markdown Formatter ──────────────────────────────────────────────────
 function formatAIResponse(text) {
     if (!text) return '';
 
-    // 1. Escape HTML to prevent XSS issues
     let html = text.replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
-    // 2. Code blocks: ```code```
     html = html.replace(/```([\s\S]*?)```/g, '<pre class="bg-slate-900/80 p-3 rounded-lg overflow-x-auto my-3 border border-slate-700 font-mono text-sm text-slate-300"><code>$1</code></pre>');
 
-    // 3. Inline code: `code`
     html = html.replace(/`([^`]+)`/g, '<code class="bg-slate-800 text-indigo-300 px-1.5 py-0.5 rounded-md font-mono text-sm">$1</code>');
 
-    // 4. Bold: **text**
     html = html.replace(/\*\*(.*?)\*\*/g, '<strong class="font-bold text-white">$1</strong>');
 
-    // 5. Italic: *text*
     html = html.replace(/\*(.*?)\*/g, '<em class="italic text-slate-300">$1</em>');
 
-    // 6. Lists: bullet points starting with * or -
     html = html.replace(/^(?:\*|\-)\s+(.*)$/gm, '<li class="ml-4 list-disc marker:text-indigo-500">$1</li>');
 
     return html;
 }
 
-// ─── UI Components ────────────────────────────────────────────────────────
 function ConsentModal({ onConsent }) {
     return `
         <div class="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 animate-fade-in">
@@ -564,7 +553,6 @@ function Register() {
     `;
 }
 
-// ─── PSYCHO REPORT TAB helpers ────────────────────────────────────────────
 function getSeverityClass(level) {
     if (!level) return 'severity-low';
     const l = level.toLowerCase();
@@ -806,8 +794,6 @@ function renderClinicalSummary(clinical_summary) {
     `;
 }
 
-// ─── MAIN: PsychoReport current data view ────────────────────────────────
-// ─── Stress renderer ─────────────────────────────────────────────────────
 function renderStress(stress) {
     if (!stress) return '<p class="text-slate-500 text-sm">No stress data available.</p>';
     const pct = ((stress.total_score / stress.max_possible) * 100).toFixed(0);
@@ -848,11 +834,9 @@ function renderStress(stress) {
     `;
 }
 
-// ─── Resilience renderer ──────────────────────────────────────────────────
 function renderResilience(resilience) {
     if (!resilience) return '<p class="text-slate-500 text-sm">No resilience data available.</p>';
     const pct = ((resilience.total_score / resilience.max_possible) * 100).toFixed(0);
-    // Resilience is GOOD when high — invert the color logic
     const color = pct >= 60 ? '#10b981' : pct >= 40 ? '#f59e0b' : '#ef4444';
     return `
         <div class="flex items-center gap-6 mb-5 p-4 rounded-xl bg-slate-900/50 border border-slate-700/40">
@@ -891,7 +875,6 @@ function renderResilience(resilience) {
 }
 
 function renderCurrentDataSection(data) {
-    // ── Robust unwrapping ──────────────────────────────────────────────────
     let content = null;
     if (!data) {
         content = null;
@@ -1008,7 +991,6 @@ function renderCurrentDataSection(data) {
     `;
 }
 
-// ─── History charts ───────────────────────────────────────────────────────
 function renderHistorySection(historyData) {
     const entries = (historyData && historyData.content) ? historyData.content : [];
     
@@ -1323,7 +1305,6 @@ function renderHistorySection(historyData) {
     `;
 }
 
-// ─── PsychoReport main component ─────────────────────────────────────────
 function PsychoReport({ psychoData, historyData, activeTab }) {
     return `
         <div class="max-w-7xl mx-auto animate-fade-in">
@@ -1355,7 +1336,6 @@ function PsychoReport({ psychoData, historyData, activeTab }) {
     `;
 }
 
-// ─── Dashboard ────────────────────────────────────────────────────────────
 function Dashboard({ dashboardData }) {
     const rootContent = dashboardData?.content || {};
     const data = rootContent._personal_dashboard_data || {};
@@ -1676,7 +1656,6 @@ function FeedbackForm() {
     `;
 }
 
-// ─── State ────────────────────────────────────────────────────────────────
 let state = {
     isAuthenticated: false,
     currentView: 'login',
@@ -1692,19 +1671,15 @@ let state = {
     currentSubordinateInfo: null,
     sidebarCollapsed: true,
     newChatModalOpen: false,
-    // NEW: Psycho assessment state
     psychoData: null,
     historyData: null,
     psychoTab: 'current',
     psychoLoading: false,
 };
 
-// ─── Psycho tab action ─────────────────────────────────────────────────────
 function setPsychoTab(tab) {
     state.psychoTab = tab;
-    // Just re-render the content area, not full page
     const contentEl = document.getElementById('psych-tab-content');
-    // Update button states
     document.querySelectorAll('.psych-tab-btn').forEach(btn => {
         btn.classList.remove('active');
         if (btn.textContent.includes(tab === 'current' ? 'Current' : 'Historical')) {
@@ -1718,7 +1693,6 @@ function setPsychoTab(tab) {
     }
 }
 
-// ─── Handlers ─────────────────────────────────────────────────────────────
 async function handleConsent() {
     try {
         await api.request('/UserConsent/', {
@@ -1777,15 +1751,13 @@ function switchToLogin() { state.currentView = 'login'; render(); }
 
 async function initializeApp() {
     try {
-        // 1. Check for server consent first
         const needsConsent = await api.checkServerConsent();
         if (needsConsent) {
             state.showConsent = true;
             render();
-            return; // Exit the function to wait for user consent
+            return;
         }
 
-        // 2. If consent is NOT needed (or already given), load the dashboard data
         const drillDownData = await api.request('/UserDrillDown/');
         if (drillDownData && drillDownData.length > 0) {
             state.drillDownList = drillDownData[0].content || [];
@@ -1798,7 +1770,6 @@ async function initializeApp() {
         const dashboardArr = await api.request('/UserDashboard/');
         if (dashboardArr && dashboardArr.length > 0) { state.dashboardData = dashboardArr[0]; }
 
-        // Fetch psycho data eagerly
         await fetchPsychoData();
 
         state.currentView = 'dashboard';
@@ -1819,10 +1790,7 @@ async function fetchPsychoData() {
 
         if (psychoRes.status === 'fulfilled') {
             const raw = psychoRes.value;
-            // Backend returns an array: [{content: {...}}, ...]
-            // Unwrap to always give renderCurrentDataSection a plain {content:{...}} or the content object itself
             if (Array.isArray(raw) && raw.length > 0) {
-                // raw[0] is {content: {...}} — pass it as-is; renderCurrentDataSection handles both shapes
                 state.psychoData = raw[0];
             } else {
                 state.psychoData = raw;
@@ -1832,8 +1800,6 @@ async function fetchPsychoData() {
 
         if (historyRes.status === 'fulfilled') {
             const raw = historyRes.value;
-            // Real backend shape: [{content:{content:[{date,content:{...}},...]}}]
-            // Drill through all nesting to find the entries array.
             let entries = null;
             if (Array.isArray(raw) && raw.length > 0) {
                 const first = raw[0];
@@ -1896,7 +1862,6 @@ async function handleSendMessage(event) {
         } catch (error) { return; }
     }
 
-    // Identify the active session and extract its specific AiMode
     const activeSession = state.sessions.find(s => s.id === state.activeSessionId);
     const currentMode = activeSession?.AiMode || 'therapy';
 
@@ -1968,7 +1933,6 @@ async function handleHumanHelp() {
 
 function handleLogout() {
     api.clearTokens();
-    // Destroy all charts on logout
     Object.keys(chartRegistry).forEach(destroyChart);
     state = {
         isAuthenticated: false, currentView: 'login', showConsent: false,
@@ -1989,7 +1953,6 @@ async function navigateTo(view) {
         } catch (error) { state.teamData = null; }
     }
     if (view === 'psychoReport') {
-        // Refresh psycho data when navigating to tab
         state.psychoLoading = true;
         render();
         await fetchPsychoData();
@@ -2022,31 +1985,24 @@ function handleSessionClick(sessionId) {
 async function handleDeleteChat(sessionId) {
     if (!confirm('Delete this chat session?')) return;
     
-    // 1. Optimistic UI Update: Instantly remove the session from local state
     state.sessions = state.sessions.filter(session => session.id !== sessionId);
     
-    // 2. If the user is currently viewing the chat they just deleted, clear it out
     if (state.activeSessionId === sessionId) { 
         state.activeSessionId = null; 
         state.messages = []; 
-        // Optional: Redirect them back to the dashboard so they aren't staring at an empty chat screen
         state.currentView = 'dashboard'; 
     }
     
-    // 3. Re-render the UI immediately so the sidebar updates
     render();
 
     try {
-        // 4. Perform the actual API deletion in the background
         await api.request(`/Chats/${sessionId}/`, { method: 'DELETE' });
         
-        // 5. Sync with the server to ensure data consistency
         const sessions = await api.request('/Chats/');
         state.sessions = sessions.sort((a, b) => new Date(b.last_updated) - new Date(a.last_updated));
         render();
     } catch (error) { 
         console.error('Delete error:', error); 
-        // If the deletion fails, you could optionally alert the user or refetch the list here
     }
 }
 
@@ -2070,7 +2026,6 @@ async function handleCreateNewChat(event) {
     } catch (error) { console.error('Create chat error:', error); }
 }
 
-// ─── Render ───────────────────────────────────────────────────────────────
 function render() {
     const root = document.getElementById('root');
     if (state.showConsent) { root.innerHTML = ConsentModal({ onConsent: handleConsent }); return; }
