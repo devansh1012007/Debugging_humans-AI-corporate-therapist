@@ -22,3 +22,7 @@ python build_vector_db.py
 uvicorn ai_server:app --host 172.25.184.106 --port 8001 (CTRL+C to end server)
 
 docker compose exec web python manage.py setup_dev_data_4
+Remove-Item -Recurse -Force ./postgres_data
+docker compose exec web python manage.py run_scheduler
+git rm -r --cached HiddenFolder/
+git pull origin main
