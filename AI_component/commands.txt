@@ -1,0 +1,7 @@
+ollama rm <model_name>
+ollama create Modelfile (after entering cd)
+ollama serve
+
+& .venv/Scripts/Activate.ps1
+python build_vector_db.py
+uvicorn ai_server:app --host 172.25.184.106 --port 8001 (CTRL+C to end server)
