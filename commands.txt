@@ -1,4 +1,4 @@
-<<<<<<< HEAD
+
 - make vene "python -m venv .venv"-> .venv is name of virtual enviroment file
 - ".venv\Scripts\activate" -> activate venv
 - "Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope Process" -> changing setting 
@@ -13,7 +13,6 @@ docker run --network host cloudflare/cloudflared:latest tunnel --url http://127.
 & .venv/Scripts/Activate.ps1
 python uvicorn ai_server:app --host 0.0.0.0 --port 8001
 docker run --rm -v db:/source -v "${PWD}:/backup" alpine tar cvf /backup/db_backup.tar /source→ for backup db 
-=======
 ollama rm <model_name>
 ollama create Modelfile (after entering cd)
 ollama serve
@@ -21,4 +20,5 @@ ollama serve
 & .venv/Scripts/Activate.ps1
 python build_vector_db.py
 uvicorn ai_server:app --host 172.25.184.106 --port 8001 (CTRL+C to end server)
->>>>>>> 397e46900b4606ec567fb84aadab369b095878cf
+
+docker compose exec web python manage.py setup_dev_data_4

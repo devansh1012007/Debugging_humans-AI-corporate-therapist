@@ -35,7 +35,6 @@ INSTALLED_APPS = [
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions', # Required for Admin and Allauth handshake
-    'django.contrib.sessions', # Required for Admin and Allauth handshake
     'django.contrib.messages',
     'django.contrib.staticfiles',
 
