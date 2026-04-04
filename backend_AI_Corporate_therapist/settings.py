@@ -2,30 +2,31 @@
 from pathlib import Path
 import os
 from datetime import timedelta
-#import dj_database_url
+import dj_database_url
 from dotenv import load_dotenv
 load_dotenv()
+
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY')
 
-DEBUG = True
+DEBUG = os.environ.get('DEBUG', 'False') == 'True'
 CORS_ALLOW_CREDENTIALS = True
 CSRF_TRUSTED_ORIGINS = [
     'https://*.trycloudflare.com',
     'https://ai-corporate-therapist.onrender.com',
 ]
 
-ALLOWED_HOSTS = [ # '*' for doker deployment
+'''ALLOWED_HOSTS = [ # '*' for doker deployment
     'localhost',
     '127.0.0.1',
     'host.docker.internal',
     '.trycloudflare.com',
     'ai-corporate-therapist.onrender.com',
     '*',
-]# very important for docker deployment and for server access
-
+]# very important for docker deployment and for server access'''
+ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', '*').split(',')
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -60,6 +61,7 @@ SITE_ID = 1
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware', # for frontend
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -88,7 +90,7 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'backend_AI_Corporate_therapist.wsgi.application'
-
+'''
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
@@ -98,15 +100,41 @@ DATABASES = {
         'HOST': os.environ.get('DB_HOST', 'db'),  
         'PORT': os.environ.get('DB_PORT', '5432'),
     }
-}
+}'''
 '''
 DATABASES = {
     'default': dj_database_url.config(
         default=os.environ.get('DATABASE_URL'),
-        conn_max_age=600
+        conn_max_age=600,
+        
     )
 }
 '''
+'''
+DATABASES = {
+    'default': dj_database_url.config(
+        default=os.environ.get('DATABASE_URL'),
+        conn_max_age=600,
+        conn_health_checks=True,
+        ssl_require=True),
+        'HOST' : os.environ.get('DB_HOST'),
+        'PORT' : os.environ.get('DB_PORT'),
+        'NAME' : os.environ.get('DB_NAME'),
+        'USER' : os.environ.get('DB_USER'),
+        'PASSWORD' : os.environ.get('DB_PASSWORD'),
+}
+'''
+
+
+# This configuration will securely connect to Neon/Supabase 
+# using the exact URL provided in the Render environment variables.
+DATABASES = {
+    'default': dj_database_url.config(
+        default=os.environ.get('DATABASE_URL'),
+        conn_max_age=600,
+        conn_health_checks=True,
+        )
+}
 
 AUTH_PASSWORD_VALIDATORS = [
     { 'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator', },
@@ -121,6 +149,8 @@ TIME_ZONE = 'UTC'
 USE_I18N = True
 USE_TZ = True
 STATIC_URL = 'static/'
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
