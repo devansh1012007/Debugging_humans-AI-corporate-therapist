@@ -23,6 +23,12 @@ COPY . /code/
 COPY entrypoint.sh /code/
 RUN sed -i 's/\r$//' /code/entrypoint.sh && chmod +x /code/entrypoint.sh
 
+RUN adduser --disabled-password --gecos '' django-user
+RUN chown -R django-user:django-user /code
+
+# Switch to the non-root user
+USER django-user
+
 # Expose the port Render expects
 EXPOSE 10000
 
