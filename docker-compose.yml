@@ -21,15 +21,30 @@ services:
       - .:/code
     ports:
       - "8000:8000"
-    environment:
-      - DB_NAME=django_db
-      - DB_USER=django_user
-      - DB_PASSWORD=django_pass
-      - DB_HOST=db
-      - DB_PORT=5432
-      - AI_SERVER_URL=http://26.217.98.105:8001/chat # http://26.217.98.105:8001/chat
+    # We use a map (key: value) here so the anchor works
+    environment: &django_env
+      DB_NAME: django_db
+      DB_USER: django_user
+      DB_PASSWORD: django_pass
+      DB_HOST: db
+      DB_PORT: 5432
+      AI_SERVER_URL: http://ai-server:8001/chat
     depends_on:
-    - db
+      db:
+        condition: service_healthy
     extra_hosts:
+      - "ai-server:26.217.98.105"
 
+  scheduler:
+    build: .
+    # Ensure 'runapscheduler' is your actual management command name
+    command: python manage.py run_scheduler
+    volumes:
+      - .:/code
+    environment:
+      <<: *django_env
+    depends_on:
+      db:
+        condition: service_healthy
+    extra_hosts:
       - "ai-server:26.217.98.105"

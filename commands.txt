@@ -12,3 +12,4 @@ docker run --network host cloudflare/cloudflared:latest tunnel --url http://127.
 & .venv/Scripts/Activate.ps1
 python uvicorn ai_server:app --host 0.0.0.0 --port 8001
 docker run --rm -v db:/source -v "${PWD}:/backup" alpine tar cvf /backup/db_backup.tar /source→ for backup db 
+Remove-Item -Recurse -Force ./postgres_data --> power shell

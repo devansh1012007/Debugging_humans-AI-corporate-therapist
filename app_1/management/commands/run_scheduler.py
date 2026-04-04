@@ -22,7 +22,7 @@ class Command(BaseCommand):
         # Schedule the function
         scheduler.add_job(
             my_daily_function,
-            trigger=CronTrigger(hour=0, minute=0),  # Runs at Midnight daily
+            trigger=CronTrigger(hour=5, minute=15),  # Runs at Midnight daily
             id="my_daily_task",  # The `id` should be unique
             max_instances=1,
             replace_existing=True,
