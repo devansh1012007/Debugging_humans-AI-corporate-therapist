@@ -5,6 +5,7 @@ from .models import ( OrgNode, UserChatSummary, UserDashboard, UserDashboard,
                     UserDashboardHistory,UserPersonalityData,UserPsycoData,
                     UserPsycoDataHistory,UserPersonalityDataHistoric,
                     UserPsycoProcessedDataHistory,UserPsycoProcessedData,
+                    EmailQueue,
 )
 from django.shortcuts import get_object_or_404
 from .problems_AI import TeamDashboard_data, UserDashboard_data
@@ -711,7 +712,18 @@ def get_report():
         history_list.append(processed_data)
         history_doc.content = history_list
         history_doc.save()
-        
+        try:
+            EmailQueue.objects.create(
+                recipient_email=user.email,
+                recipient_name=user.username,
+                report_id=f"PSY-{user.id}-{date.today()}"
+            )
+        except Exception as e:
+            # Log this failure. If the queue insertion fails, the report exists, 
+            # but the user will not be notified.
+            print(f"Failed to queue email for {user.email}: {str(e)}")
+    # call the email sending function after processing all users, or rely on a separate scheduled task to handle the queue
+
 
 
 
@@ -754,7 +766,84 @@ def get_report():
         history_doc.save()
         
 
+import os
+from django.db import transaction
+from django.utils import timezone
+from datetime import timedelta
+from sendgrid import SendGridAPIClient
+from sendgrid.helpers.mail import Mail
+from python_http_client.exceptions import HTTPError
+from .models import EmailQueue
 
+def process_email_queue_task():
+    """
+    Checks the database for pending emails and processes them in a single transaction.
+    Designed to run frequently. Exits immediately if the queue is empty.
+    """
+    sg_api_key = os.environ.get('SENDGRID_API_KEY')
+    sender_email = os.environ.get('SENDER_EMAIL')
+
+    if not sg_api_key or not sender_email:
+        print("CRITICAL: SendGrid credentials missing from environment.")
+        return
+
+    sg_client = SendGridAPIClient(sg_api_key)
+
+    with transaction.atomic():
+        # Lock the rows to prevent duplicate processing if instances overlap
+        tasks = EmailQueue.objects.select_for_update(skip_locked=True).filter(status='PENDING')
+        
+        if not tasks.exists():
+            return # Exit silently if nothing to process
+
+        for task in tasks:
+            task.status = 'PROCESSING'
+            task.save(update_fields=['status', 'updated_at'])
+
+            subject = f"Confidential: Your Assessment Report ({task.report_id}) is Ready"
+            html_content = f"""
+                <div style="font-family: Arial, sans-serif; color: #333;">
+                    <h2>Hello {task.recipient_name},</h2>
+                    <p>Your recent corporate psychology assessment report has been securely generated.</p>
+                    <p>Please log in to your secure portal to view your results.</p>
+                </div>
+            """
+
+            message = Mail(
+                from_email=sender_email,
+                to_emails=task.recipient_email,
+                subject=subject,
+                html_content=html_content
+            )
+
+            try:
+                sg_client.send(message)
+                task.status = 'SENT'
+                print(f"SUCCESS: Email sent to {task.recipient_email}")
+            except HTTPError as e:
+                task.error_log = f"SendGrid API Error: {e.to_dict}"
+                task.retry_count += 1
+                task.status = 'FAILED' if task.retry_count >= 3 else 'PENDING'
+            except Exception as e:
+                task.error_log = f"Unexpected Error: {str(e)}"
+                task.retry_count += 1
+                task.status = 'FAILED' if task.retry_count >= 3 else 'PENDING'
+
+            task.save(update_fields=['status', 'retry_count', 'updated_at', 'error_log'])
+
+def cleanup_email_queue_task():
+    """
+    Deletes queue records older than 30 days that have successfully been sent.
+    This prevents database performance degradation over time.
+    """
+    thirty_days_ago = timezone.now() - timedelta(days=30)
+    deleted_count, _ = EmailQueue.objects.filter(
+        status='SENT', 
+        updated_at__lt=thirty_days_ago
+    ).delete()
+    
+    if deleted_count > 0:
+        print(f"CLEANUP: Removed {deleted_count} old email queue records.")
 
 ###############################################################33
 

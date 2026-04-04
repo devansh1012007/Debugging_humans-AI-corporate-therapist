@@ -186,7 +186,8 @@ class UserConsentViewSet(viewsets.ModelViewSet):
             samesite='None',  
             secure=True       
         )
-
+        # cookies are saved in browser but our current version does not ask for permission to save cookies, we need to make sure that the cookie is saved in the browser and sent back with requests. 
+        # This is crucial for our consent management logic to work correctly. If the cookie is not being sent back, we may need to adjust our frontend code to ensure that it includes credentials in its requests (e.g., using fetch with credentials: 'include' or axios with withCredentials: true).
         return response
 
     def perform_create(self, serializer):

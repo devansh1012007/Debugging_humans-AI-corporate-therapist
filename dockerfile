@@ -6,6 +6,12 @@ ENV PYTHONUNBUFFERED=1
 
 WORKDIR /code
 
+# Add this near the top of your Dockerfile
+RUN apt-get update && apt-get install -y \
+    curl \
+    procps \
+    && rm -rf /var/lib/apt/lists/*
+    
 # Install system dependencies required for PostgreSQL compilation
 RUN apt-get update && apt-get install -y \
     libpq-dev \

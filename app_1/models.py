@@ -113,3 +113,28 @@ class UserConsent(models.Model):
 class Tharipistneeded(OwnedModel):
     in_need = models.BooleanField(default=False)
     submitted_at = models.DateTimeField(auto_now_add=True)
+
+class EmailQueue(models.Model):
+    STATUS_CHOICES = [
+        ('PENDING', 'Pending'),
+        ('PROCESSING', 'Processing'),
+        ('SENT', 'Sent'),
+        ('FAILED', 'Failed'),
+    ]
+
+    recipient_email = models.EmailField()
+    recipient_name = models.CharField(max_length=255)
+    report_id = models.CharField(max_length=100) # Reference to the specific report
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='PENDING', db_index=True)
+    
+    # Audit and reliability fields
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    retry_count = models.IntegerField(default=0)
+    error_log = models.TextField(blank=True, null=True)
+
+    class Meta:
+        ordering = ['created_at'] # Process older emails first
+
+    def __str__(self):
+        return f"{self.recipient_email} - {self.status}"

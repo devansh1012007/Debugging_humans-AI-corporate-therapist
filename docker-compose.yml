@@ -34,6 +34,14 @@ services:
         condition: service_healthy
     extra_hosts:
       - "ai-server:26.217.98.105"
+    healthcheck:
+      # Pings the root URL. Fails if it doesn't get a 200-399 HTTP status.
+      test: ["CMD", "curl", "-f", "http://localhost:8000/"]
+      interval: 30s       # How often to check
+      timeout: 10s        # How long to wait for a response before failing
+      retries: 3          # Consecutive failures before marking as 'unhealthy'
+      start_period: 40s   # Grace period for Django to boot and run migrations
+    restart: unless-stopped # Instructs Docker to reboot unhealthy containers
 
   scheduler:
     build: .
@@ -48,3 +56,12 @@ services:
         condition: service_healthy
     extra_hosts:
       - "ai-server:26.217.98.105"
+    healthcheck:
+      # Uses 'ps' to check if the specific Python script is running.
+      # The brackets around '[r]' are a regex trick to prevent grep from matching itself.
+      test: ["CMD-SHELL", "ps aux | grep '[r]un_scheduler' || exit 1"]
+      interval: 45s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    restart: unless-stopped
