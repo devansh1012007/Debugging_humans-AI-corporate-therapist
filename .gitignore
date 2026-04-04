@@ -19,10 +19,12 @@ env/
 # VS Code settings
 .vscode/
 
-# Python cache
 __pycache__/
 *.py[cod]
 
 # OS files
 .DS_Store
 Thumbs.db
+
+# Python cachegit rm -r --cached .
+# git add .
