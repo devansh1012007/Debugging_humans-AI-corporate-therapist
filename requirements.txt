@@ -8,9 +8,7 @@ dj-rest-auth[Google]
 cryptography
 djangorestframework-simplejwt
 requests
-dotenv
 ollama
-psycopg2-binary 
 pgvector 
 httpx
 starlette
