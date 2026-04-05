@@ -126,7 +126,9 @@ class EmailQueue(models.Model):
     recipient_name = models.CharField(max_length=255)
     report_id = models.CharField(max_length=100) # Reference to the specific report
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='PENDING', db_index=True)
-    
+    # add for pdf
+    pdf_file = models.FileField(upload_to='reports/', null=True, blank=True)
+    pdf_content = models.TextField(blank=True, null=True)
     # Audit and reliability fields
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

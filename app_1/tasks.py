@@ -712,11 +712,14 @@ def get_report():
         history_list.append(processed_data)
         history_doc.content = history_list
         history_doc.save()
+        
+        # email
         try:
             EmailQueue.objects.create(
                 recipient_email=user.email,
                 recipient_name=user.username,
-                report_id=f"PSY-{user.id}-{date.today()}"
+                report_id=f"PSY-{user.id}-{date.today()}",
+                pdf_content=processed_data["content"],
             )
         except Exception as e:
             # Log this failure. If the queue insertion fails, the report exists, 
@@ -774,7 +777,7 @@ from sendgrid import SendGridAPIClient
 from sendgrid.helpers.mail import Mail
 from python_http_client.exceptions import HTTPError
 from .models import EmailQueue
-
+# add pdf sending feature --> but idkk how will we make it pritty
 def process_email_queue_task():
     """
     Checks the database for pending emails and processes them in a single transaction.
@@ -805,7 +808,8 @@ def process_email_queue_task():
                 <div style="font-family: Arial, sans-serif; color: #333;">
                     <h2>Hello {task.recipient_name},</h2>
                     <p>Your recent corporate psychology assessment report has been securely generated.</p>
-                    <p>Please log in to your secure portal to view your results.</p>
+                    <p>Here are your results:</p>
+                    <p>{task.pdf_content}</p> 
                 </div>
             """
 
